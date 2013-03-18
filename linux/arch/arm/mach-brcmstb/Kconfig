@@ -1,0 +1,146 @@
+config ARCH_BRCMSTB
+	bool "Broadcom BCM7XXX based boards" if ARCH_MULTI_V7
+	depends on MMU
+	select ARM_ARCH_TIMER
+	select ARM_GIC
+	select BRCMSTB
+	help
+	  This enables support for Broadcom ARM-based set-top box chipsets.
+
+choice
+	prompt "Chipset selection"
+	depends on BRCMSTB
+	help
+	  Select the Broadcom chipset you are building for.
+
+config BCM7445A0
+	bool "7445 Ax"
+	select BCM7445
+	select BRCM_GENET_V4
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_0
+
+endchoice
+
+
+config BCMGENET
+	tristate "Broadcom STB 10/100/1000 MAC/PHY support"
+	depends on ETHERNET
+	depends on BRCMSTB
+	default y
+	select CRC32
+	select MII
+	help
+	  Say Y to support the internal 10/100/1000 GENET MAC/PHY on
+	  Broadcom set-top chips.  This driver also supports the datapath
+	  for the onchip MoCA transceiver.
+
+	  If your chipset supports power management, disabling this driver
+	  will keep the device permanently powered down.
+
+
+config BRCM_USB
+	tristate "Broadcom STB USB support"
+	depends on BRCMSTB && USB
+	default y
+	help
+	  Say Y to enable the drivers for the onchip USB controllers.
+
+	  If your chipset supports power management, disabling this driver
+	  will keep the device permanently powered down.
+
+
+config MTD_NAND_BRCMSTB
+	tristate "Broadcom NAND controller support"
+	default y
+	help
+	  Say Y to enable the onchip NAND controller.
+
+config SATA_BRCMSTB
+	tristate "Broadcom STB SATA support"
+	depends on BRCMSTB && ATA
+	default y
+	select SATA_AHCI_PLATFORM
+	help
+	  This option enables support for STB onchip SATA cores.
+	  If unsure, say Y.
+
+config BRCM_SDIO
+	bool "Broadcom SDHCI (SDIO) support"
+	depends on BRCMSTB && MMC_SDHCI
+	default y
+	select MMC_SDHCI_IO_ACCESSORS
+	help
+	  Say Y to enable the driver for the onchip SDIO controller.
+
+	  If you do not plan on using this device, disabling CONFIG_MMC
+	  will save about 75KB.
+
+	  If unsure, say Y.
+
+#####################################################################
+# Hidden options
+#####################################################################
+
+
+config BRCMSTB
+	bool
+
+
+config BCM7445
+	bool
+
+
+config BRCM_GENET_V3
+	bool
+
+config BRCM_GENET_V4
+	bool
+
+config BRCM_GENET_VERSION
+	int
+	default 3 if BRCM_GENET_V3
+	default 4 if BRCM_GENET_V4
+
+
+config BRCM_HAS_NAND_MINOR_0
+	bool
+
+config BRCM_HAS_NAND_MINOR_1
+	bool
+
+config BRCM_HAS_NAND_MINOR_2
+	bool
+
+config BRCM_HAS_NAND_MINOR_3
+	bool
+
+config BRCM_HAS_NAND_MINOR_4
+	bool
+
+config BRCM_HAS_NAND_MAJOR_5
+	bool
+	select BRCM_HAS_NAND
+
+config BRCM_HAS_NAND_MAJOR_6
+	bool
+	select BRCM_HAS_NAND
+
+config BRCM_HAS_NAND_MAJOR_7
+	bool
+	select BRCM_HAS_NAND
+
+
+config BRCMNAND_MAJOR_VERS
+	int
+	default "7" if BRCM_HAS_NAND_MAJOR_7
+	default "6" if BRCM_HAS_NAND_MAJOR_6
+	default "5" if BRCM_HAS_NAND_MAJOR_5
+
+config BRCMNAND_MINOR_VERS
+	int
+	default "4" if BRCM_HAS_NAND_MINOR_4
+	default "3" if BRCM_HAS_NAND_MINOR_3
+	default "2" if BRCM_HAS_NAND_MINOR_2
+	default "1" if BRCM_HAS_NAND_MINOR_1
+	default "0" if BRCM_HAS_NAND_MINOR_0

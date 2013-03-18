@@ -1,0 +1,36 @@
+* Broadcom SATA3 AHCI Controller
+
+SATA nodes are defined to describe on-chip Serial ATA controllers.
+Each SATA controller should have its own node.
+
+Required properties:
+- compatible         : compatible list, contains "brcm,sata3-ahci"
+- reg                : <registers mapping>
+- interrupts         : <interrupt mapping for SATA IRQ>
+- phy-generation     : 16-bit integer which describes both the SATA PHY design
+		       generation, and revision number.
+		       (0xXXYY, XX = generation, YY = rev)
+- phy-base-addr      : Address of SATA PHY configuration registers.
+- top-ctrl-base-addr : Address of the SATA IP core "top" registers.
+
+Optional properties:
+- phy-enable-ssc-mask : A 32-bit bitmask, where each bit is associated with
+			one SATA port.
+			(e.g.: If bit is 1, spread-spectrum clocking will be
+			configured for that port.)
+- phy-force-spd       : An array of integer pairs which specify the SATA port
+			number and SATA speed generation to use as an
+			upper-bound during link speed negotiation.
+
+Example:
+	sata@f045a000 {
+		compatible = "brcm,sata3-ahci";
+		reg = <0xf045a000 0x1000>;
+		interrupts = <0x0 0x1e 0x0>;
+		phy-generation = <0x2800>;
+		phy-base-addr = <0xf0458100>;
+		phy-enable-ssc-mask = <0x00000001>;
+		phy-force-spd = <0 3
+				 1 1>;
+		top-ctrl-base-addr = <0xf0458040>;
+	};
