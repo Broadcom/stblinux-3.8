@@ -34,8 +34,8 @@
 
 #include "bcmgenet_map.h"
 
-#define BRCM_PHY_ID_AUTO	-1
-#define BRCM_PHY_ID_NONE	-2
+#define BRCM_PHY_ID_AUTO	0x100
+#define BRCM_PHY_ID_NONE	0x101
 
 #define BRCM_PHY_TYPE_INT	1
 #define BRCM_PHY_TYPE_EXT_MII	2
@@ -140,10 +140,12 @@ struct BcmEnet_devctrl {
 	/* other misc variables */
 	int irq0;	/* regular IRQ */
 	int	irq1;	/* ring buf IRQ */
-	int phyAddr;
+	int	phyAddr;
 	int	phyType;
 	int	phySpeed;
 	int	extPhy;
+	int	swAddr;
+	int	swType;
 	int	bIPHdrOptimize;
 	unsigned int irq0_stat;	/* sw copy of irq0 status, for IRQ BH */
 	unsigned int irq1_stat;	/* sw copy of irq1 status, for NAPI rx */

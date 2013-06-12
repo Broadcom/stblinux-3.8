@@ -4,6 +4,7 @@ config ARCH_BRCMSTB
 	select ARM_ARCH_TIMER
 	select ARM_GIC
 	select BRCMSTB
+	select MIGHT_HAVE_PCI
 	help
 	  This enables support for Broadcom ARM-based set-top box chipsets.
 
@@ -13,20 +14,73 @@ choice
 	help
 	  Select the Broadcom chipset you are building for.
 
+config BCM7145A0
+	bool "7145 Ax"
+	select BCM7145
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_0
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
+
+config BCM7366A0
+	bool "7366 Ax"
+	select BCM7366
+	select BRCM_GENET_V4
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_0
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
+
+config BCM7439A0
+	bool "7439 Ax"
+	select BCM7439
+	select BRCM_GENET_V4
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_0
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
+
 config BCM7445A0
 	bool "7445 Ax"
 	select BCM7445
 	select BRCM_GENET_V4
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
+
+config BCM7445B0
+	bool "7445 Bx"
+	select BCM7445
+	select BRCM_GENET_V4
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_0
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
+
+config BCM7445C0
+	bool "7445 Bx"
+	select BCM7445
+	select BRCM_GENET_V4
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_0
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
 
 endchoice
 
 
+config SPI_BRCMSTB
+	tristate "Broadcom HIF SPI controller support"
+	default y
+	depends on BRCMSTB
+	help
+	  Say Y to enable support for SPI (serial) flash devices.
+
+
 config BCMGENET
 	tristate "Broadcom STB 10/100/1000 MAC/PHY support"
-	depends on ETHERNET
-	depends on BRCMSTB
+	depends on ETHERNET && BRCMSTB && (BRCM_GENET_V3 || BRCM_GENET_V4)
 	default y
 	select CRC32
 	select MII
@@ -53,6 +107,7 @@ config BRCM_USB
 config MTD_NAND_BRCMSTB
 	tristate "Broadcom NAND controller support"
 	default y
+	depends on OF && OF_MTD
 	help
 	  Say Y to enable the onchip NAND controller.
 
@@ -86,6 +141,15 @@ config BRCM_SDIO
 config BRCMSTB
 	bool
 
+
+config BCM7145
+	bool
+
+config BCM7366
+	bool
+
+config BCM7439
+	bool
 
 config BCM7445
 	bool
@@ -144,3 +208,21 @@ config BRCMNAND_MINOR_VERS
 	default "2" if BRCM_HAS_NAND_MINOR_2
 	default "1" if BRCM_HAS_NAND_MINOR_1
 	default "0" if BRCM_HAS_NAND_MINOR_0
+
+config BRCM_HAS_BSPI_V4
+	bool
+	select BRCM_HAS_SPI
+
+config BRCM_BSPI_MAJOR_VERS
+	int
+	default "4" if BRCM_HAS_BSPI_V4
+	default "3" if BRCM_HAS_BSPI_V3
+	default "2" if BRCM_HAS_BSPI_V2
+
+# For MSPI prior to v1.5 (first version with a revision register)
+config BRCM_MSPI_LEGACY
+	bool
+
+# MSPI can transfer either 64b or 8b per slot
+config BRCM_MSPI_64B_WORDS
+	bool

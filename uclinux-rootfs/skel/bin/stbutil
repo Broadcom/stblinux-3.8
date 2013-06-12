@@ -194,7 +194,7 @@ function handle_opt_2()
 		# old style
 		cmdline=ubiroot
 	else
-		cmdline="${dt_console_args} ubi.mtd=${rootfs_mtd_name} rootfstype=ubifs root=ubi0:rootfs"
+		cmdline="${dt_console_args} ubi.mtd=${rootfs_mtd_name} rootfstype=ubifs root=ubi0:rootfs rw"
 	fi
 
 	rem_img=ubifs-$(($flash_erasesize / 1024))k-$(($flash_writesize))-${plat}.img
@@ -225,7 +225,7 @@ function handle_opt_2()
 		popd > /dev/null
 
 		umount /mnt/flash
-		ubidetach -m0
+		ubidetach -d 0
 	fi
 	echo ""
 	echo "Finished writing rootfs to flash."
@@ -572,10 +572,6 @@ if ! find_thumbdrive; then
 	suf7="(not available)"
 fi
 
-for x in chip_id chip_rev cfe_boardname cpu_name; do
-	eval $x=\"$(cat /sys/devices/platform/brcmstb/$x)\"
-done
-
 while :; do
 
 	echo ""
@@ -591,9 +587,6 @@ while :; do
 	echo "Linux build target:    $plat"
 
 	echo ""
-	echo "Chip ID register:      BCM${chip_id}${chip_rev}"
-	echo "Board name:            ${cfe_boardname}"
-	echo "CPU:                   ${cpu_name}"
 	echo "Primary Linux flash:   ${flash_type:-none}"
 
 	echo ""

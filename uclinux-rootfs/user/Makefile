@@ -63,6 +63,7 @@ dir_$(CONFIG_USER_CHAT_CHAT)                += pppd/chat
 dir_$(CONFIG_USER_CHAT_AFFINITY)            += chat_affinity
 dir_$(CONFIG_USER_CKSUM_CKSUM)              += cksum
 dir_$(CONFIG_USER_CLOCK_CLOCK)              += clock
+dir_$(CONFIG_USER_CMATEST)                  += cmatest
 dir_$(CONFIG_USER_CPU_CPU)                  += cpu
 dir_$(CONFIG_USER_CRAMFS_MKCRAMFS)          += cramfs
 dir_$(CONFIG_USER_CRAMFS_CRAMFSCK)          += cramfs

@@ -168,6 +168,9 @@ struct brcm_usb_instance {
 #define SCB_SIZE_s		7
 #define SCB_SIZE_m		(0x1f << SCB_SIZE_s)
 
+#define SCB1_EN_m		BIT(14)
+#define SCB2_EN_m		BIT(15)
+
 #define SETUP_REG		0x00
 #define EBRIDGE_REG		0x0c
 #define OBRIDGE_REG		0x10
@@ -179,6 +182,9 @@ static void brcm_usb_instance_hw_init(struct brcm_usb_instance *priv)
 	/* set up byte order for DRAM accesses */
 	reg = (readl(priv->ctrl_regs + SETUP_REG) & ~ENDIAN_m) |
 	      ENDIAN_SETTING;
+
+	/* enable the second and third memory controller interfaces */
+	reg |= (SCB1_EN_m | SCB2_EN_m);
 
 	/* set overcurrent and power polarity based on DT properties */
 	reg &= ~(IOC_m | IPP_m);

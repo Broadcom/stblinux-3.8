@@ -1,0 +1,52 @@
+* Broadcom STB SPI Controller
+
+The Broadcom STB SPI controller supports serial flash through both the MSPI and
+BSPI interfaces.
+
+Required properties:
+- compatible     : should be "brcm,spi-brcmstb"
+- reg            : base address and length of the (1) MSPI, (2) BSPI, and (3)
+                   BSPI RAF register regions
+- interrupts     : the appropriate HIF SPI interrupt
+- #address-cells : should be <1>; subnodes will give their chip-select number as
+                   their reg (see spi-bus.txt)
+- #size-cells    : should be <0>
+
+Optional properties:
+- num-cs         : specifies the number of chip select lines supported (see
+                   spi-bus.txt). If not specified, the default number of chip
+                   select lines is set to 4.
+
+SPI controller properties in subnodes (slaves):
+- use-bspi       : boolean, asserting that this slave should use BSPI
+                   acceleration
+
+For other slave properties, see spi-bus.txt. Also note that flash partitioning
+(e.g., for m25p80) is specified by mtd/partition.txt.
+
+Example:
+
+spi0@0 {
+	compatible = "brcm,spi-brcmstb";
+	interrupts = < 0 33 0>;
+	reg = <0xf0443400 0x187>,
+	      <0xf0443200 0x50>,
+	      <0xf0443300 0x23>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "m25p80";
+		reg = <0>;
+		spi-max-frequency = <40000000>;
+		spi-cpol;
+		spi-cpha;
+		use-bspi;
+
+		flash0@0 {
+			reg = <0 0>; // MTDPART_SIZ_FULL
+		};
+	};
+};

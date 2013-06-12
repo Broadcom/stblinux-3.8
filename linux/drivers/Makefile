@@ -5,6 +5,7 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+obj-$(CONFIG_BRCMSTB)		+= brcmstb/
 obj-y				+= irqchip/
 obj-y				+= bus/
 

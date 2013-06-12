@@ -525,6 +525,7 @@ bool 'chat_affinity'		CONFIG_USER_CHAT_AFFINITY
 bool 'chat'			CONFIG_USER_CHAT_CHAT
 bool 'cksum'			CONFIG_USER_CKSUM_CKSUM
 bool 'clock'			CONFIG_USER_CLOCK_CLOCK
+bool 'cmatest'			CONFIG_USER_CMATEST
 bool 'cpu'			CONFIG_USER_CPU_CPU
 bool 'date'			CONFIG_USER_CAL_DATE
 

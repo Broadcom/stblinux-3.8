@@ -10,4 +10,4 @@
 # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-obj-$(CONFIG_ARCH_BRCMSTB) := common.o headsmp.o platsmp.o
+obj-$(CONFIG_ARCH_BRCMSTB) := common.o headsmp.o platsmp.o cma_driver.o

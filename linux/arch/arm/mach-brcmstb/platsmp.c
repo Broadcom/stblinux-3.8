@@ -87,25 +87,12 @@ static int __cpuinit brcmstb_boot_secondary(unsigned int cpu,
 	return 0;
 }
 
-/*
- * Initialise the CPU possible map early - this describes the CPUs
- * which may be present or become present in the system.
- */
 static void __init brcmstb_smp_init_cpus(void)
 {
-	/* FIXME: ncores needs to come from DT */
-	unsigned int i, ncores = 4;
-
-	if (ncores > nr_cpu_ids) {
-		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-			ncores, nr_cpu_ids);
-		ncores = nr_cpu_ids;
-	}
-
-	for (i = 0; i < ncores; i++)
-		set_cpu_possible(i, true);
-
-	set_smp_cross_call(gic_raise_softirq);
+	if (num_possible_cpus() > 1)
+		set_smp_cross_call(gic_raise_softirq);
+	else
+		setup_max_cpus = 0;
 }
 
 static void __init brcmstb_smp_prepare_cpus(unsigned int max_cpus)

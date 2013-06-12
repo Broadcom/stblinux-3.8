@@ -47,6 +47,7 @@ my $arch_defaults_le = "defaults/config.arch-le";
 my $arch_defaults_be = "defaults/config.arch-be";
 my $arch_defaults_arm = "defaults/config.arch-arm";
 my $linux_defaults = "";
+my $linux_new_defaults = "";
 
 my $LINUXDIR = "linux";
 
@@ -209,22 +210,19 @@ sub get_tgt($)
 	($chip, $be, $suffix) = ($1, defined($2) ? 1 : 0,
 		defined($3) ? $3 : "");
 
-	my $dc = "bcm${chip}_defconfig";
-	$linux_defaults = "$LINUXDIR/arch/mips/configs/$dc";
-	if(-e $linux_defaults) {
-		$ARCH = "mips";
-		return;
-	}
-
-	$linux_defaults = "$LINUXDIR/arch/arm/configs/$dc";
-	if(-e $linux_defaults) {
+	# FIXME: if we're using a semi-multiplatform kernel we need a new
+	# way to tell if the chip is MIPS or ARM.  Suggest adding new
+	# metadata under include/linux/brcmstb/7*
+	if(-d "$LINUXDIR/include/linux/brcmstb/${chip}") {
+		$linux_defaults = "$LINUXDIR/arch/arm/configs/brcmstb_defconfig";
+		$linux_new_defaults = "$LINUXDIR/arch/arm/configs/brcmstb_new_defconfig";
 		$ARCH = "arm";
 		return;
 	}
 
 	print "\n";
 	print "ERROR: No Linux configuration for $chip\n";
-	print "Attempted to open: $LINUXDIR/arch/{mips,arm}/configs/$dc\n";
+	print "Attempted to open: $LINUXDIR/arch/arm/configs/brcmstb_defconfig\n";
 	print "\n";
 	exit 1;
 }
@@ -278,18 +276,11 @@ sub expand_modifiers($$)
 
 sub get_chiplist()
 {
-	my @defs = glob("$LINUXDIR/arch/mips/configs/bcm*_defconfig");
+	my @defs = glob("$LINUXDIR/include/linux/brcmstb/7*");
 	my @out = ( );
 
 	foreach (@defs) {
-		if(m/bcm([0-9]+[a-z][0-9])_defconfig/) {
-			push(@out, $1);
-		}
-	}
-
-	@defs = glob("$LINUXDIR/arch/arm/configs/bcm*_defconfig");
-	foreach (@defs) {
-		if(m/bcm([0-9]+[a-z][0-9])_defconfig/) {
+		if(m/([0-9]+[a-z][0-9])/) {
 			push(@out, $1);
 		}
 	}
@@ -376,12 +367,24 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	}
 
 	unlink($linux_config);
-	system("make -C $LINUXDIR ARCH=$ARCH bcm${chip}_defconfig");
+	system("make -C $LINUXDIR ARCH=$ARCH brcmstb_defconfig");
 
 	read_cfg($linux_config, \%linux);
 	read_cfg($uclibc_defaults, \%uclibc);
 	read_cfg($busybox_defaults, \%busybox);
 	read_cfg($vendor_defaults, \%vendor);
+
+	# set chip, e.g. CONFIG_BCM7445A0=y
+
+	my $capchip = $chip;
+	$capchip =~ tr/a-z/A-Z/;
+
+	foreach my $x (keys(%linux)) {
+		if ($x =~ m/^CONFIG_BCM7[0-9]{3,}/) {
+			$linux{$x} = "n";
+		}
+	}
+	$linux{'CONFIG_BCM'.$capchip} = 'y';
 
 	# set architecture
 
@@ -772,10 +775,14 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	close(F);
 
 	# write out the new configuration
-	write_cfg($linux_config, $linux_config, \%linux);
+	write_cfg($linux_defaults, $linux_new_defaults, \%linux);
 	write_cfg($uclibc_defaults, $uclibc_config, \%uclibc);
 	write_cfg($busybox_defaults, $busybox_config, \%busybox);
 	write_cfg($vendor_defaults, $vendor_config, \%vendor);
+
+	# fix up the kernel defconfig (due to CONFIG_BCM* munging)
+	system("make -C $LINUXDIR ARCH=$ARCH brcmstb_new_defconfig");
+	unlink($linux_new_defaults);
 
 	unlink($arch_config);
 	copy($ARCH eq "arm" ? $arch_defaults_arm :

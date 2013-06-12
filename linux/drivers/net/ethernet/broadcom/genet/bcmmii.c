@@ -66,7 +66,12 @@ int bcmgenet_mii_read(struct net_device *dev, int phy_id, int location)
 			HZ/100);
 	ret = umac->mdio_cmd;
 	mutex_unlock(&pDevCtrl->mdio_mutex);
-	if (ret & MDIO_READ_FAIL) {
+
+	/*
+	 * Don't check error codes from switches, as some of them are
+	 * known to return MDIO_READ_FAIL on good transactions
+	 */
+	if (!pDevCtrl->swType && (ret & MDIO_READ_FAIL)) {
 		TRACE(("MDIO read failure\n"));
 		ret = 0;
 	}

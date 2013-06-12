@@ -20,6 +20,7 @@
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
+#include <linux/console.h>
 
 #include <asm/arch_timer.h>
 #include <asm/mach/arch.h>
@@ -31,7 +32,11 @@
 
 #include "common.h"
 
-static struct map_desc io_map[] __initdata = {
+/***********************************************************************
+ * STB CPU (main application processor)
+ ***********************************************************************/
+
+static struct map_desc brcmstb_io_map[] __initdata = {
 	{
 	.virtual = (unsigned long)BRCMSTB_PERIPH_VIRT,
 	.pfn     = __phys_to_pfn(BRCMSTB_PERIPH_PHYS),
@@ -43,6 +48,8 @@ static struct map_desc io_map[] __initdata = {
 static const char *brcmstb_match[] __initdata = {
 	"brcm,brcmstb",
 	"brcm,bcm7445a0",
+	"brcm,bcm7445b0",
+	"brcm,bcm7145a0",
 	NULL
 };
 
@@ -53,7 +60,7 @@ static const struct of_device_id brcmstb_dt_irq_match[] __initconst = {
 
 static void __init brcmstb_map_io(void)
 {
-	iotable_init(io_map, ARRAY_SIZE(io_map));
+	iotable_init(brcmstb_io_map, ARRAY_SIZE(brcmstb_io_map));
 }
 
 static void __init brcmstb_machine_init(void)
@@ -75,6 +82,11 @@ static void __init timer_init(void)
 	arch_timer_of_register();
 }
 
+static void __init brcmstb_init_early(void)
+{
+	add_preferred_console("ttyS", 0, "115200");
+}
+
 static struct sys_timer __initdata brcmstb_timer = {
 	.init = timer_init,
 };
@@ -88,6 +100,33 @@ void __init brcmstb_dt_init_irq(void)
 	of_irq_init(brcmstb_dt_irq_match);
 }
 
+void wktmr_read(struct wktmr_time *t)
+{
+	uint32_t tmp;
+
+	do {
+		t->sec = BDEV_RD(BCHP_WKTMR_COUNTER);
+		tmp = BDEV_RD(BCHP_WKTMR_PRESCALER_VAL);
+	} while (tmp >= WKTMR_FREQ);
+
+	t->pre = WKTMR_FREQ - tmp;
+}
+
+unsigned long wktmr_elapsed(struct wktmr_time *t)
+{
+	struct wktmr_time now;
+
+	wktmr_read(&now);
+	now.sec -= t->sec;
+	if (now.pre > t->pre) {
+		now.pre -= t->pre;
+	} else {
+		now.pre = WKTMR_FREQ + now.pre - t->pre;
+		now.sec--;
+	}
+	return (now.sec * WKTMR_FREQ) + now.pre;
+}
+
 DT_MACHINE_START(BRCMSTB, "Broadcom STB (Flattened Device Tree)")
 	.map_io		= brcmstb_map_io,
 	.init_irq	= brcmstb_dt_init_irq,
@@ -97,4 +136,43 @@ DT_MACHINE_START(BRCMSTB, "Broadcom STB (Flattened Device Tree)")
 	.dt_compat	= brcmstb_match,
 	.restart	= brcmstb_restart,
 	.smp		= &brcmstb_smp_ops,
+	.init_early	= brcmstb_init_early,
+MACHINE_END
+
+/***********************************************************************
+ * RG coprocessor kernel - for cable combo chips only
+ ***********************************************************************/
+
+static struct map_desc brcmrg_io_map[] __initdata = {
+	{
+	.virtual = (unsigned long)BRCMRG_PERIPH_VIRT,
+	.pfn     = __phys_to_pfn(BRCMRG_PERIPH_PHYS),
+	.length  = BRCMRG_PERIPH_LENGTH,
+	.type    = MT_DEVICE,
+	},
+};
+
+static const char *brcmrg_match[] __initdata = {
+	"brcm,bcm7145a0-rg",
+	NULL
+};
+
+static void __init brcmrg_map_io(void)
+{
+	iotable_init(brcmrg_io_map, ARRAY_SIZE(brcmrg_io_map));
+}
+
+void __init brcmrg_dt_init_irq(void)
+{
+	of_irq_init(brcmstb_dt_irq_match);
+}
+
+DT_MACHINE_START(BRCMRG, "Broadcom RG CPU (Flattened Device Tree)")
+	.map_io		= brcmrg_map_io,
+	.init_irq	= brcmrg_dt_init_irq,
+	.handle_irq	= gic_handle_irq,
+	.timer		= &brcmstb_timer,
+	.init_machine	= brcmstb_machine_init,
+	.dt_compat	= brcmrg_match,
+	.init_early	= brcmstb_init_early,
 MACHINE_END

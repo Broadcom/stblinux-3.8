@@ -322,6 +322,9 @@ static int bcmgenet_open(struct net_device *dev)
 		clk_disable(pDevCtrl->clk_wol);
 		/* init umac registers to synchronize s/w with h/w */
 		init_umac(pDevCtrl);
+
+		if (pDevCtrl->swType)
+			bcmgenet_ethsw_init(dev);
 		/* Speed settings must be restored */
 		bcmgenet_mii_init(dev);
 		bcmgenet_mii_setup(dev);
@@ -1009,8 +1012,8 @@ static int bcmgenet_xmit(struct sk_buff *skb, struct net_device *dev)
 					__func__, i, frag->size);
 			print_hex_dump(KERN_NOTICE, "", DUMP_PREFIX_ADDRESS,
 				16, 1,
-				page_address(frag->page)+frag->page_offset,
-				frag->size, 0);
+				skb_frag_address(frag),
+				skb_frag_size(frag), 0);
 #endif
 			txCBPtr->BdAddr->length_status =
 					((unsigned long)frag->size << 16) |
@@ -1533,11 +1536,11 @@ static int init_umac(struct BcmEnet_devctrl *pDevCtrl)
 
 	/* Monitor cable plug/unpluged event for internal PHY */
 	if (pDevCtrl->phyType == BRCM_PHY_TYPE_INT) {
-#if !defined(CONFIG_BCM7445A0)
-		/* HW7445-870: energy detect on A0 silicon is unreliable */
+#if !defined(CONFIG_BCM7445A0) && !defined(CONFIG_BCM7445B0)
+		/* HW7445-870: energy detect on A0 and B0 silicon is unreliable */
 		intrl2->cpu_mask_clear |= (UMAC_IRQ_PHY_DET_R |
 				UMAC_IRQ_PHY_DET_F);
-#endif /* !defined(CONFIG_BCM7445A0) */
+#endif /* !defined(CONFIG_BCM7445A0) && !defined(CONFIG_BCM7445B0) */
 		intrl2->cpu_mask_clear |= (UMAC_IRQ_LINK_DOWN |
 				UMAC_IRQ_LINK_UP);
 		/* Turn on ENERGY_DET interrupt in bcmgenet_open()
@@ -1568,8 +1571,9 @@ static void init_edma(struct BcmEnet_devctrl *pDevCtrl)
 {
 #ifdef CONFIG_BCMGENET_RX_DESC_THROTTLE
 	int speeds[] = {10, 100, 1000, 2500};
-	int sid = 1, timeout, __maybe_unused first_bd;
+	int sid = 1, timeout;
 #endif
+	int __maybe_unused first_bd;
 	volatile struct rDmaRingRegs *rDma_desc;
 	volatile struct tDmaRingRegs *tDma_desc;
 	TRACE(("bcmgenet: init_edma\n"));
@@ -2502,6 +2506,7 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 	struct BcmEnet_devctrl *pDevCtrl;
 	struct net_device *dev;
 	const void *macaddr;
+	u32 propval;
 
 #ifdef CONFIG_NET_SCH_MULTIQ
 	dev = alloc_etherdev_mq(sizeof(*(pDevCtrl)), GENET_MQ_CNT+1);
@@ -2558,20 +2563,36 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 	/* Mii wait queue */
 	init_waitqueue_head(&pDevCtrl->wq);
 
-	/* TODO: get these from the OF properties */
 	pDevCtrl->phyType = BRCM_PHY_TYPE_INT;
-	pDevCtrl->phySpeed = SPEED_1000;
-	pDevCtrl->extPhy = 0;
 	pDevCtrl->phyAddr = 10;
-	pDevCtrl->devnum = pdev->id;
+	pDevCtrl->phySpeed = SPEED_1000;
 
+	if (!of_property_read_u32(dn, "phy-type", &propval))
+		pDevCtrl->phyType = propval;
+	if (!of_property_read_u32(dn, "phy-id", &propval))
+		pDevCtrl->phyAddr = propval;
+	if (!of_property_read_u32(dn, "phy-speed", &propval))
+		pDevCtrl->phySpeed = propval;
+
+	pDevCtrl->extPhy = pDevCtrl->phyType != BRCM_PHY_TYPE_INT;
+	pDevCtrl->devnum = pdev->id;
 	pDevCtrl->pdev = pdev;
 
 	/* Init GENET registers, Tx/Rx buffers */
 	if (bcmgenet_init_dev(pDevCtrl) < 0)
 		goto err1;
 
-	bcmgenet_mii_init(dev);
+	if (!of_property_read_u32(dn, "ethsw-type", &propval)) {
+		/* one-shot initialization; never poll for link status */
+		pDevCtrl->swType = propval;
+
+		pDevCtrl->swAddr = pDevCtrl->phyAddr;
+		pDevCtrl->phyAddr = BRCM_PHY_ID_NONE;
+
+		bcmgenet_mii_init(dev);
+		bcmgenet_ethsw_init(dev);
+	} else
+		bcmgenet_mii_init(dev);
 
 	INIT_WORK(&pDevCtrl->bcmgenet_irq_work, bcmgenet_irq_task);
 

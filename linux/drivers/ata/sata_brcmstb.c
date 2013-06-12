@@ -30,7 +30,9 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/ahci_platform.h>
+#include <linux/compiler.h>
 #include <scsi/scsi_host.h>
+#include <linux/brcmstb/brcmstb.h>
 
 #include "sata_brcmstb.h"
 #include "ahci.h"
@@ -157,8 +159,8 @@ static void spd_setting_set(struct sata_brcm_pdata *pdata, int port, int val)
 	pdata->phy_force_spd[port / SPD_SETTING_WIDTH] = tmp;
 }
 
-static void sata_mdio_wr(void __iomem *addr, u32 port, u32 bank, u32 ofs,
-			 u32 msk, u32 value)
+static void __maybe_unused sata_mdio_wr(void __iomem *addr, u32 port,
+					u32 bank, u32 ofs, u32 msk, u32 value)
 {
 	u32 tmp;
 	void __iomem *base = addr + ((port) * SATA_MDIO_REG_SPACE_SIZE);
@@ -183,6 +185,17 @@ static void sata_mdio_wr_legacy(void __iomem *addr, u32 bank, u32 ofs, u32 msk,
 	writel(tmp, ofs * 4 + base);
 }
 
+static void brcm_sata3_enable_phy(const struct sata_brcm_pdata *pdata)
+{
+#if defined(CONFIG_BCM7145A0)
+	/*
+	 * This version of the chip placed the reset bit in a non-SATA IP
+	 * register.
+	 */
+	BDEV_WR_F(SUN_TOP_CTRL_GENERAL_CTRL_0, sata_phy_disable, 0);
+#endif
+}
+
 static void brcm_sata3_init_phy(const struct sata_brcm_pdata *pdata, int port)
 {
 	const u32 phy_base = pdata->phy_base_addr;
@@ -196,7 +209,7 @@ static void brcm_sata3_init_phy(const struct sata_brcm_pdata *pdata, int port)
 	}
 
 	if (pdata->phy_generation == 0x2800) {
-#if defined(CONFIG_BCM7445A0)
+#if defined(CONFIG_BCM7445A0) || defined(CONFIG_BCM7445B0)
 		/* The 28nm SATA PHY has incorrect PLL settings upon
 		 * chip reset.
 		 * The workaround suggested by the H/W team requires
@@ -211,6 +224,9 @@ static void brcm_sata3_init_phy(const struct sata_brcm_pdata *pdata, int port)
 			     PLL_SM_CTRL_0_DFLT);
 		sata_mdio_wr(base, port, PLL_REG_BANK_0, 0x81, 0xFFFFFFFE, 0x0);
 #endif
+
+		brcm_sata3_enable_phy(pdata);
+
 		/* FIXME: Need SSC setup routine for new PHY */
 		spd_setting_get(pdata, port);
 	} else {

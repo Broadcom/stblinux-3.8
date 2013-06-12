@@ -1,0 +1,39 @@
+* Broadcom STB CMA Platform Device
+
+The Broadcom STB CMA Platform Device is a character device intended for
+providing a user-space interface to the dma-contiguous (CMA) API. More
+specifically, this implementation allows for allocation of contiguous physical
+memory on a particular memory controller (MEMC) within an STB SoC.
+
+Required properties:
+- compatible              : compatible list, contains "brcm,cma-plat-dev"
+- linux,contiguous-region : A phandle to a memory/region node, as defined
+                            in the CMA 'memory.txt' binding.
+
+Example:
+	/* snip */
+
+	/* This node is defined per binding in 'memory.txt' */
+	memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		device_type = "memory";
+		reg = <0x0 0x40000000>;
+		region_0: region@30000000 {
+			contiguous-region;
+			reg = <0x30000000 0x10000000>;
+		};
+	};
+
+	/* snip */
+
+	/*
+	 * This node instantiates a CMA device, using the region with name
+	 * 'region_0' as its range.
+	 */
+	cma-dev@0 {
+		#address-cells = <0>;
+		#size-cells = <0>;
+		compatible = "brcm,cma-plat-dev";
+		linux,contiguous-region = <&region_0>;
+	};
