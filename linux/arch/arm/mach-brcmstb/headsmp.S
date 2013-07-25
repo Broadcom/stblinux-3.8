@@ -69,7 +69,8 @@ ENTRY(v7_invalidate_l1)
 ENDPROC(v7_invalidate_l1)
 
 ENTRY(brcmstb_secondary_startup)
-        msr     cpsr_fsxc, #0xd3
+        mov     r0, #0xd3
+        msr     cpsr_fsxc, r0
         bl      v7_invalidate_l1
         b       secondary_startup
 ENDPROC(brcmstb_secondary_startup)

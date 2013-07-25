@@ -59,7 +59,7 @@ config BCM7445B0
 	select BRCM_MSPI_64B_WORDS
 
 config BCM7445C0
-	bool "7445 Bx"
+	bool "7445 Cx"
 	select BCM7445
 	select BRCM_GENET_V4
 	select BRCM_HAS_NAND_MAJOR_7

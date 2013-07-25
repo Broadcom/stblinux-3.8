@@ -28,10 +28,6 @@
 
 #include <linux/bitops.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define UMAC_SPEED_10			0
 #define UMAC_SPEED_100			1
 #define UMAC_SPEED_1000			2
@@ -113,7 +109,7 @@ extern "C" {
 #define MDIO_WR					(1 << 26)
 #define MDIO_PMD_SHIFT			21
 #define MDIO_PMD_MASK			0x1F
-#define MDIO_REG_SHIFT 			16
+#define MDIO_REG_SHIFT			16
 #define MDIO_REG_MASK			0x1F
 /* umac register group end */
 
@@ -187,6 +183,9 @@ extern "C" {
 #define UMAC_IRQ_TXDMA_MBDONE	(1 << 16)
 #define UMAC_IRQ_TXDMA_PDONE	(1 << 17)
 #define UMAC_IRQ_TXDMA_BDONE	(1 << 18)
+/* Only valid for GENETv3+ */
+#define UMAC_IRQ_MDIO_DONE	(1 << 23)
+#define UMAC_IRQ_MDIO_ERROR	(1 << 24)
 
 #define DMA_RW_POINTER_MASK		0x1FF
 /* reg: rDmaRingRegs->rdma_producer_index */
@@ -258,11 +257,6 @@ extern "C" {
 #define DMA_TX_APPEND_CRC		0x0040
 #define DMA_TX_OW_CRC			0x0020
 #define DMA_TX_DO_CSUM			0x0010
-#if CONFIG_BRCM_GENET_VERSION < 3
-#define DMA_TX_QTAG_MASK		0x001F
-#else /* GENET_V3+: 6-bit QTAG */
-#define DMA_TX_QTAG_MASK		0x003F
-#endif
 #define DMA_TX_QTAG_SHIFT		7
 
 /* Rx Specific Dma descriptor bits */
@@ -280,9 +274,5 @@ extern "C" {
 #define DMA_ARBITER_RR			0x00
 #define DMA_ARBITER_WRR			0x01
 #define DMA_ARBITER_SP			0x02
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 #endif /* __UNIMAC_DEFS_H__ */

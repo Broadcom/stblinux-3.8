@@ -23,6 +23,10 @@ config.log
 config.h
 po/Makefile.in
 po/POTFILES
+elfutils.spec
+libcpu/i386_dis.h
+libcpu/x86_64.h
+version.h
 
 #
 # Debugging files

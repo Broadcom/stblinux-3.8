@@ -12,6 +12,9 @@
 #include <errno.h>
 #include "cmatest.h"
 
+#define PAGE_SIZE 4096
+#define TEST_BFR_LEN (64 * PAGE_SIZE)
+
 static int cma_get_mem(int fd, uint32_t dev_index, uint32_t num_bytes,
 			uint32_t align_bytes, uint64_t *addr)
 {
@@ -308,24 +311,195 @@ static void run_unit_tests(int fd)
 	printf("UNIT TEST PASSED!\n");
 }
 
-static void cma_mmap(int fd, uint32_t base, uint32_t len)
+static void test_bfr_gen(uint32_t *bfr, uint32_t bfr_sz)
 {
-	uint32_t *mem;
+	unsigned int i;
+	uint32_t *curr = bfr;
 
-	printf("cma_mmap() BASE=%xh LEN=%xh\n", base, len);
+	for (i = 0; i < bfr_sz / sizeof(uint32_t); i++)
+		curr[i] = i;
+}
 
-	mem = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base);
-	if (mem == NULL) {
-		printf("mmap failed\n");
+static int test_bfr_chk(uint32_t *bfr, uint32_t bfr_sz)
+{
+	int rc = 0;
+	unsigned int i;
+	uint32_t *curr = bfr;
+
+	for (i = 0; i < bfr_sz / sizeof(uint32_t); i++) {
+		if (curr[i] != i) {
+			rc = -1;
+			break;
+		}
+	}
+
+	return rc;
+}
+
+static int test_file_gen(const char *path)
+{
+	/*
+	 * Use stdio to create the test file. We'll use mmap() for
+	 * reading it back.
+	 */
+	FILE *fp = fopen(path, "w");
+	uint32_t *test_bfr = NULL;
+	size_t count;
+	int rc = 0;
+
+	if (!fp) {
+		rc = -1;
+		goto done;
+	}
+
+	test_bfr = (uint32_t *)malloc(TEST_BFR_LEN);
+	if (!test_bfr) {
+		rc = -1;
+		goto done;
+	}
+
+	test_bfr_gen(test_bfr, TEST_BFR_LEN);
+
+	count = fwrite(test_bfr, 1, TEST_BFR_LEN, fp);
+	if (count != TEST_BFR_LEN) {
+		rc = -1;
+		goto done;
+	}
+
+done:
+	if (test_bfr)
+		free(test_bfr);
+
+	return rc;
+}
+
+static int test_file_chk(const char *path)
+{
+	/*
+	 * Use stdio to create the test file. We'll use mmap() for
+	 * reading it back.
+	 */
+	FILE *fp = fopen(path, "r");
+	uint32_t *test_bfr = NULL;
+	size_t count;
+	int rc;
+
+	if (!fp) {
+		rc = -1;
+		goto done;
+	}
+
+	test_bfr = (uint32_t *)malloc(TEST_BFR_LEN);
+	if (!test_bfr) {
+		rc = -1;
+		goto done;
+	}
+
+	count = fread(test_bfr, 1, TEST_BFR_LEN, fp);
+	if (count != TEST_BFR_LEN) {
+		rc = -1;
+		goto done;
+	}
+
+	rc = test_bfr_chk(test_bfr, TEST_BFR_LEN);
+	if (rc)
+		printf("file check failed (%d)\n", rc);
+
+done:
+	if (test_bfr)
+		free(test_bfr);
+
+	return rc;
+}
+
+static void cma_mmap(int cma_fd, uint32_t base, uint32_t len, char *path)
+{
+	int rc;
+	int fd = -1;
+	int cnt;
+	uint32_t *mem = NULL;
+	void *align_va = NULL;
+
+	if ((base % PAGE_SIZE) != 0) {
+		printf("error: base address is not page aligned!\n");
 		return;
 	}
 
-	*mem++ = 0xDEADBEEF;
-	*mem++ = 0xDEADBEEF;
-	*mem++ = 0xDEADBEEF;
-	*mem++ = 0xDEADBEEF;
+	if ((len == 0) || ((len % PAGE_SIZE) != 0) || (len < TEST_BFR_LEN)) {
+		printf("error: bad length! "
+		       "(should be non-zero, page aligned, and at least "
+		       "%d bytes)\n", TEST_BFR_LEN);
+		return;
+	}
 
-	munmap(mem, len);
+	printf("generating test file at \"%s\"\n", path);
+	rc = test_file_gen(path);
+	if (rc) {
+		printf("error: cannot generate test file (%d)\n", rc);
+		return;
+	}
+
+	printf("verify file using stdio before using mmap()\n");
+	rc = test_file_chk(path);
+	if (rc) {
+		printf("error: test file not valid (%d)\n", rc);
+		return;
+	}
+
+	printf("allocating page aligned memory using posix_memalign()\n");
+	rc = posix_memalign(&align_va, PAGE_SIZE, len);
+	if (rc) {
+		printf("posix_memalign failed (%d)\n", rc);
+		return;
+	}
+
+	printf("mmap() base=%xh len=%xh at va=%xh\n", base, len, align_va);
+	mem = mmap(align_va, len, PROT_READ | PROT_WRITE,
+		   MAP_SHARED | MAP_FIXED, cma_fd, base);
+
+	if (!mem) {
+		printf("mmap() failed\n");
+		goto cleanup;
+	}
+
+	if (mem != align_va) {
+		printf("mmap() did not obey MAP_FIXED flag!\n");
+		goto cleanup;
+	}
+
+	printf("trying to open \"%s\" with (O_SYNC | O_DIRECT) flags\n", path);
+	fd = open(path, O_SYNC | O_DIRECT);
+	printf("open fd: %d\n", fd);
+	if (fd < 0) {
+		printf("open failed, errno: %d\n", errno);
+		goto cleanup;
+	}
+
+	printf("reading %d bytes from \"%s\"\n", TEST_BFR_LEN, path);
+	cnt = read(fd, mem, TEST_BFR_LEN);
+	printf("cnt: %d\n", cnt);
+	if (cnt < 0) {
+		printf("read failed, errno: %d\n", errno);
+		goto cleanup;
+	}
+
+	/* TODO: cache coherency? */
+	printf("verify file data read via mmap()\n");
+	rc = test_bfr_chk(mem, TEST_BFR_LEN);
+	if (rc)
+		printf("file verification failed (%d)\n", rc);
+	else
+		printf("file OK!\n");
+
+cleanup:
+	if (fd >= 0)
+		close(fd);
+
+	if (mem)
+		munmap(mem, len);
+
+	if (align_va)
+		free(align_va);
 }
 
 static void show_usage(char *argv[])
@@ -339,7 +513,7 @@ static void show_usage(char *argv[])
 	printf("    setprot <pg_prot val>\n");
 	printf("    unittest\n");
 	printf("    resetall\n");
-	printf("    mmap    0x<addr> 0x<len>\n");
+	printf("    mmap    0x<addr> 0x<len> <test_file>\n");
 	printf("\nexamples:\n");
 	printf("    %s /dev/brcm_cma0 alloc 2 0x1000 0x0\n", argv[0]);
 	printf("    %s /dev/brcm_cma0 unittest\n\n", argv[0]);
@@ -475,17 +649,22 @@ int main(int argc, char *argv[])
 	} else if (strcmp(argv[2], "unittest") == 0) {
 		run_unit_tests(fd);
 	} else if (strcmp(argv[2], "resetall") == 0) {
-		reset_all(fd, 0);
-		reset_all(fd, 1);
-		reset_all(fd, 2);
+		int i;
+		for (i = 0; i < CMA_NUM_RANGES; i++)
+			reset_all(fd, i);
 	} else if (strcmp(argv[2], "mmap") == 0) {
 		uint32_t base;
 		uint32_t len;
 
+		if (argc != 6) {
+			show_usage(argv);
+			return -1;
+		}
+
 		sscanf(argv[3], "%x", &base);
 		sscanf(argv[4], "%x", &len);
 
-		cma_mmap(fd, base, len);
+		cma_mmap(fd, base, len, argv[5]);
 	}
 
 	close(fd);

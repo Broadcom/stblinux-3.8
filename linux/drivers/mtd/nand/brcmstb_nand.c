@@ -967,6 +967,8 @@ static int brcmstb_nand_write(struct mtd_info *mtd,
 		oob_reg_write(i, 0xffffffff);
 
 	for (i = 0; i < trans; i++, addr += FC_BYTES) {
+		int cmd = CMD_PROGRAM_PAGE;
+
 		/* full address MUST be set before populating FC */
 		BDEV_WR_RB(BCHP_NAND_CMD_ADDRESS, addr & 0xffffffff);
 
@@ -984,22 +986,27 @@ static int brcmstb_nand_write(struct mtd_info *mtd,
 
 #ifdef HW7445_988_WORKAROUND
 		/*
-		 * HW7445-988: for PROGRAM_PAGE with SECTOR_SIZE_1K=1,
-		 * skip CMD_START for every other 512B
+		 * HW7445-988: when programming with SECTOR_SIZE_1K=1, just use
+		 * PROGRAM_SPARE_AREA for every other 512B -- to fill
+		 * the spare area without triggering the ping-pong IRQ bug
 		 */
-		if (host->hwcfg.sector_size_1k && !(i & 0x01))
-			continue;
+		if (host->hwcfg.sector_size_1k && !(i & 0x01)) {
+			cmd = CMD_PROGRAM_SPARE_AREA;
+		} else {
+			cmd = CMD_PROGRAM_PAGE;
 
-		/*
-		 * HW7445-988: for PROGRAM_PAGE (all sector sizes) ignore the
-		 * first interrupt except for the last sector
-		 */
-		if ((i + 1) != trans)
-			ctrl->skip_irq = 1;
+			/*
+			 * HW7445-988: for PROGRAM_PAGE (all sector sizes)
+			 * ignore the first interrupt except for the last
+			 * sector
+			 */
+			if ((i + 1) != trans)
+				ctrl->skip_irq = 1;
+		}
 #endif
 
 		/* we cannot use SPARE_AREA_PROGRAM when PARTIAL_PAGE_EN=0 */
-		brcmstb_nand_send_cmd(host, CMD_PROGRAM_PAGE);
+		brcmstb_nand_send_cmd(host, cmd);
 		status = brcmstb_nand_waitfunc(mtd, chip);
 
 		if (status & NAND_STATUS_FAIL) {
@@ -1161,6 +1168,36 @@ static void brcmstb_nand_print_cfg(char *buf, struct brcmstb_nand_cfg *cfg)
 		sprintf(buf, ", BCH-%u\n", cfg->ecc_level);
 }
 
+/*
+ * Return true if the two configurations are basically identical. Note that we
+ * allow certain variations in spare area size.
+ */
+static bool brcmstb_nand_config_match(struct brcmstb_nand_cfg *orig,
+		struct brcmstb_nand_cfg *new)
+{
+	/* Negative matches */
+	if (orig->device_size != new->device_size)
+		return false;
+	if (orig->block_size != new->block_size)
+		return false;
+	if (orig->page_size != new->page_size)
+		return false;
+	if (orig->device_width != new->device_width)
+		return false;
+	if (orig->col_adr_bytes != new->col_adr_bytes)
+		return false;
+	if (orig->blk_adr_bytes != new->blk_adr_bytes)
+		return false;
+	if (orig->ful_adr_bytes != new->ful_adr_bytes)
+		return false;
+
+	/* Positive matches */
+	if (orig->spare_area_size == new->spare_area_size)
+		return true;
+	return orig->spare_area_size >= 27 &&
+	       orig->spare_area_size <= new->spare_area_size;
+}
+
 static int brcmstb_nand_setup_dev(struct brcmstb_nand_host *host)
 {
 	struct mtd_info *mtd = &host->mtd;
@@ -1194,24 +1231,7 @@ static int brcmstb_nand_setup_dev(struct brcmstb_nand_host *host)
 	if (new_cfg.spare_area_size > MAX_CONTROLLER_OOB)
 		new_cfg.spare_area_size = MAX_CONTROLLER_OOB;
 
-	/* use bootloader spare_area_size if it's "close enough" */
-	if (new_cfg.spare_area_size == orig_cfg.spare_area_size + 1) {
-		new_cfg.spare_area_size = orig_cfg.spare_area_size;
-		/*
-		 * Set oobsize to be consistent with controller's
-		 * spare_area_size. This helps nandwrite testing.
-		 */
-		mtd->oobsize = new_cfg.spare_area_size * (mtd->writesize >> FC_SHIFT);
-	}
-
-	if (orig_cfg.device_size != new_cfg.device_size ||
-			orig_cfg.block_size != new_cfg.block_size ||
-			orig_cfg.page_size != new_cfg.page_size ||
-			orig_cfg.spare_area_size != new_cfg.spare_area_size ||
-			orig_cfg.device_width != new_cfg.device_width ||
-			orig_cfg.col_adr_bytes != new_cfg.col_adr_bytes ||
-			orig_cfg.blk_adr_bytes != new_cfg.blk_adr_bytes ||
-			orig_cfg.ful_adr_bytes != new_cfg.ful_adr_bytes) {
+	if (!brcmstb_nand_config_match(&orig_cfg, &new_cfg)) {
 #if CONTROLLER_VER >= 50
 #ifdef CONFIG_BCM7445A0
 		/* HW7445-750: 7445A0 NAND is broken for SECTOR_SIZE = 1024B */
@@ -1260,6 +1280,13 @@ static int brcmstb_nand_setup_dev(struct brcmstb_nand_host *host)
 			return -ENXIO;
 		}
 #endif
+		/*
+		 * Set oobsize to be consistent with controller's
+		 * spare_area_size. This helps nandwrite testing.
+		 */
+		mtd->oobsize = new_cfg.spare_area_size *
+			       (mtd->writesize >> FC_SHIFT);
+
 		brcmstb_nand_print_cfg(msg, &orig_cfg);
 		dev_info(&host->pdev->dev, "%s\n", msg);
 	}

@@ -21,6 +21,14 @@
 #include <linux/smp.h>
 
 extern void brcmstb_secondary_startup(void);
+extern void brcmstb_cpu_boot(unsigned int cpu);
+extern void brcmstb_cpu_power_on(unsigned int cpu);
+extern int brcmstb_cpu_get_power_state(unsigned int cpu);
 extern struct smp_operations brcmstb_smp_ops;
+
+#ifdef CONFIG_HOTPLUG_CPU
+extern void brcmstb_cpu_die(unsigned int cpu);
+extern int brcmstb_cpu_kill(unsigned int cpu);
+#endif
 
 #endif /* __BRCMSTB_COMMON_H__ */

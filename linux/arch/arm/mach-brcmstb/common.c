@@ -80,6 +80,7 @@ static void brcmstb_restart(char mode, const char *cmd)
 static void __init timer_init(void)
 {
 	arch_timer_of_register();
+	arch_timer_sched_clock_init();
 }
 
 static void __init brcmstb_init_early(void)

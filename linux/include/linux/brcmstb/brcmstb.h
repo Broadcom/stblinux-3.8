@@ -117,6 +117,14 @@
 #include <linux/brcmstb/7145a0/bchp_shimphy_addr_cntl_0.h>
 #include <linux/brcmstb/7145a0/bchp_shimphy_addr_cntl_1.h>
 #include <linux/brcmstb/7145a0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7145a0/bchp_switch_acb.h>
+#include <linux/brcmstb/7145a0/bchp_switch_core.h>
+#include <linux/brcmstb/7145a0/bchp_switch_fcb.h>
+#include <linux/brcmstb/7145a0/bchp_switch_indir_rw.h>
+#include <linux/brcmstb/7145a0/bchp_switch_intrl2_0.h>
+#include <linux/brcmstb/7145a0/bchp_switch_intrl2_1.h>
+#include <linux/brcmstb/7145a0/bchp_switch_mdio.h>
+#include <linux/brcmstb/7145a0/bchp_switch_reg.h>
 #include <linux/brcmstb/7145a0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7366A0)

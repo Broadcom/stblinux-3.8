@@ -59,6 +59,9 @@
 #include <linux/gfp.h>
 #include <linux/migrate.h>
 #include <linux/string.h>
+#ifdef CONFIG_BRCMSTB
+#include <linux/brcmstb/cma_driver.h>
+#endif
 
 #include <asm/io.h>
 #include <asm/pgalloc.h>
@@ -1759,6 +1762,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 			pte_unmap(pte);
 			goto next_page;
 		}
+
+#ifdef CONFIG_BRCMSTB
+		/* handle direct I/O on CMA regions */
+		if (!cma_dev_get_page(mm, vma, start,
+				       pages ? &pages[i] : NULL)) {
+			if (vmas)
+				vmas[i] = vma;
+			i++;
+			start += PAGE_SIZE;
+			nr_pages--;
+			continue;
+		}
+#endif
 
 		if (!vma ||
 		    (vma->vm_flags & (VM_IO | VM_PFNMAP)) ||

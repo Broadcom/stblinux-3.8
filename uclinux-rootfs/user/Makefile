@@ -304,6 +304,7 @@ dir_$(CONFIG_USER_TIMEPEG_TPT)              += tpt
 dir_$(CONFIG_USER_TRACEROUTE_TRACEROUTE)    += traceroute
 dir_$(CONFIG_USER_TRIPWIRE_SIGGEN)          += tripwire
 dir_$(CONFIG_USER_TRIPWIRE_TRIPWIRE)        += tripwire
+dir_$(CONFIG_USER_TTCP_TTCP)                += ttcp
 dir_$(CONFIG_USER_UCDSNMP_SNMPD)            += ucdsnmp
 dir_$(CONFIG_USER_UTELNETD)                 += utelnetd
 dir_$(CONFIG_USER_VERSION_VERSION)          += version

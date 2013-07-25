@@ -25,8 +25,11 @@
 #include <linux/miscdevice.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/brcmstb/cma_driver.h>
+#include <linux/mmzone.h>
+#include <linux/vmalloc.h>
 
 extern phys_addr_t dma_contiguous_def_base;
 
@@ -40,6 +43,7 @@ struct cma_root_dev {
 	struct cdev cdev;
 	struct device *dev;
 	struct cma_devs_list cma_devs;
+	struct mem_range *cached_region;
 };
 
 /* Mutex for serializing accesses to private variables */
@@ -108,6 +112,62 @@ static int cma_dev_mmap(struct file *filp, struct vm_area_struct *vma)
 	}
 
 	return 0;
+}
+
+/*
+ * Search through all reserved ranges to check if the page falls
+ * completely within any of them.
+ */
+static int cma_dev_is_page_reserved(struct page *page)
+{
+	const unsigned long pg_start = page_to_phys(page);
+	const unsigned long pg_end = pg_start + PAGE_SIZE;
+	struct list_head *dev_pos;
+	int match = 0;
+	unsigned long range_start;
+	unsigned long range_end;
+
+	mutex_lock(&cma_dev_mutex);
+
+	/*
+	 * The reserved regions tend to be larger than a page size, so optimize
+	 * repeated calls to cma_dev_is_page_reserved() by caching the region
+	 * which was determined to be a full-hit.
+	 */
+	if (cma_root_dev->cached_region) {
+		range_start = cma_root_dev->cached_region->base;
+		range_end = range_start + cma_root_dev->cached_region->size;
+		if (pg_start >= range_start && pg_end <= range_end)
+			match = 1;
+	}
+
+	if (match)
+		goto done;
+
+	list_for_each(dev_pos, &cma_root_dev->cma_devs.list) {
+		struct list_head *reg_pos;
+		struct cma_dev *curr_cma_dev;
+
+		curr_cma_dev = list_entry(dev_pos, struct cma_dev, list);
+		BUG_ON(curr_cma_dev == NULL);
+
+		list_for_each(reg_pos, &curr_cma_dev->regions.list) {
+			struct region_list *reg;
+			reg = list_entry(reg_pos, struct region_list, list);
+
+			range_start = reg->region.base;
+			range_end = range_start + reg->region.size;
+			if (pg_start >= range_start && pg_end <= range_end) {
+				cma_root_dev->cached_region = &reg->region;
+				match = 1;
+				break;
+			}
+		}
+	}
+
+done:
+	mutex_unlock(&cma_dev_mutex);
+	return match;
 }
 
 /**
@@ -185,9 +245,12 @@ int cma_dev_get_mem(struct cma_dev *cma_dev, u64 *addr, u32 len,
 	*addr = page_to_phys(page);
 
 	/* Accounting */
+	mutex_lock(&cma_dev_mutex);
 	new_region->region.base = *addr;
 	new_region->region.size = len;
 	list_add(&new_region->list, &cma_dev->regions.list);
+	cma_root_dev->cached_region = NULL;
+	mutex_unlock(&cma_dev_mutex);
 
 	goto done;
 
@@ -214,6 +277,7 @@ int cma_dev_put_mem(struct cma_dev *cma_dev, u64 addr, u32 len)
 	int match = 0;
 	struct device *dev = cma_dev->dev;
 	struct region_list *region_entry = NULL;
+	int status = 0;
 
 	if (page == NULL) {
 		dev_dbg(cma_root_dev->dev, "bad addr (%llxh)\n", addr);
@@ -226,6 +290,7 @@ int cma_dev_put_mem(struct cma_dev *cma_dev, u64 addr, u32 len)
 	}
 
 	/* Accounting - confirm address has been allocated */
+	mutex_lock(&cma_dev_mutex);
 	list_for_each(pos, &cma_dev->regions.list) {
 		struct mem_range *region;
 
@@ -237,18 +302,25 @@ int cma_dev_put_mem(struct cma_dev *cma_dev, u64 addr, u32 len)
 			break;
 		}
 	}
+
 	if (match == 0) {
 		dev_err(dev, "no region matched that address\n");
-		return -EINVAL;
+		status = -EINVAL;
+		goto done;
 	}
 
-	if (!dma_release_from_contiguous(dev, page, len / PAGE_SIZE))
-		return -EIO;
+	if (!dma_release_from_contiguous(dev, page, len / PAGE_SIZE)) {
+		status = -EIO;
+		goto done;
+	}
 
+	cma_root_dev->cached_region = NULL;
 	list_del(pos);
 	devm_kfree(dev, region_entry);
 
-	return 0;
+done:
+	mutex_unlock(&cma_dev_mutex);
+	return status;
 }
 EXPORT_SYMBOL(cma_dev_put_mem);
 
@@ -305,6 +377,125 @@ int cma_dev_get_region_info(struct cma_dev *cma_dev, int region_num,
 }
 EXPORT_SYMBOL(cma_dev_get_region_info);
 
+/**
+ * Special handling for __get_user_pages() on CMA reserved memory:
+ *
+ * 1) Override the VM_IO | VM_PFNMAP sanity checks
+ * 2) No cache flushes (this is explicitly under application control)
+ * 3) vm_normal_page() does not work on these regions
+ * 4) Don't need to worry about any kinds of faults; pages are always present
+ *
+ * The vanilla kernel behavior was to prohibit O_DIRECT operations on our
+ * CMA regions, but direct I/O is absolutely required for PVR and video
+ * playback from SATA/USB.
+ */
+int cma_dev_get_page(struct mm_struct *mm, struct vm_area_struct *vma,
+	unsigned long start, struct page **page)
+{
+	unsigned long pg = start & PAGE_MASK, pfn;
+	int ret = -EFAULT;
+	pgd_t *pgd;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+	struct page *tmp_page;
+
+	pgd = pgd_offset(mm, pg);
+	BUG_ON(pgd_none(*pgd));
+	pud = pud_offset(pgd, pg);
+	BUG_ON(pud_none(*pud));
+	pmd = pmd_offset(pud, pg);
+	if (pmd_none(*pmd))
+		return ret;
+
+	pte = pte_offset_map(pmd, pg);
+	if (!pte)
+		return ret;
+
+	if (pte_none(*pte))
+		goto out;
+
+	pfn = pte_pfn(*pte);
+
+	tmp_page = pfn_to_page(pfn);
+	if (!tmp_page)
+		goto out;
+
+	if (get_pageblock_migratetype(tmp_page) != MIGRATE_CMA)
+		goto out;
+
+	if (!cma_dev_is_page_reserved(tmp_page))
+		goto out;
+
+	if (page) {
+		*page = tmp_page;
+		get_page(*page);
+	}
+	ret = 0;
+
+out:
+	pte_unmap(pte);
+	return ret;
+}
+
+static int pte_callback(pte_t *pte, unsigned long x, unsigned long y,
+			struct mm_walk *walk)
+{
+	const pgprot_t pte_prot = __pgprot(*pte);
+	const pgprot_t req_prot = (pgprot_t)walk->private;
+	const pgprot_t prot_msk = L_PTE_MT_MASK | L_PTE_VALID;
+	return (((pte_prot ^ req_prot) & prot_msk) == 0) ? 0 : -1;
+}
+
+static void *page_to_virt_contig(const struct page *page, unsigned int pg_cnt,
+					pgprot_t pgprot)
+{
+	int rc;
+	struct mm_walk walk;
+	unsigned long pfn;
+	unsigned long pfn_start;
+	unsigned long pfn_end;
+	unsigned long va_start;
+	unsigned long va_end;
+
+	if ((page == NULL) || !pg_cnt)
+		return ERR_PTR(-EINVAL);
+
+	pfn_start = page_to_pfn(page);
+	pfn_end = pfn_start + pg_cnt;
+	for (pfn = pfn_start; pfn < pfn_end; pfn++) {
+		const struct page *cur_pg = pfn_to_page(pfn);
+		phys_addr_t pa;
+
+		/* Verify range is in low memory only */
+		if (PageHighMem(cur_pg))
+			return NULL;
+
+		/* Must be mapped */
+		pa = page_to_phys(cur_pg);
+		if (page_address(cur_pg) == NULL)
+			return NULL;
+	}
+
+	/*
+	 * Aliased mappings with different cacheability attributes on ARM can
+	 * lead to trouble!
+	 */
+	memset(&walk, 0, sizeof(walk));
+	walk.pte_entry = &pte_callback;
+	walk.private = (void *)pgprot;
+	walk.mm = current->mm;
+	va_start = (unsigned long)page_address(page);
+	va_end = (unsigned long)(page_address(page) + (pg_cnt << PAGE_SHIFT));
+	rc = walk_page_range(va_start,
+			     va_end,
+			     &walk);
+	if (rc)
+		pr_debug("cacheability mismatch\n");
+
+	return rc ? NULL : page_address(page);
+}
+
 static int cma_dev_ioctl_check_cmd(unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
@@ -327,6 +518,122 @@ static int cma_dev_ioctl_check_cmd(unsigned int cmd, unsigned long arg)
 
 	return 0;
 }
+
+static struct page **get_pages(struct page *page, int num_pages)
+{
+	struct page **pages;
+	long pfn;
+	int i;
+
+	if (num_pages == 0) {
+		pr_err("bad count\n");
+		return NULL;
+	}
+
+	if (page == NULL) {
+		pr_err("bad page\n");
+		return NULL;
+	}
+
+	pages = kmalloc(sizeof(struct page *) * num_pages, GFP_KERNEL);
+	if (pages == NULL) {
+		pr_err("cannot alloc pages\n");
+		return NULL;
+	}
+
+	pfn = page_to_pfn(page);
+	for (i = 0; i < num_pages; i++) {
+		/*
+		 * pfn_to_page() should resolve to simple arithmetic for the
+		 * FLATMEM memory model.
+		 */
+		pages[i] = pfn_to_page(pfn++);
+	}
+
+	return pages;
+}
+
+static void put_pages(struct page **pages)
+{
+	if (pages == NULL) {
+		pr_err("null ptr\n");
+		return;
+	}
+
+	kfree(pages);
+}
+
+/**
+ * cma_dev_kva_map() - Map page(s) to a kernel virtual address
+ *
+ * @page: A struct page * that points to the beginning of a chunk of physical
+ * contiguous memory.
+ * @num_pages: Number of pages
+ * @pgprot: Page protection bits
+ */
+void *cma_dev_kva_map(struct page *page, int num_pages, pgprot_t pgprot)
+{
+	void *va;
+
+	if (cma_root_dev->dev == NULL) {
+		pr_err("cma root dev not initialized\n");
+		return NULL;
+	}
+
+	/* get the virtual address for this range if it exists */
+	va = page_to_virt_contig(page, num_pages, pgprot);
+	if (IS_ERR(va)) {
+		pr_debug("page_to_virt_contig() failed (%ld)\n", PTR_ERR(va));
+		return NULL;
+	} else if (va == NULL || is_vmalloc_addr(va)) {
+		struct page **pages;
+
+		pages = get_pages(page, num_pages);
+		if (pages == NULL) {
+			pr_err("couldn't get pages\n");
+			return NULL;
+		}
+
+		va = vmap(pages, num_pages, 0, pgprot);
+
+		put_pages(pages);
+
+		if (va == NULL) {
+			pr_err("vmap failed (num_pgs=%d)\n", num_pages);
+			return NULL;
+		}
+	}
+
+	return va;
+}
+EXPORT_SYMBOL(cma_dev_kva_map);
+
+/**
+ * cma_dev_kva_unmap() - Unmap a kernel virtual address associated
+ * to physical pages mapped by cma_dev_kva_map()
+ *
+ * @kva: Kernel virtual address previously mapped by cma_dev_kva_map()
+ */
+int cma_dev_kva_unmap(const void *kva)
+{
+	if (cma_root_dev->dev == NULL) {
+		pr_err("cma root dev not initialized\n");
+		return -EFAULT;
+	}
+
+	if (kva == NULL)
+		return -EINVAL;
+
+	if (!is_vmalloc_addr(kva)) {
+		/* unmapping not necessary for low memory VAs */
+		return 0;
+	}
+
+	vunmap(kva);
+
+	return 0;
+}
+EXPORT_SYMBOL(cma_dev_kva_unmap);
 
 static long cma_dev_ioctl(struct file *filp, unsigned int cmd,
 			  unsigned long arg)
@@ -475,7 +782,7 @@ static int cma_drvr_alloc_devno(struct device *dev)
 
 static int cma_drvr_get_node_num(const char *p)
 {
-	char *d = strchr(p, '.');
+	char *d = strchr(p, '@');
 	long val;
 
 	if (!d || kstrtol(d + 1, 10, &val))
@@ -542,10 +849,11 @@ static int cma_drvr_parse_fdt(struct platform_device *pdev,
 	dev_info(dev, "base=%xh size=%xh\n", cma_dev->range.base,
 		cma_dev->range.size);
 
-	/* Derive the minor number / index from device tree */
-	minor = cma_drvr_get_node_num(pdev->name);
+	/* Derive the node number from device tree */
+	minor = cma_drvr_get_node_num(of_node_full_name(of_node));
 	if ((minor < 0) || (minor > CMA_DEV_MAX)) {
-		dev_err(dev, "minor num exceeds supported (%d)\n", minor);
+		dev_err(dev, "node num (%d) exceeds supported (%d)\n", minor,
+			CMA_DEV_MAX);
 		return -EINVAL;
 	}
 	cma_dev->cma_dev_index = minor;
@@ -596,6 +904,8 @@ static int cma_drvr_init_root_dev(struct device *dev)
 		goto del_cdev;
 	}
 
+	my_cma_root_dev->cached_region = NULL;
+	my_cma_root_dev->dev = dev2;
 	cma_root_dev = my_cma_root_dev;
 
 	dev_info(dev, "Initialized Broadcom CMA root device\n");

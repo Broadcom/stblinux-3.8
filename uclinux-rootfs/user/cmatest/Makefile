@@ -1,6 +1,6 @@
 include $(ROOTDIR)/config.arch
 
-CFLAGS += -I. -I../../../linux/include/uapi -Wall -Wextra -Werror
+CFLAGS += -I. -I../../../linux/include/uapi -Wall -Wextra -Werror -D_GNU_SOURCE
 
 .PHONY: all
 all: cmatest

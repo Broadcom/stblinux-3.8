@@ -133,21 +133,21 @@ static unsigned char swdata[16];
 
 void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
+	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int phy_id;
 	int v, vm[4];
 	int i;
 
-	phy_id = pDevCtrl->swAddr;
+	phy_id = priv->sw_addr;
 	v = (page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT) | REG_PPM_REG16_MDIO_ENABLE;
-	pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 
 	v = (reg << REG_PPM_REG17_REG_NUMBER_SHIFT) | REG_PPM_REG17_OP_READ;
-	pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
+	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
 
 	for (i = 0; i < 5; i++)
 	{
-		v = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG17);
+		v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG17);
 
 		if ((v & (REG_PPM_REG17_OP_WRITE | REG_PPM_REG17_OP_READ)) == REG_PPM_REG17_OP_DONE)
 			break;
@@ -164,32 +164,32 @@ void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *d
 	switch (len) 
 	{
 		case 1:
-			v = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			data[0] = (unsigned char)v;
 			break;
 		case 2:
-			v = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)v;
 			break;
 		case 4:
-			vm[0] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
-			vm[1] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[0] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[1] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
 			((unsigned short *)data)[0] = (unsigned short)vm[0];
 			((unsigned short *)data)[1] = (unsigned short)vm[1];
 			break;
 		case 6:
-			vm[0] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG26);
-			vm[1] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
-			vm[2] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[0] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG26);
+			vm[1] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[2] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)vm[2];
 			((unsigned short *)data)[1] = (unsigned short)vm[1];
 			((unsigned short *)data)[2] = (unsigned short)vm[0];
 			break;
 		case 8:
-			vm[0] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG27);
-			vm[1] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG26);
-			vm[2] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
-			vm[3] = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[0] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG27);
+			vm[1] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG26);
+			vm[2] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[3] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)vm[3];
 			((unsigned short *)data)[1] = (unsigned short)vm[2];
 			((unsigned short *)data)[2] = (unsigned short)vm[1];
@@ -197,62 +197,62 @@ void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *d
 			break;
 	}
 	v = page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT;
-	pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 }
 
 void ethsw_mdio_wreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
+	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int phy_id;
 	int v;
 	int i;
 
-	phy_id = pDevCtrl->swAddr;
+	phy_id = priv->sw_addr;
 	v = (page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT) | REG_PPM_REG16_MDIO_ENABLE;
-	pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 
 	switch (len) 
 	{
 		case 1:
 			v = data[0];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			break;
 		case 2:
 			v = ((unsigned short *)data)[0];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			break;
 		case 4:
 			v = ((unsigned short *)data)[0];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			break;
 		case 6:
 			v = ((unsigned short *)data)[0];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			v = ((unsigned short *)data)[2];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
 			break;
 		case 8:
 			v = ((unsigned short *)data)[0];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			v = ((unsigned short *)data)[2];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
 			v = ((unsigned short *)data)[3];
-			pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG27, v);
+			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG27, v);
 			break;
 	}
 
 	v = (reg << REG_PPM_REG17_REG_NUMBER_SHIFT) | REG_PPM_REG17_OP_WRITE;
-	pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
+	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
 
 	for (i = 0; i < 5; i++)
 	{
-		v = pDevCtrl->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG17);
+		v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG17);
 
 		if ((v & (REG_PPM_REG17_OP_WRITE | REG_PPM_REG17_OP_READ)) == REG_PPM_REG17_OP_DONE)
 			break;
@@ -264,7 +264,7 @@ void ethsw_mdio_wreg(struct net_device *dev, int page, int reg, unsigned char *d
 		printk("ethsw_mdio_wreg: timeout!\n");
 
 	v = page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT;
-	pDevCtrl->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 }
 
 static void ethsw_rreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
@@ -326,7 +326,7 @@ int ethsw_reset_ports(struct net_device *dev)
 	unsigned long flags;
 	int i;
 	unsigned char v8;
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
+	struct bcmgenet_priv *priv = netdev_priv(dev);
 
 	local_irq_save(flags);
 
@@ -340,7 +340,7 @@ int ethsw_reset_ports(struct net_device *dev)
 	/* Config IMP port RGMII clock delay by DLL disabled and tx_clk aligned timing */
 	ethsw_rreg(dev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
 	v8 &= ~(REG_RGMII_CTRL_DLL_RXC_BYPASS | REG_RGMII_CTRL_TIMING_SEL);
-	if (pDevCtrl->phyType == BRCM_PHY_TYPE_EXT_RGMII_NO_ID)
+	if (priv->phy_type == BRCM_PHY_TYPE_EXT_RGMII_NO_ID)
 		v8 |= REG_RGMII_CTRL_DLL_RXC_BYPASS;
 	v8 |= REG_RGMII_CTRL_TIMING_SEL;
 	ethsw_wreg(dev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));

@@ -468,6 +468,7 @@ bool 'tftp'			CONFIG_USER_TFTP_TFTP
 bool 'tftpd'			CONFIG_USER_TFTPD_TFTPD
 bool 'thttpd'			CONFIG_USER_THTTPD_THTTPD
 bool 'traceroute'		CONFIG_USER_TRACEROUTE_TRACEROUTE
+bool 'ttcp'			CONFIG_USER_TTCP_TTCP
 bool 'ucd snmpd'		CONFIG_USER_UCDSNMP_SNMPD
 
 bool 'utelnetd'			CONFIG_USER_UTELNETD

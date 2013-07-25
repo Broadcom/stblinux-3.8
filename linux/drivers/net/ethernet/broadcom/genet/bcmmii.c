@@ -37,16 +37,16 @@
 #include <linux/brcmstb/brcmstb.h>
 
 /* read a value from the MII */
-int bcmgenet_mii_read(struct net_device *dev, int phy_id, int location)
+static int bcmgenet_mii_read(struct net_device *dev, int phy_id, int location)
 {
 	int ret;
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
-	volatile struct uniMacRegs *umac = pDevCtrl->umac;
+	struct bcmgenet_priv *priv = netdev_priv(dev);
+	u32 reg;
 
 	if (phy_id == BRCM_PHY_ID_NONE) {
 		switch (location) {
 		case MII_BMCR:
-			return (pDevCtrl->phySpeed == SPEED_1000) ?
+			return (priv->phy_speed == SPEED_1000) ?
 				BMCR_FULLDPLX | BMCR_SPEED1000 :
 				BMCR_FULLDPLX | BMCR_SPEED100;
 		case MII_BMSR:
@@ -56,52 +56,60 @@ int bcmgenet_mii_read(struct net_device *dev, int phy_id, int location)
 		}
 	}
 
-	mutex_lock(&pDevCtrl->mdio_mutex);
+	mutex_lock(&priv->mdio_mutex);
 
-	umac->mdio_cmd = (MDIO_RD | (phy_id << MDIO_PMD_SHIFT) |
-			(location << MDIO_REG_SHIFT));
+	bcmgenet_umac_writel(priv, (MDIO_RD | (phy_id << MDIO_PMD_SHIFT) |
+			(location << MDIO_REG_SHIFT)), UMAC_MDIO_CMD);
 	/* Start MDIO transaction*/
-	umac->mdio_cmd |= MDIO_START_BUSY;
-	wait_event_timeout(pDevCtrl->wq, !(umac->mdio_cmd & MDIO_START_BUSY),
+	reg = bcmgenet_umac_readl(priv, UMAC_MDIO_CMD);
+	reg |= MDIO_START_BUSY;
+	bcmgenet_umac_writel(priv, reg, UMAC_MDIO_CMD);
+	wait_event_timeout(priv->wq,
+			!(bcmgenet_umac_readl(priv, UMAC_MDIO_CMD)
+				& MDIO_START_BUSY),
 			HZ/100);
-	ret = umac->mdio_cmd;
-	mutex_unlock(&pDevCtrl->mdio_mutex);
+	ret = bcmgenet_umac_readl(priv, UMAC_MDIO_CMD);
+	mutex_unlock(&priv->mdio_mutex);
 
-	/*
-	 * Don't check error codes from switches, as some of them are
+	/* Don't check error codes from switches, as some of them are
 	 * known to return MDIO_READ_FAIL on good transactions
 	 */
-	if (!pDevCtrl->swType && (ret & MDIO_READ_FAIL)) {
-		TRACE(("MDIO read failure\n"));
+	if (!priv->sw_type && (ret & MDIO_READ_FAIL)) {
+		netif_dbg(priv, hw, dev, "MDIO read failure\n");
 		ret = 0;
 	}
 	return ret & 0xffff;
 }
 
 /* write a value to the MII */
-void bcmgenet_mii_write(struct net_device *dev, int phy_id,
+static void bcmgenet_mii_write(struct net_device *dev, int phy_id,
 			int location, int val)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
-	volatile struct uniMacRegs *umac = pDevCtrl->umac;
+	struct bcmgenet_priv *priv = netdev_priv(dev);
+	u32 reg;
 
 	if (phy_id == BRCM_PHY_ID_NONE)
 		return;
-	mutex_lock(&pDevCtrl->mdio_mutex);
-	umac->mdio_cmd = (MDIO_WR | (phy_id << MDIO_PMD_SHIFT) |
-			(location << MDIO_REG_SHIFT) | (0xffff & val));
-	umac->mdio_cmd |= MDIO_START_BUSY;
-	wait_event_timeout(pDevCtrl->wq, !(umac->mdio_cmd & MDIO_START_BUSY),
+	mutex_lock(&priv->mdio_mutex);
+	bcmgenet_umac_writel(priv, (MDIO_WR | (phy_id << MDIO_PMD_SHIFT) |
+			(location << MDIO_REG_SHIFT) | (0xffff & val)),
+			UMAC_MDIO_CMD);
+	reg = bcmgenet_umac_readl(priv, UMAC_MDIO_CMD);
+	reg |= MDIO_START_BUSY;
+	bcmgenet_umac_writel(priv, reg, UMAC_MDIO_CMD);
+	wait_event_timeout(priv->wq,
+			!(bcmgenet_umac_readl(priv, UMAC_MDIO_CMD) &
+				MDIO_START_BUSY),
 			HZ/100);
-	mutex_unlock(&pDevCtrl->mdio_mutex);
+	mutex_unlock(&priv->mdio_mutex);
 }
 
 /* mii register read/modify/write helper function */
 static int bcmgenet_mii_set_clr_bits(struct net_device *dev, int location,
 		     int set_mask, int clr_mask)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
-	int phy_id = pDevCtrl->phyAddr;
+	struct bcmgenet_priv *priv = netdev_priv(dev);
+	int phy_id = priv->phy_addr;
 	int v;
 
 	v = bcmgenet_mii_read(dev, phy_id, location);
@@ -111,34 +119,34 @@ static int bcmgenet_mii_set_clr_bits(struct net_device *dev, int location,
 	return v;
 }
 
-/*
- * setup netdev link state when PHY link status change and
+/* setup netdev link state when PHY link status change and
  * update UMAC and RGMII block when link up
  */
 void bcmgenet_mii_setup(struct net_device *dev)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
+	struct bcmgenet_priv *priv = netdev_priv(dev);
 	struct ethtool_cmd ecmd;
-	volatile struct uniMacRegs *umac = pDevCtrl->umac;
 	int cur_link, prev_link;
 	unsigned int val, cmd_bits;
+	u32 reg;
 
-	if (pDevCtrl->phyType == BRCM_PHY_TYPE_MOCA)
+	if (priv->phy_type == BRCM_PHY_TYPE_MOCA)
 		return;
 
-	cur_link = mii_link_ok(&pDevCtrl->mii);
-	prev_link = netif_carrier_ok(pDevCtrl->dev);
+	cur_link = mii_link_ok(&priv->mii);
+	prev_link = netif_carrier_ok(priv->dev);
 	if (cur_link && !prev_link) {
-		mii_ethtool_gset(&pDevCtrl->mii, &ecmd);
-		/*
-		 * program UMAC and RGMII block based on established link
+		mii_ethtool_gset(&priv->mii, &ecmd);
+		/* program UMAC and RGMII block based on established link
 		 * speed, pause, and duplex.
 		 * the speed set in umac->cmd tell RGMII block which clock
 		 * 25MHz(100Mbps)/125MHz(1Gbps) to use for transmit.
 		 * receive clock is provided by PHY.
 		 */
-		GENET_RGMII_OOB_CTRL(pDevCtrl) &= ~OOB_DISABLE;
-		GENET_RGMII_OOB_CTRL(pDevCtrl) |= RGMII_LINK;
+		reg = bcmgenet_ext_readl(priv, EXT_RGMII_OOB_CTRL);
+		reg &= ~OOB_DISABLE;
+		reg |= RGMII_LINK;
+		bcmgenet_ext_writel(priv, reg, EXT_RGMII_OOB_CTRL);
 
 		/* speed */
 		if (ecmd.speed == SPEED_1000)
@@ -154,44 +162,47 @@ void bcmgenet_mii_setup(struct net_device *dev)
 			cmd_bits |= CMD_HD_EN;
 
 		/* pause capability */
-		if (pDevCtrl->phyType == BRCM_PHY_TYPE_INT ||
-		    pDevCtrl->phyType == BRCM_PHY_TYPE_EXT_MII ||
-		    pDevCtrl->phyType == BRCM_PHY_TYPE_EXT_RVMII) {
+		if (priv->phy_type == BRCM_PHY_TYPE_INT ||
+		    priv->phy_type == BRCM_PHY_TYPE_EXT_MII ||
+		    priv->phy_type == BRCM_PHY_TYPE_EXT_RVMII) {
 			val = bcmgenet_mii_read(
-				dev, pDevCtrl->phyAddr, MII_LPA);
+				dev, priv->phy_addr, MII_LPA);
 			if (!(val & LPA_PAUSE_CAP)) {
 				cmd_bits |= CMD_RX_PAUSE_IGNORE;
 				cmd_bits |= CMD_TX_PAUSE_IGNORE;
 			}
-		} else if (pDevCtrl->extPhy) { /* RGMII only */
+		} else if (priv->ext_phy) { /* RGMII only */
 			val = bcmgenet_mii_read(dev,
-				pDevCtrl->phyAddr, MII_BRCM_AUX_STAT_SUM);
+				priv->phy_addr, MII_BRCM_AUX_STAT_SUM);
 			if (!(val & MII_BRCM_AUX_GPHY_RX_PAUSE))
 				cmd_bits |= CMD_RX_PAUSE_IGNORE;
 			if (!(val & MII_BRCM_AUX_GPHY_TX_PAUSE))
 				cmd_bits |= CMD_TX_PAUSE_IGNORE;
 		}
 
-		umac->cmd &= ~((CMD_SPEED_MASK << CMD_SPEED_SHIFT) |
+		reg = bcmgenet_umac_readl(priv, UMAC_CMD);
+		reg &= ~((CMD_SPEED_MASK << CMD_SPEED_SHIFT) |
 			       CMD_HD_EN |
 			       CMD_RX_PAUSE_IGNORE | CMD_TX_PAUSE_IGNORE);
-		umac->cmd |= cmd_bits;
+		reg |= cmd_bits;
+		bcmgenet_umac_writel(priv, reg, UMAC_CMD);
 
-		netif_carrier_on(pDevCtrl->dev);
-		netdev_info(dev, "link up, %d Mbps, %s duplex\n", ecmd.speed,
+		netif_carrier_on(priv->dev);
+		netif_info(priv, link, dev,
+			"link up, %d Mbps, %s duplex\n", ecmd.speed,
 			ecmd.duplex == DUPLEX_FULL ? "full" : "half");
 	} else if (!cur_link && prev_link) {
-		netif_carrier_off(pDevCtrl->dev);
-		netdev_info(dev, "link down\n");
+		netif_carrier_off(priv->dev);
+		netif_info(priv, link, dev, "link down\n");
 	}
 }
 
 void bcmgenet_ephy_workaround(struct net_device *dev)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
-	int phy_id = pDevCtrl->phyAddr;
+	struct bcmgenet_priv *priv = netdev_priv(dev);
+	int phy_id = priv->phy_addr;
 
-	if (pDevCtrl->phyType != BRCM_PHY_TYPE_INT)
+	if (priv->phy_type != BRCM_PHY_TYPE_INT)
 		return;
 
 #ifdef CONFIG_BCM7445A0
@@ -211,14 +222,24 @@ void bcmgenet_ephy_workaround(struct net_device *dev)
 #endif
 
 	/* workarounds are only needed for 100Mbps PHYs */
-	if (pDevCtrl->phySpeed == SPEED_1000)
+	if (priv->phy_speed == SPEED_1000)
 		return;
+
+	/* workarounds are only needed for some 40nm chips, exclude
+	 * GENET v1 or 60/65nm chips
+	 */
+	if (GENET_IS_V1(priv))
+		return;
+
+#if defined(CONFIG_BCM7342) || defined(CONFIG_BCM7468) || \
+	defined(CONFIG_BCM7340) || defined(CONFIG_BCM7420)
+	return;
+#endif
 
 	/* set shadow mode 2 */
 	bcmgenet_mii_set_clr_bits(dev, 0x1f, 0x0004, 0x0004);
 
-	/*
-	 * Workaround for SWLINUX-2281: explicitly reset IDDQ_CLKBIAS
+	/* Workaround for SWLINUX-2281: explicitly reset IDDQ_CLKBIAS
 	 * in the Shadow 2 regset, due to power sequencing issues.
 	 */
 	/* set iddq_clkbias */
@@ -227,8 +248,7 @@ void bcmgenet_ephy_workaround(struct net_device *dev)
 	/* reset iddq_clkbias */
 	bcmgenet_mii_write(dev, phy_id, 0x14, 0x0C00);
 
-	/*
-	 * Workaround for SWLINUX-2056: fix timing issue between the ephy
+	/* Workaround for SWLINUX-2056: fix timing issue between the ephy
 	 * digital and the ephy analog blocks.  This clock inversion will
 	 * inherently fix any setup and hold issue.
 	 */
@@ -238,57 +258,75 @@ void bcmgenet_ephy_workaround(struct net_device *dev)
 	bcmgenet_mii_set_clr_bits(dev, 0x1f, 0x0004, 0);
 }
 
+void bcmgenet_ephy_workaround_iddq(struct net_device *dev)
+{
+	struct bcmgenet_priv *priv = netdev_priv(dev);
+
+	/* Workaround for putting EPHY in iddq mode. */
+	priv->mii.mdio_write(dev, priv->phy_addr, 0x1f, 0x008b);
+	priv->mii.mdio_write(dev, priv->phy_addr, 0x10, 0x01c0);
+	priv->mii.mdio_write(dev, priv->phy_addr, 0x14, 0x7000);
+	priv->mii.mdio_write(dev, priv->phy_addr, 0x1f, 0x000f);
+	priv->mii.mdio_write(dev, priv->phy_addr, 0x10, 0x20d0);
+	priv->mii.mdio_write(dev, priv->phy_addr, 0x1f, 0x000b);
+}
+
 void bcmgenet_mii_reset(struct net_device *dev)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
+	struct bcmgenet_priv *priv = netdev_priv(dev);
 
-	bcmgenet_mii_write(dev, pDevCtrl->phyAddr, MII_BMCR, BMCR_RESET);
+	bcmgenet_mii_write(dev, priv->phy_addr, MII_BMCR, BMCR_RESET);
 	udelay(1);
 	/* enable 64 clock MDIO */
-	bcmgenet_mii_write(dev, pDevCtrl->phyAddr, 0x1d, 0x1000);
-	bcmgenet_mii_read(dev, pDevCtrl->phyAddr, 0x1d);
+	bcmgenet_mii_write(dev, priv->phy_addr, 0x1d, 0x1000);
+	bcmgenet_mii_read(dev, priv->phy_addr, 0x1d);
 	bcmgenet_ephy_workaround(dev);
 }
 
 int bcmgenet_mii_init(struct net_device *dev)
 {
-	struct BcmEnet_devctrl *pDevCtrl = netdev_priv(dev);
-	volatile struct uniMacRegs *umac;
+	struct bcmgenet_priv *priv = netdev_priv(dev);
 	u32 id_mode_dis = 0;
 	char *phy_name;
+	u32 reg;
+	u32 port_ctrl;
 
-	umac = pDevCtrl->umac;
-	pDevCtrl->mii.phy_id = pDevCtrl->phyAddr;
-	pDevCtrl->mii.phy_id_mask = 0x1f;
-	pDevCtrl->mii.reg_num_mask = 0x1f;
-	pDevCtrl->mii.dev = dev;
-	pDevCtrl->mii.mdio_read = bcmgenet_mii_read;
-	pDevCtrl->mii.mdio_write = bcmgenet_mii_write;
-	pDevCtrl->mii.supports_gmii = 0;
+	priv->mii.phy_id = priv->phy_addr;
+	priv->mii.phy_id_mask = 0x1f;
+	priv->mii.reg_num_mask = 0x1f;
+	priv->mii.dev = dev;
+	priv->mii.mdio_read = bcmgenet_mii_read;
+	priv->mii.mdio_write = bcmgenet_mii_write;
+	priv->mii.supports_gmii = 0;
 
-	switch (pDevCtrl->phyType) {
+	switch (priv->phy_type) {
 
 	case BRCM_PHY_TYPE_INT:
 		phy_name = "internal PHY";
-		if (pDevCtrl->phySpeed == SPEED_1000) {
-			pDevCtrl->mii.supports_gmii = 1;
-			pDevCtrl->sys->sys_port_ctrl = PORT_MODE_INT_GPHY;
+		if (priv->phy_speed == SPEED_1000) {
+			priv->mii.supports_gmii = 1;
+			port_ctrl = PORT_MODE_INT_GPHY;
 		} else
-			pDevCtrl->sys->sys_port_ctrl = PORT_MODE_INT_EPHY;
+			port_ctrl = PORT_MODE_INT_EPHY;
+		bcmgenet_sys_writel(priv, port_ctrl, SYS_PORT_CTRL);
 		/* enable APD */
-		pDevCtrl->ext->ext_pwr_mgmt |= EXT_PWR_DN_EN_LD;
+		reg = bcmgenet_ext_readl(priv, EXT_EXT_PWR_MGMT);
+		reg |= EXT_PWR_DN_EN_LD;
+		bcmgenet_ext_writel(priv, reg, EXT_EXT_PWR_MGMT);
 		bcmgenet_mii_reset(dev);
 		break;
 	case BRCM_PHY_TYPE_EXT_MII:
 		phy_name = "external MII";
-		pDevCtrl->sys->sys_port_ctrl = PORT_MODE_EXT_EPHY;
+		bcmgenet_sys_writel(priv,
+				PORT_MODE_EXT_EPHY, SYS_PORT_CTRL);
 		break;
 	case BRCM_PHY_TYPE_EXT_RVMII:
 		phy_name = "external RvMII";
-		if (pDevCtrl->phySpeed == SPEED_100)
-			pDevCtrl->sys->sys_port_ctrl = PORT_MODE_EXT_RVMII_25;
+		if (priv->phy_speed == SPEED_100)
+			port_ctrl = PORT_MODE_EXT_RVMII_25;
 		else
-			pDevCtrl->sys->sys_port_ctrl = PORT_MODE_EXT_RVMII_50;
+			port_ctrl = PORT_MODE_EXT_RVMII_50;
+		bcmgenet_sys_writel(priv, port_ctrl, SYS_PORT_CTRL);
 		break;
 	case BRCM_PHY_TYPE_EXT_RGMII_NO_ID:
 		/*
@@ -302,15 +340,18 @@ int bcmgenet_mii_init(struct net_device *dev)
 		/* fall through */
 	case BRCM_PHY_TYPE_EXT_RGMII:
 		phy_name = "external RGMII";
-		GENET_RGMII_OOB_CTRL(pDevCtrl) |= RGMII_MODE_EN | id_mode_dis;
-		pDevCtrl->sys->sys_port_ctrl = PORT_MODE_EXT_GPHY;
+		reg = bcmgenet_ext_readl(priv, EXT_RGMII_OOB_CTRL);
+		reg |= RGMII_MODE_EN | id_mode_dis;
+		bcmgenet_ext_writel(priv, reg, EXT_RGMII_OOB_CTRL);
+		bcmgenet_sys_writel(priv,
+				PORT_MODE_EXT_GPHY, SYS_PORT_CTRL);
 		/*
 		 * setup mii based on configure speed and RGMII txclk is set in
 		 * umac->cmd, mii_setup() after link established.
 		 */
-		if (pDevCtrl->phySpeed == SPEED_1000) {
-			pDevCtrl->mii.supports_gmii = 1;
-		} else if (pDevCtrl->phySpeed == SPEED_100) {
+		if (priv->phy_speed == SPEED_1000) {
+			priv->mii.supports_gmii = 1;
+		} else if (priv->phy_speed == SPEED_100) {
 			/* disable 1000BASE-T full, half-duplex capability */
 			bcmgenet_mii_set_clr_bits(dev, MII_CTRL1000, 0,
 				(ADVERTISE_1000FULL|ADVERTISE_1000HALF));
@@ -322,17 +363,19 @@ int bcmgenet_mii_init(struct net_device *dev)
 	case BRCM_PHY_TYPE_MOCA:
 		phy_name = "MoCA";
 		/* setup speed in umac->cmd for RGMII txclk set to 125MHz */
-		umac->cmd = umac->cmd | (UMAC_SPEED_1000 << CMD_SPEED_SHIFT);
-		pDevCtrl->mii.force_media = 1;
-		pDevCtrl->sys->sys_port_ctrl = PORT_MODE_INT_GPHY |
-			LED_ACT_SOURCE_MAC;
+		reg = bcmgenet_umac_readl(priv, UMAC_CMD);
+		reg |= (UMAC_SPEED_1000 << CMD_SPEED_SHIFT);
+		bcmgenet_umac_writel(priv, reg, UMAC_CMD);
+		priv->mii.force_media = 1;
+		bcmgenet_sys_writel(priv,
+			PORT_MODE_INT_GPHY | LED_ACT_SOURCE_MAC, SYS_PORT_CTRL);
 		break;
 	default:
-		pr_err("unknown phy_type: %d\n", pDevCtrl->phyType);
+		netdev_err(dev, "unknown phy_type: %d\n", priv->phy_type);
 		return -1;
 	}
 
-	pr_info("configuring instance for %s\n", phy_name);
+	netdev_info(dev, "configuring instance for %s\n", phy_name);
 
 	return 0;
 }
