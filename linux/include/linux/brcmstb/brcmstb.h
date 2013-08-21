@@ -464,14 +464,6 @@ extern int brcm_moca_enabled;
 extern int brcm_usb_enabled;
 extern int brcm_pm_enabled;
 
-extern unsigned long brcm_mtd_rootfs_start;
-extern unsigned long brcm_mtd_rootfs_len;
-extern unsigned long brcm_mtd_kernel_start;
-extern unsigned long brcm_mtd_kernel_len;
-extern unsigned long brcm_mtd_ocap_start;
-extern unsigned long brcm_mtd_ocap_len;
-extern unsigned long brcm_mtd_flash_size_mb;
-
 #ifdef CONFIG_BRCM_SLOW_TVM_CLOCK
 #define BRCM_BASE_BAUD_TVM	(54000000 / 16)
 #else
@@ -485,23 +477,12 @@ extern unsigned long brcm_base_baud;
 
 #define CFE_STRING_SIZE		64
 
-extern char brcm_mtd_flash_type[CFE_STRING_SIZE];
 extern char brcm_cfe_boardname[CFE_STRING_SIZE];
 
 extern unsigned long brcm_moca_i2c_base;
 extern unsigned long brcm_moca_rf_band;
 
 #define BRCM_PCI_SLOTS		16
-
-struct mtd_partition;
-
-struct brcmnand_platform_data {
-	int			chip_select;
-	int			nr_parts;
-	struct mtd_partition	*parts;
-};
-
-#define BRCM_FLASH_CS_NONE	-1
 
 /***********************************************************************
  * HIF L2 IRQ controller - shared by EDU, SDIO
@@ -570,12 +551,10 @@ struct brcmnand_platform_data {
 asmlinkage void brcm_upper_tlb_setup(void);
 void board_pinmux_setup(void);
 void board_get_ram_size(unsigned long *dram0_mb, unsigned long *dram1_mb);
-int board_get_partition_map(struct mtd_partition **p);
 void brcm_wraparound_check(void);
 
 void ebi_restore_settings(void);
 
-int bchip_strap_flash_type(void);
 void brcmstb_cpu_setup(void);
 void bchip_sata3_init(void);
 void bchip_usb_init(void);

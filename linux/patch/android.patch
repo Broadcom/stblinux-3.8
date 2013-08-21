@@ -375,23 +375,6 @@ diff -Nur a/linux/arch/arm/boot/compressed/head.S b/linux/arch/arm/boot/compress
  		mcrne	p15, 0, r1, c3, c0, 0	@ load domain access control
  		mcrne   p15, 0, r6, c2, c0, 2   @ load ttb control
  #endif
-@@ -805,6 +806,8 @@
- 		.align	2
- 		.type	proc_types,#object
- proc_types:
-+#if !defined(CONFIG_CPU_V7)
-+		/* This collides with some V7 IDs, preventing correct detection */
- 		.word	0x00000000		@ old ARM ID
- 		.word	0x0000f000
- 		mov	pc, lr
-@@ -813,6 +816,7 @@
-  THUMB(		nop				)
- 		mov	pc, lr
-  THUMB(		nop				)
-+#endif
- 
- 		.word	0x41007000		@ ARM7/710
- 		.word	0xfff8fe00
 diff -Nur a/linux/arch/arm/boot/dts/at91sam9n12.dtsi b/linux/arch/arm/boot/dts/at91sam9n12.dtsi
 --- a/linux/arch/arm/boot/dts/at91sam9n12.dtsi	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/arch/arm/boot/dts/at91sam9n12.dtsi	2013-03-20 16:30:17.599219319 -0700
@@ -30847,18 +30830,6 @@ diff -Nur a/linux/include/uapi/linux/netfilter/xt_socket.h b/linux/include/uapi/
 +			       struct xt_action_param *par);
 +
  #endif /* _XT_SOCKET_H */
-diff -Nur a/linux/include/uapi/linux/serial_core.h b/linux/include/uapi/linux/serial_core.h
---- a/linux/include/uapi/linux/serial_core.h	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/include/uapi/linux/serial_core.h	2013-03-20 16:30:39.260373173 -0700
-@@ -50,7 +50,7 @@
- #define PORT_LPC3220	22	/* NXP LPC32xx SoC "Standard" UART */
- #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
- #define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
--#define PORT_BRCM_TRUMANAGE	25
-+#define PORT_BRCM_TRUMANAGE	24
- #define PORT_MAX_8250	25	/* max port ID */
- 
- /*
 diff -Nur a/linux/include/uapi/linux/sockios.h b/linux/include/uapi/linux/sockios.h
 --- a/linux/include/uapi/linux/sockios.h	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/include/uapi/linux/sockios.h	2013-03-20 16:30:39.256372960 -0700

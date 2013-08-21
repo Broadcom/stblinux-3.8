@@ -140,146 +140,47 @@ static int pdev_lookup(struct device *dev,
 	return status;
 }
 
-static int spd_setting_get(const struct sata_brcm_pdata *pdata, int port)
-{
-	int val = (pdata->phy_force_spd[port / SPD_SETTING_PER_U32]
-		   >> SPD_SETTING_SHIFT(port));
-
-	return val & SPD_SETTING_MASK;
-}
-
-static void spd_setting_set(struct sata_brcm_pdata *pdata, int port, int val)
-{
-	int tmp = pdata->phy_force_spd[port / SPD_SETTING_PER_U32];
-
-	pr_debug("Forcing port %d to gen %d speed\n", port, val);
-
-	tmp &= ~(SPD_SETTING_MASK << SPD_SETTING_SHIFT(port));
-	tmp |= (val & SPD_SETTING_MASK) << SPD_SETTING_SHIFT(port);
-	pdata->phy_force_spd[port / SPD_SETTING_WIDTH] = tmp;
-}
-
-static void __maybe_unused sata_mdio_wr(void __iomem *addr, u32 port,
-					u32 bank, u32 ofs, u32 msk, u32 value)
-{
-	u32 tmp;
-	void __iomem *base = addr + ((port) * SATA_MDIO_REG_SPACE_SIZE);
-
-	writel(bank, base + SATA_MDIO_BANK_OFFSET);
-	tmp = readl(base + SATA_MDIO_REG_OFFSET(ofs));
-	tmp = (tmp & msk) | value;
-	writel(tmp, base + SATA_MDIO_REG_OFFSET(ofs));
-}
-
-static void sata_mdio_wr_legacy(void __iomem *addr, u32 bank, u32 ofs, u32 msk,
-				u32 value)
-{
-	u32 tmp;
-	void __iomem *base = addr + (0x8F * 4);
-
-	writel(bank, base);
-	/* Read, mask, enable */
-	tmp = readl(ofs * 4 + base);
-	tmp = (tmp & msk) | value;
-	/* Write */
-	writel(tmp, ofs * 4 + base);
-}
-
-static void brcm_sata3_enable_phy(const struct sata_brcm_pdata *pdata)
-{
-#if defined(CONFIG_BCM7145A0)
-	/*
-	 * This version of the chip placed the reset bit in a non-SATA IP
-	 * register.
-	 */
-	BDEV_WR_F(SUN_TOP_CTRL_GENERAL_CTRL_0, sata_phy_disable, 0);
-#endif
-}
-
-static void brcm_sata3_init_phy(const struct sata_brcm_pdata *pdata, int port)
-{
-	const u32 phy_base = pdata->phy_base_addr;
-	const int ssc_enable = pdata->phy_enable_ssc_mask & (1 << port);
-	void __iomem *base;
-
-	base = ioremap(phy_base, SATA_MDIO_REG_LENGTH);
-	if (!base) {
-		pr_err("%s: Failed to ioremap PHY registers!\n", __func__);
-		goto err;
-	}
-
-	if (pdata->phy_generation == 0x2800) {
-#if defined(CONFIG_BCM7445A0) || defined(CONFIG_BCM7445B0)
-		/* The 28nm SATA PHY has incorrect PLL settings upon
-		 * chip reset.
-		 * The workaround suggested by the H/W team requires
-		 * initialization of the PLL registers in order to force
-		 * calibration.
-		 *
-		 * For more information, refer to: HWxxxx
-		 */
-		const u32 PLL_SM_CTRL_0_DFLT = 0x3089;
-
-		sata_mdio_wr(base, port, PLL_REG_BANK_0, 0x81, 0x00000000,
-			     PLL_SM_CTRL_0_DFLT);
-		sata_mdio_wr(base, port, PLL_REG_BANK_0, 0x81, 0xFFFFFFFE, 0x0);
-#endif
-
-		brcm_sata3_enable_phy(pdata);
-
-		/* FIXME: Need SSC setup routine for new PHY */
-		spd_setting_get(pdata, port);
-	} else {
-		/* TXPMD_control1 - enable SSC force */
-		sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-				    TXPMD_CONTROL1, 0xFFFFFFFC, 0x00000003);
-
-		/* TXPMD_tx_freq_ctrl_control2 - set fixed min freq */
-		sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-				    TXPMD_TX_FREQ_CTRL_CONTROL2,
-				    0xFFFFFC00, 0x000003DF);
-
-		/*
-		 * TXPMD_tx_freq_ctrl_control3 - set fixed max freq
-		 *  If ssc_enable == 0, center frequencies
-		 *  Otherwise, spread spectrum frequencies
-		 */
-		if (ssc_enable) {
-			pr_info("SATA3: enabling SSC on port %d\n", port);
-			sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-					    TXPMD_TX_FREQ_CTRL_CONTROL3,
-					    0xFFFFFC00, 0x00000083);
-		} else {
-			sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-					    TXPMD_TX_FREQ_CTRL_CONTROL3,
-					    0xFFFFFC00, 0x000003DF);
-		}
-	}
-
-	iounmap(base);
-
-err:
-	return;
-}
-
-static int brcm_sata3_init_config_endian(struct sata_brcm_pdata *brcm_pdata)
+static int brcm_sata3_init_config(void __iomem *ahci_regs,
+				  struct platform_device *ahci_pdev,
+				  struct sata_brcm_pdata *brcm_pdata)
 {
 	int status = 0;
-	void __iomem *top_regs = ioremap(brcm_pdata->top_ctrl_base_addr,
-			   SATA_TOP_CTRL_REG_LENGTH);
+	void __iomem *top_regs = NULL;
 
+	top_regs = ioremap(brcm_pdata->top_ctrl_base_addr,
+			   SATA_TOP_CTRL_REG_LENGTH);
 	if (!top_regs) {
-		pr_err("%s: Failed to ioremap TOP registers!\n", __func__);
 		status = -EFAULT;
 		goto done;
 	}
 
+	/* Configure endianness */
 	writel((DATA_ENDIAN << 4) | (DATA_ENDIAN << 2) | (MMIO_ENDIAN << 0),
 		top_regs + SATA_TOP_CTRL_BUS_CTRL);
 
-	iounmap(top_regs);
+	if (brcm_pdata->quirks & SATA_BRCM_QK_NONCQ) {
+		/* Temporarily allow writing to AHCI RO registers */
+		u32 reg = readl(top_regs + SATA_TOP_CTRL_BUS_CTRL);
+		reg |= SATA_TOP_CTRL_BUS_CTRL_OVERRIDE_HWINIT;
+		writel(reg, top_regs + SATA_TOP_CTRL_BUS_CTRL);
+
+		/* Clear out the NCQ bit so the AHCI driver will not issue
+		 * FPDMA/NCQ commands.
+		 */
+		reg = readl(ahci_regs + HOST_CAP);
+		reg &= ~HOST_CAP_NCQ;
+		writel(reg, ahci_regs + HOST_CAP);
+
+		/* Re-enable AHCI RO property */
+		reg = readl(top_regs + SATA_TOP_CTRL_BUS_CTRL);
+		reg &= ~SATA_TOP_CTRL_BUS_CTRL_OVERRIDE_HWINIT;
+		writel(reg, top_regs + SATA_TOP_CTRL_BUS_CTRL);
+	}
 
 done:
+	if (top_regs)
+		iounmap(top_regs);
+
 	return status;
 }
 
@@ -301,12 +202,12 @@ static int brcm_sata3_init(struct device *dev, void __iomem *addr)
 	brcm_pdata = brcm_pdev->dev.platform_data;
 	ports = fls(readl(addr + HOST_PORTS_IMPL));
 
-	status = brcm_sata3_init_config_endian(brcm_pdata);
+	status = brcm_sata3_init_config(addr, ahci_pdev, brcm_pdata);
 	if (status)
 		goto done;
 
 	for (i = 0; i < ports; i++)
-		brcm_sata3_init_phy(brcm_pdata, i);
+		brcm_sata3_phy_init(brcm_pdata, i);
 
 done:
 	return status;
@@ -334,13 +235,6 @@ static int brcm_ahci_resume(struct device *dev)
 
 	return brcm_sata3_init(dev, addr);
 }
-
-static struct ahci_platform_data brcm_ahci_pdata = {
-	.init = &brcm_ahci_init,
-	.exit = &brcm_ahci_exit,
-	.suspend = &brcm_ahci_suspend,
-	.resume = &brcm_ahci_resume,
-};
 
 static const struct of_device_id ahci_of_match[] = {
 	{.compatible = "brcm,sata3-ahci"},
@@ -408,7 +302,7 @@ static int brcm_ahci_parse_dt_node(struct platform_device *pdev)
 			while (num_entries-- != 0) {
 				const u32 port = be32_to_cpup(ptr++);
 				const u32 val = be32_to_cpup(ptr++);
-				spd_setting_set(brcm_pdata, port, val);
+				brcm_sata3_phy_spd_set(brcm_pdata, port, val);
 			}
 		} else
 			pr_err("%s property is malformed!\n", propname);
@@ -418,65 +312,121 @@ err:
 	return status;
 }
 
+static void brcm_ahci_setup_quirks(struct platform_device *pdev)
+{
+#if defined(CONFIG_BRCMSTB)
+	struct sata_brcm_pdata *brcm_pdata = pdev->dev.platform_data;
+	const u32 chip_id = BDEV_RD(BCHP_SUN_TOP_CTRL_CHIP_FAMILY_ID);
+
+	brcm_pdata->quirks = 0;
+
+	switch (chip_id) {
+	case 0x71450000: /* 7145a0 */
+		brcm_pdata->quirks |= SATA_BRCM_QK_ALT_RST;
+		brcm_pdata->quirks |= SATA_BRCM_QK_NONCQ;
+		break;
+	case 0x74450000: /* 7445a0 */
+		brcm_pdata->quirks |= SATA_BRCM_QK_INIT_PHY;
+		brcm_pdata->quirks |= SATA_BRCM_QK_NONCQ;
+		break;
+	case 0x74450010: /* 7445b0 */
+		brcm_pdata->quirks |= SATA_BRCM_QK_INIT_PHY;
+		brcm_pdata->quirks |= SATA_BRCM_QK_NONCQ;
+		break;
+	default:
+		break;
+	}
+#endif
+}
+
+static int setup_ahci_pdata(struct platform_device *pdev,
+	struct ahci_platform_data *ahci_pd)
+{
+	int status = 0;
+
+	ahci_pd->init = &brcm_ahci_init;
+	ahci_pd->exit = &brcm_ahci_exit;
+	ahci_pd->suspend = &brcm_ahci_suspend;
+	ahci_pd->resume = &brcm_ahci_resume;
+
+	return status;
+}
+
 static int brcm_ahci_probe(struct platform_device *pdev)
 {
 	int status;
-	struct platform_device *ahci_pdev;
+	int mapped = 0;
+	struct platform_device *ahci_pdev = NULL;
+	struct sata_brcm_pdata brcm_pdata;
+	struct ahci_platform_data ahci_pdata;
 	static u64 brcm_ahci_dmamask = DMA_BIT_MASK(32);
-	struct sata_brcm_pdata *brcm_pdata = NULL;
-
-	brcm_pdata = kmalloc(sizeof(struct sata_brcm_pdata), GFP_KERNEL);
-	if (brcm_pdata == NULL) {
-		status = -ENOMEM;
-		goto done;
-	}
-
-	pdev->dev.platform_data = brcm_pdata;
-
-	status = brcm_ahci_parse_dt_node(pdev);
-	if (status)
-		goto err_free_brcm_pdata;
 
 	ahci_pdev = platform_device_alloc("strict-ahci", 0);
 	if (ahci_pdev == NULL) {
 		pr_err("Cannot allocate AHCI platform device!\n");
 		status = -ENOMEM;
-		goto err_free_brcm_pdata;
+		goto err_cleanup;
 	}
 
-	status = pdev_map(&ahci_pdev->dev, ahci_pdev, pdev);
-	if (status)
-		goto err_free_ahci_pdev;
+	/*
+	 * Configure the Broadcom AHCI wrapper
+	 */
 
-	status = platform_device_add_data(ahci_pdev, &brcm_ahci_pdata,
-					  sizeof(brcm_ahci_pdata));
-	if (status)
-		goto err_free_ahci_pdev;
+	/* Keep reference to the "child" platform device */
+	brcm_pdata.ahci_pdev = ahci_pdev;
 
+	status = platform_device_add_data(pdev, &brcm_pdata,
+					  sizeof(struct sata_brcm_pdata));
+	if (status)
+		goto err_cleanup;
+
+	status = brcm_ahci_parse_dt_node(pdev);
+	if (status)
+		goto err_cleanup;
+
+	brcm_ahci_setup_quirks(pdev);
+
+	/*
+	 * Configure the platform AHCI device
+	 */
+	status = setup_ahci_pdata(pdev, &ahci_pdata);
+	if (status)
+		goto err_cleanup;
+
+	status = platform_device_add_data(ahci_pdev, &ahci_pdata,
+					  sizeof(struct ahci_platform_data));
+	if (status)
+		goto err_cleanup;
+
+	/* Pass the register addresses over to the AHCI platform device */
 	status = platform_device_add_resources(ahci_pdev,
 					       pdev->resource,
 					       pdev->num_resources);
 	if (status)
-		goto err_free_ahci_pdev;
+		goto err_cleanup;
 
 	ahci_pdev->dev.dma_mask = &brcm_ahci_dmamask;
 	ahci_pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 
+	status = pdev_map(&ahci_pdev->dev, ahci_pdev, pdev);
+	if (status)
+		goto err_cleanup;
+	else
+		mapped = 1;
+
+	/* Ready to handoff configuration to platform AHCI driver */
 	status = platform_device_add(ahci_pdev);
 	if (status)
-		goto err_free_ahci_pdev;
-
-	/* Keep reference to the "child" platform device */
-	brcm_pdata->ahci_pdev = ahci_pdev;
+		goto err_cleanup;
 
 	goto done;
 
-err_free_ahci_pdev:
-	pdev_unmap(&ahci_pdev->dev);
-	platform_device_put(ahci_pdev);
+err_cleanup:
+	if (mapped)
+		pdev_unmap(&ahci_pdev->dev);
 
-err_free_brcm_pdata:
-	kfree(brcm_pdata);
+	if (ahci_pdev != NULL)
+		platform_device_put(ahci_pdev);
 
 done:
 	return status;

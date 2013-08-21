@@ -43,8 +43,13 @@
 #define SPD_SETTING_SHIFT(port)		\
 	(((port) % SPD_SETTING_PER_U32) * SPD_SETTING_WIDTH)
 
-#define SATA_TOP_CTRL_REG_LENGTH	0x24
-#define SATA_TOP_CTRL_BUS_CTRL		0x4
+#define MAX_PHY_CTRL_PORTS			2
+#define SATA_TOP_CTRL_REG_LENGTH		0x24
+#define SATA_TOP_CTRL_BUS_CTRL			0x4
+#define SATA_TOP_CTRL_PHY_CTRL_2		0x10
+#define SATA_TOP_CTRL_PHY_CTRL_4		0x18
+#define SATA_TOP_CTRL_BUS_CTRL_OVERRIDE_HWINIT	(1 << 16)
+#define SATA_TOP_CTRL_PHY_GLOBAL_RESET		(1 << 14)
 
 enum sata_mdio_phy_legacy_regs {
 	TXPMD_CONTROL1 = 0x81,
@@ -55,6 +60,12 @@ enum sata_mdio_phy_legacy_regs {
 
 enum sata_mdio_phy_regs {
 	PLL_REG_BANK_0 = 0x50,
+};
+
+enum sata_brcm_quirks {
+	SATA_BRCM_QK_INIT_PHY = BIT(0),
+	SATA_BRCM_QK_ALT_RST  = BIT(1),
+	SATA_BRCM_QK_NONCQ    = BIT(2),
 };
 
 /**
@@ -84,6 +95,11 @@ struct sata_brcm_pdata {
 	u32 phy_enable_ssc_mask;
 	u32 phy_force_spd[MAX_PORTS / SPD_SETTING_PER_U32];
 	u32 top_ctrl_base_addr;
+	u32 quirks;
 };
+
+int brcm_sata3_phy_spd_get(const struct sata_brcm_pdata *pdata, int port);
+void brcm_sata3_phy_spd_set(struct sata_brcm_pdata *pdata, int port, int val);
+void brcm_sata3_phy_init(const struct sata_brcm_pdata *pdata, int port);
 
 #endif /* __SATA_BRCMSTB_H__ */

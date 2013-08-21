@@ -127,6 +127,19 @@ static int of_platform_serial_setup(struct platform_device *ofdev,
 	if (type == PORT_TEGRA)
 		port->handle_break = tegra_serial_handle_break;
 
+	if (type == PORT_BRCM_BUGGY_DW)
+		port->flags |= UPF_SAFER_LCR_WRITES;
+
+#if defined(CONFIG_BCM7145A0) || defined(CONFIG_BCM7366A0) || \
+    defined(CONFIG_BCM7439A0) || defined(CONFIG_BCM7445A0) || \
+    defined(CONFIG_BCM7445B0) || defined(CONFIG_BCM7445C0)
+	/*
+	 * All of these chips definitely have an unresettable busy
+	 * detect serial interrupt.
+	 */
+	port->flags |= UPF_SAFER_LCR_WRITES;
+#endif
+
 	return 0;
 out:
 	if (info->clk)
@@ -232,6 +245,10 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
  * A few common types, add more as needed.
  */
 static struct of_device_id of_platform_serial_table[] = {
+#ifdef CONFIG_BRCMSTB
+	{ .compatible = "brcm,buggy-dw-apb-uart",
+		.data = (void *)PORT_BRCM_BUGGY_DW, },
+#endif
 	{ .compatible = "ns8250",   .data = (void *)PORT_8250, },
 	{ .compatible = "ns16450",  .data = (void *)PORT_16450, },
 	{ .compatible = "ns16550a", .data = (void *)PORT_16550A, },

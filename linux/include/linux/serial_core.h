@@ -165,6 +165,7 @@ struct uart_port {
 #define UPF_BUGGY_UART		((__force upf_t) (1 << 14))
 #define UPF_NO_TXEN_TEST	((__force upf_t) (1 << 15))
 #define UPF_MAGIC_MULTIPLIER	((__force upf_t) (1 << 16))
+#define UPF_SAFER_LCR_WRITES	((__force upf_t) (1 << 17))
 /* Port has hardware-assisted h/w flow control (iow, auto-RTS *not* auto-CTS) */
 #define UPF_HARD_FLOW		((__force upf_t) (1 << 21))
 /* Port has hardware-assisted s/w flow control */

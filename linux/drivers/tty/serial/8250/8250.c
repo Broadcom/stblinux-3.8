@@ -65,6 +65,8 @@ static int serial_index(struct uart_port *port)
 
 static unsigned int skip_txen_test; /* force skip of txen test at init time */
 
+static void wait_for_xmitr(struct uart_8250_port *up, int bits);
+
 /*
  * Debugging.
  */
@@ -306,6 +308,13 @@ static const struct serial8250_config uart_config[] = {
 		.tx_loadsz	= 1024,
 		.flags		= UART_CAP_HFIFO,
 	},
+	[PORT_BRCM_BUGGY_DW] = {
+		.name		= "BuggyDW",
+		.fifo_size	= 32,
+		.tx_loadsz	= 32,
+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+		.flags		= UART_CAP_FIFO | UART_NATSEMI,
+	},
 	[PORT_8250_CIR] = {
 		.name		= "CIR port"
 	}
@@ -458,6 +467,24 @@ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
 	return readl(p->membase + offset);
 }
 
+static void safer_mem_serial_out(struct uart_port *p, int offset, int value)
+{
+	struct uart_8250_port *up =
+		container_of(p, struct uart_8250_port, port);
+	if (offset == UART_LCR)
+		wait_for_xmitr(up, BOTH_EMPTY);
+	mem_serial_out(p, offset, value);
+}
+
+static void safer_mem32_serial_out(struct uart_port *p, int offset, int value)
+{
+	struct uart_8250_port *up =
+		container_of(p, struct uart_8250_port, port);
+	if (offset == UART_LCR)
+		wait_for_xmitr(up, BOTH_EMPTY);
+	mem32_serial_out(p, offset, value);
+}
+
 static unsigned int io_serial_in(struct uart_port *p, int offset)
 {
 	offset = offset << p->regshift;
@@ -490,11 +517,15 @@ static void set_io_from_upio(struct uart_port *p)
 	case UPIO_MEM:
 		p->serial_in = mem_serial_in;
 		p->serial_out = mem_serial_out;
+		if (p->flags & UPF_SAFER_LCR_WRITES)
+			p->serial_out = safer_mem_serial_out;
 		break;
 
 	case UPIO_MEM32:
 		p->serial_in = mem32_serial_in;
 		p->serial_out = mem32_serial_out;
+		if (p->flags & UPF_SAFER_LCR_WRITES)
+			p->serial_out = safer_mem32_serial_out;
 		break;
 
 #ifdef CONFIG_SERIAL_8250_RM9K
@@ -2296,6 +2327,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
 	unsigned char cval, fcr = 0;
 	unsigned long flags;
 	unsigned int baud, quot;
+	unsigned int lsr;
 	int fifo_bug = 0;
 
 	switch (termios->c_cflag & CSIZE) {
@@ -2443,6 +2475,14 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
 			serial_port_out(port, UART_OMAP_OSC_12M_SEL, 0);
 	}
 
+	if (port->flags & UPF_SAFER_LCR_WRITES) {
+		/* We'll break IRQ if we don't discard RX chars here */
+		lsr = serial_in(up, UART_LSR);
+		while (lsr & (UART_LSR_DR)) {
+			(void) serial_in(up, UART_RX);
+			lsr = serial_in(up, UART_LSR);
+		}
+	}
 	/*
 	 * For NatSemi, switch to bank 2 not bank 1, to avoid resetting EXCR2,
 	 * otherwise just set DLAB

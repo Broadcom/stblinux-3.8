@@ -1284,7 +1284,7 @@ static int brcmstb_nand_setup_dev(struct brcmstb_nand_host *host)
 		 * Set oobsize to be consistent with controller's
 		 * spare_area_size. This helps nandwrite testing.
 		 */
-		mtd->oobsize = new_cfg.spare_area_size *
+		mtd->oobsize = orig_cfg.spare_area_size *
 			       (mtd->writesize >> FC_SHIFT);
 
 		brcmstb_nand_print_cfg(msg, &orig_cfg);

@@ -72,7 +72,7 @@
 
 struct enet_cb {
 	struct sk_buff      *skb;
-	volatile struct dma_desc    *bd_addr;
+	void __iomem *bd_addr;
 	DEFINE_DMA_UNMAP_ADDR(dma_addr);
 	DEFINE_DMA_UNMAP_LEN(dma_len);
 };
@@ -189,23 +189,26 @@ struct bcmgenet_priv {
 	struct napi_struct napi ____cacheline_aligned;
 
 	/* transmit variables */
-	volatile struct dma_desc *tx_bds;	/* location of tx Dma BD ring */
+	void __iomem *tx_bds;	/* location of tx Dma BD ring */
 	struct enet_cb *tx_cbs;	/* locaation of tx control block pool */
 	int	num_tx_bds;		/* number of transmit bds */
-	int	tx_free_bds;		/* # of free transmit bds */
-	int	tx_last_c_index; /* consumer index for the last xmit call */
 
-	struct enet_cb *tx_ring_cbs[16]; /* tx ring buffer control block*/
-	unsigned int tx_ring_size[16];	/* size of each tx ring */
-	unsigned int tx_ring_c_index[16]; /* last consumer index of each ring*/
-	int tx_ring_free_bds[16];	/* # of free bds for each ring */
+	struct enet_cb *tx_ring_cbs[17]; /* tx ring buffer control block*/
+	unsigned int tx_ring_size[17];	/* size of each tx ring */
+	unsigned int tx_ring_c_index[17]; /* last consumer index of each ring*/
+	int tx_ring_free_bds[17];	/* # of free bds for each ring */
+	unsigned int tx_ring_write_ptr[17]; /* Tx ring write pointer SW copy */
+	unsigned int tx_ring_prod_index[17];
 
 	/* receive variables */
-	volatile struct dma_desc *rx_bds;	/* location of rx bd ring */
-	volatile struct dma_desc *rx_bd_assign_ptr;	/*next rx bd to assign buffer*/
+	void __iomem *rx_bds;	/* location of rx bd ring */
+	void __iomem *rx_bd_assign_ptr;	/*next rx bd to assign buffer*/
+	int rx_bd_assign_index;	/* next rx bd to assign, index from rx_bds */
 	struct enet_cb *rx_cbs;	/* location of rx control block pool */
 	int	num_rx_bds;	/* number of receive bds */
 	int	rx_buf_len;	/* size of rx buffers for DMA */
+	unsigned int rx_read_ptr; /* Rx read pointer SW copy */
+	unsigned int rx_c_index;  /* Rx consumer index SW copy */
 
 	/* other misc variables */
 	struct bcmgenet_hw_params *hw_params;
@@ -242,7 +245,7 @@ struct bcmgenet_priv {
 	u32	wolopts;
 
 	/* S3 warm boot */
-	struct dma_desc saved_rx_desc[TOTAL_DESC];
+	u32 *saved_rx_desc;
 	u32 int0_mask;
 	u32 int1_mask;
 	u32 rbuf_ctrl;
@@ -251,37 +254,37 @@ struct bcmgenet_priv {
 /* Extension registers accessors */
 static inline u32 bcmgenet_ext_readl(struct bcmgenet_priv *priv, u32 off)
 {
-	return readl_relaxed(priv->base + GENET_EXT_OFF + off);
+	return __raw_readl(priv->base + GENET_EXT_OFF + off);
 }
 
 static inline void bcmgenet_ext_writel(struct bcmgenet_priv *priv,
 					u32 val, u32 off)
 {
-	writel_relaxed(val, priv->base + GENET_EXT_OFF + off);
+	__raw_writel(val, priv->base + GENET_EXT_OFF + off);
 }
 
 /* UniMAC register accessors */
 static inline u32 bcmgenet_umac_readl(struct bcmgenet_priv *priv, u32 off)
 {
-	return readl_relaxed(priv->base + GENET_UMAC_OFF + off);
+	return __raw_readl(priv->base + GENET_UMAC_OFF + off);
 }
 
 static inline void bcmgenet_umac_writel(struct bcmgenet_priv *priv,
 					u32 val, u32 off)
 {
-	writel_relaxed(val, priv->base + GENET_UMAC_OFF + off);
+	__raw_writel(val, priv->base + GENET_UMAC_OFF + off);
 }
 
 /* System registers */
 static inline u32 bcmgenet_sys_readl(struct bcmgenet_priv *priv, u32 off)
 {
-	return readl_relaxed(priv->base + off);
+	return __raw_readl(priv->base + off);
 }
 
 static inline void bcmgenet_sys_writel(struct bcmgenet_priv *priv,
 					u32 val, u32 off)
 {
-	writel_relaxed(val, priv->base + off);
+	__raw_writel(val, priv->base + off);
 }
 
 #endif /* __BCMGENET_H__ */

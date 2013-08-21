@@ -877,6 +877,7 @@ bool 'tpt'				CONFIG_USER_TIMEPEG_TPT
 bool 'Oprofile'				CONFIG_USER_PROFILE_OPROFILE
 bool 'LTTng'				CONFIG_USER_LTT_CONTROL
 bool 'perf'				CONFIG_USER_PERF
+bool 'trace-cmd'			CONFIG_USER_TRACECMD
 
 endmenu
 

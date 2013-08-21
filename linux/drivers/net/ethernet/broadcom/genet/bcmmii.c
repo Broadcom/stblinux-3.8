@@ -205,7 +205,7 @@ void bcmgenet_ephy_workaround(struct net_device *dev)
 	if (priv->phy_type != BRCM_PHY_TYPE_INT)
 		return;
 
-#ifdef CONFIG_BCM7445A0
+#if defined(CONFIG_BCM7445A0) || defined(CONFIG_BCM7445B0)
 	/* increases ADC latency by 24ns */
 	bcmgenet_mii_write(dev, phy_id, 0x17, 0x0038);
 	bcmgenet_mii_write(dev, phy_id, 0x15, 0xAB95);

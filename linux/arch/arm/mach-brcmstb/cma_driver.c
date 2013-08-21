@@ -18,6 +18,8 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define pr_fmt(fmt) "cma_driver: " fmt
+
 #include <linux/of.h>
 #include <linux/cdev.h>
 #include <linux/dma-mapping.h>
@@ -536,10 +538,8 @@ static struct page **get_pages(struct page *page, int num_pages)
 	}
 
 	pages = kmalloc(sizeof(struct page *) * num_pages, GFP_KERNEL);
-	if (pages == NULL) {
-		pr_err("cannot alloc pages\n");
+	if (pages == NULL)
 		return NULL;
-	}
 
 	pfn = page_to_pfn(page);
 	for (i = 0; i < num_pages; i++) {
@@ -551,16 +551,6 @@ static struct page **get_pages(struct page *page, int num_pages)
 	}
 
 	return pages;
-}
-
-static void put_pages(struct page **pages)
-{
-	if (pages == NULL) {
-		pr_err("null ptr\n");
-		return;
-	}
-
-	kfree(pages);
 }
 
 /**
@@ -596,7 +586,7 @@ void *cma_dev_kva_map(struct page *page, int num_pages, pgprot_t pgprot)
 
 		va = vmap(pages, num_pages, 0, pgprot);
 
-		put_pages(pages);
+		kfree(pages);
 
 		if (va == NULL) {
 			pr_err("vmap failed (num_pgs=%d)\n", num_pages);
@@ -618,7 +608,7 @@ int cma_dev_kva_unmap(const void *kva)
 {
 	if (cma_root_dev->dev == NULL) {
 		pr_err("cma root dev not initialized\n");
-		return -EFAULT;
+		return -EINVAL;
 	}
 
 	if (kva == NULL)

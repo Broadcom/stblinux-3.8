@@ -483,7 +483,7 @@ tftphost=$TFTPHOST
 tftppath=$TFTPPATH
 plat=$PLAT
 
-for part_name in rootfs flash1.rootfs flash0.rootfs; do
+for part_name in rootfs flash{2,1,0}.rootfs{,0,1}; do
 	if find_mtd_partition $part_name rootfs_part; then
 		if \
 			! get_mtd_attr $rootfs_part type flash_type || \
@@ -502,7 +502,11 @@ for part_name in rootfs flash1.rootfs flash0.rootfs; do
 	fi
 done
 
-find_mtd_partition kernel kernel_part || true
+for part_name in kernel flash{2,1,0}.kernel{,0,1}; do
+	if find_mtd_partition $part_name kernel_part; then
+		break
+	fi
+done
 
 # parse command line
 
@@ -561,11 +565,6 @@ fi
 if [ "$flash_type" = "nand" ]; then
 	suf3="(not available)"
 	suf4="(uses UBI)"
-fi
-
-# Don't support SQUASHFS on 7445 yet
-if [ "$rootfs_mtd_name" != "rootfs" ]; then
-	suf4="(not available)"
 fi
 
 if ! find_thumbdrive; then

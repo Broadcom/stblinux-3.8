@@ -65,14 +65,9 @@ struct status_64 {
 /*
 ** DMA Descriptor
 */
-struct dma_desc {
-	u32	length_status;	/* in bytes of data in buffer */
-	u32	address_lo;	/* lower 32 bits of PA */
-#if CONFIG_BRCM_GENET_VERSION >= 4
-	u32	address_hi;	/* upper 32 bits of PA, only on GENETv4+ */
-#endif
-};
-
+#define DMA_DESC_LENGTH_STATUS	0x00	/* in bytes of data in buffer */
+#define DMA_DESC_ADDRESS_LO	0x04	/* lower bits of PA */
+#define DMA_DESC_ADDRESS_HI	0x08	/* upper 32 bits of PA, GENETv4+ */
 
 /*
 ** UniMAC TSV or RSV (Transmit Status Vector or Receive Status Vector
