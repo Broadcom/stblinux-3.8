@@ -288,6 +288,11 @@ static const u8 bcmgenet_dma_regs_v1[] = {
 /* Set at runtime once bcmgenet version is known */
 static const u8 *bcmgenet_dma_regs;
 
+static inline struct bcmgenet_priv *dev_to_priv(struct device *dev)
+{
+	return netdev_priv(dev_get_drvdata(dev));
+}
+
 static inline u32 bcmgenet_tdma_readl(struct bcmgenet_priv *priv,
 					enum dma_reg r)
 {
@@ -1940,7 +1945,6 @@ static unsigned int bcmgenet_desc_rx(void *ptr, unsigned int budget)
 
 		cb = &priv->rx_cbs[priv->rx_read_ptr];
 		skb = cb->skb;
-		BUG_ON(skb == NULL);
 		dma_unmap_single(&dev->dev, dma_unmap_addr(cb, dma_addr),
 				priv->rx_buf_len, DMA_FROM_DEVICE);
 
@@ -1948,6 +1952,13 @@ static unsigned int bcmgenet_desc_rx(void *ptr, unsigned int budget)
 			priv->rx_read_ptr = 0;
 		else
 			priv->rx_read_ptr++;
+
+		/* out of memory, just drop packets at the hardware level */
+		if (unlikely(!skb)) {
+			dev->stats.rx_dropped++;
+			dev->stats.rx_errors++;
+			goto refill;
+		}
 
 		if (unlikely(!(dma_flag & DMA_EOP) || !(dma_flag & DMA_SOP))) {
 			netif_err(priv, rx_status, dev,
@@ -2731,6 +2742,10 @@ static void bcmgenet_umac_reset(struct bcmgenet_priv *priv)
 	u32 reg;
 
 	reg = bcmgenet_rbuf_ctrl_get(priv);
+	reg |= BIT(1);
+	bcmgenet_rbuf_ctrl_set(priv, reg);
+	udelay(10);
+
 	reg &= ~BIT(1);
 	bcmgenet_rbuf_ctrl_set(priv, reg);
 	udelay(10);
@@ -2875,12 +2890,14 @@ static int bcmgenet_open(struct net_device *dev)
 	}
 
 	/* Start the network engine */
-	netif_tx_start_all_queues(dev);
 	napi_enable(&priv->napi);
 
 	reg = bcmgenet_umac_readl(priv, UMAC_CMD);
 	reg |= (CMD_TX_EN | CMD_RX_EN);
 	bcmgenet_umac_writel(priv, reg, UMAC_CMD);
+
+	/* Make sure we reflect the value of CRC_CMD_FWD */
+	priv->crc_fwd_en = !!(reg & CMD_CRC_FWD);
 
 #ifdef CONFIG_BRCM_HAS_STANDBY
 	brcm_pm_wakeup_register(&bcmgenet_wakeup_ops, priv, dev->name);
@@ -2889,6 +2906,8 @@ static int bcmgenet_open(struct net_device *dev)
 
 	if (priv->phy_type == BRCM_PHY_TYPE_INT)
 		bcmgenet_power_up(priv, GENET_POWER_PASSIVE);
+
+	netif_tx_start_all_queues(dev);
 
 	return 0;
 
@@ -3282,7 +3301,7 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 
 	dev->base_addr = (unsigned long)priv->base;
 	SET_NETDEV_DEV(dev, &pdev->dev);
-	dev_set_drvdata(&pdev->dev, priv);
+	dev_set_drvdata(&pdev->dev, dev);
 	memcpy(dev->dev_addr, macaddr, ETH_ALEN);
 	dev->irq = priv->irq0;
 	dev->watchdog_timeo         = 2*HZ;
@@ -3389,11 +3408,10 @@ err0:
 
 static int bcmgenet_drv_remove(struct platform_device *pdev)
 {
-	struct bcmgenet_priv *priv = dev_get_drvdata(&pdev->dev);
+	struct bcmgenet_priv *priv = dev_to_priv(&pdev->dev);
 
+	dev_set_drvdata(&pdev->dev, NULL);
 	unregister_netdev(priv->dev);
-	free_irq(priv->irq0, priv);
-	free_irq(priv->irq1, priv);
 	bcmgenet_uninit_dev(priv);
 	iounmap(priv->base);
 	free_netdev(priv->dev);
@@ -3403,7 +3421,7 @@ static int bcmgenet_drv_remove(struct platform_device *pdev)
 static int bcmgenet_drv_suspend(struct device *dev)
 {
 	int val = 0;
-	struct bcmgenet_priv *priv = dev_get_drvdata(dev);
+	struct bcmgenet_priv *priv = dev_to_priv(dev);
 
 	cancel_work_sync(&priv->bcmgenet_irq_work);
 
@@ -3422,7 +3440,7 @@ static int bcmgenet_drv_suspend(struct device *dev)
 static int bcmgenet_drv_resume(struct device *dev)
 {
 	int val = 0;
-	struct bcmgenet_priv *priv = dev_get_drvdata(dev);
+	struct bcmgenet_priv *priv = dev_to_priv(dev);
 
 	if (priv->dev_opened)
 		val = bcmgenet_open(priv->dev);

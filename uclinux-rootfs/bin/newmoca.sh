@@ -2,8 +2,10 @@
 
 repos=/projects/stblinuxrel/RESTRICTED
 
+usage="usage: $0 </path/to/moca/tarball> [ <jira_ticket> ]"
+
 if [ -z "$1" ]; then
-	echo "usage: $0 </path/to/moca/tarball> [ <jira_ticket> ]"
+	echo $usage
 	exit 1
 fi
 
@@ -50,8 +52,9 @@ fi
 
 set -ex
 
-rm -rf $mocadir/{src,fw,mipsel,mips}
-mkdir $mocadir/{src,fw,mipsel,mips}
+rm -rf $mocadir/{src,fw,mipsel,mips,arm}
+mkdir $mocadir/{src,fw,mipsel,mips,arm}
+
 cp $tarball $mocadir/src/TARBALL
 
 pushd $mocadir/src
@@ -74,10 +77,13 @@ fi
 cp moca*-gen*.bin ../fw/
 
 make clean
+make CROSS=arm-linux-
+eval cp bin/{$binaries} ../arm/
+arm-linux-strip --strip-all ../arm/*
+make clean
 make CROSS=mipsel-linux-
 eval cp bin/{$binaries} ../mipsel/
 mipsel-linux-strip --strip-all ../mipsel/*
-
 make clean
 make CROSS=mips-linux-
 eval cp bin/{$binaries} ../mips/

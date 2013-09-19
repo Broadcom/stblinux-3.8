@@ -158,6 +158,11 @@
 #define EXT_PHY_RESET			(1 << 8)
 #define EXT_ENERGY_DET_MASK		(1 << 12)
 
+/* reg: ext->gphy_ctrl */
+#define EXT_CFG_IDDQ_BIAS		(1 << 0)
+#define EXT_CFG_PWR_DOWN		(1 << 1)
+#define EXT_GPHY_RESET			(1 << 5)
+
 /* reg: ext->emcg_ctrl */
 #define EXT_Ck25_EN				(1 << 0)
 #define EPHY_CLK_SEL			(1 << 4)

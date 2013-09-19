@@ -271,6 +271,32 @@ void bcmgenet_ephy_workaround_iddq(struct net_device *dev)
 	priv->mii.mdio_write(dev, priv->phy_addr, 0x1f, 0x000b);
 }
 
+/* 7366a0 EXT GPHY block comes with the CFG_IDDQ_BIAS and CFG_EXT_PWR_DOWN
+ * bits set to 1 at reset, they need to be cleared. A reset must also be
+ * issued. An initial reset value of 1500 micro seconds was not enough, 2000
+ * micro seconds always works. The post-reset delay of 20 micro seconds could
+ * be eliminated but better be safe than sorry.
+ */
+static void bcmgenet_ephy_power_up(struct net_device *dev)
+{
+	struct bcmgenet_priv *priv = netdev_priv(dev);
+	u32 reg = 0;
+
+	/* EXT_GPHY_CTRL is only valid for GENETv4 and onward */
+	if (!GENET_IS_V4(priv))
+		return;
+
+	reg = bcmgenet_ext_readl(priv, EXT_GPHY_CTRL);
+	reg &= ~(EXT_CFG_IDDQ_BIAS | EXT_CFG_PWR_DOWN);
+	reg |= EXT_GPHY_RESET;
+	bcmgenet_ext_writel(priv, reg, EXT_GPHY_CTRL);
+	mdelay(2);
+
+	reg &= ~EXT_GPHY_RESET;
+	bcmgenet_ext_writel(priv, reg, EXT_GPHY_CTRL);
+	udelay(20);
+}
+
 void bcmgenet_mii_reset(struct net_device *dev)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
@@ -309,6 +335,8 @@ int bcmgenet_mii_init(struct net_device *dev)
 		} else
 			port_ctrl = PORT_MODE_INT_EPHY;
 		bcmgenet_sys_writel(priv, port_ctrl, SYS_PORT_CTRL);
+		/* Power up EPHY */
+		bcmgenet_ephy_power_up(dev);
 		/* enable APD */
 		reg = bcmgenet_ext_readl(priv, EXT_EXT_PWR_MGMT);
 		reg |= EXT_PWR_DN_EN_LD;

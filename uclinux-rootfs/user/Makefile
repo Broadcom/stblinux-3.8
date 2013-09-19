@@ -147,6 +147,7 @@ dir_$(CONFIG_USER_IPPORTFW_IPPORTFW)        += ipportfw
 dir_$(CONFIG_USER_IPREDIR_IPREDIR)          += ipredir
 dir_$(CONFIG_USER_IPROUTE2)                 += iproute2
 dir_$(CONFIG_USER_IPTABLES_IPTABLES)        += iptables
+dir_$(CONFIG_USER_IPTRAF_IPTRAF)            += iptraf
 dir_$(CONFIG_USER_KLAXON_KLAXON)            += klaxon
 dir_$(CONFIG_USER_LANG_A60)                 += a60
 dir_$(CONFIG_USER_LCD_LCD)                  += lcd

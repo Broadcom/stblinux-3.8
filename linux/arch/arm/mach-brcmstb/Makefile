@@ -11,4 +11,4 @@
 # GNU General Public License for more details.
 
 obj-$(CONFIG_ARCH_BRCMSTB) := common.o headsmp.o platsmp.o cma_driver.o \
-			      hotplug.o
+			      hotplug.o gisb.o

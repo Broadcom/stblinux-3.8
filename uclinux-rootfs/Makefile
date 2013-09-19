@@ -35,6 +35,11 @@ LIBCDIR		:= uClibc
 
 CFG		:= perl -w bin/config.pl
 CHKPATH		:= perl -w bin/checkpath.pl
+ifneq ($(shell which rsync),)
+COPY_HELPER	:= rsync -qa
+else
+COPY_HELPER	:= cp -f
+endif
 
 SHELL		:= /bin/bash
 PATH		:= $(shell $(CHKPATH) -a)
@@ -294,7 +299,7 @@ xconfig-linux: .target
 .PHONY: install
 install:
 	mkdir -p $(TFTPDIR)
-	cp -f -p images/* $(TFTPDIR)/
+	$(COPY_HELPER) images/* $(TFTPDIR)/
 	@echo ""
 	@echo "Images have been copied to $(TFTPDIR)"
 	@echo ""

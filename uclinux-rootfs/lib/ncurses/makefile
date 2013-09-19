@@ -15,6 +15,7 @@ all::
 			--without-shared --enable-termcap || exit 1 ; \
 	fi
 	$(MAKE) -j1 -C ncurses
+	$(MAKE) -j1 -C panel
 	ln -sf curses.h include/ncurses.h
 
 .PHONY: romfs

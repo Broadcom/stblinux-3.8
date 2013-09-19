@@ -51,8 +51,8 @@ static struct cma_area {
 	phys_addr_t base;
 	unsigned long size;
 	struct cma *cma;
-} cma_areas[MAX_CMA_AREAS] __initdata;
-static unsigned cma_area_count __initdata;
+} cma_areas[MAX_CMA_AREAS];
+static unsigned cma_area_count;
 
 
 static struct cma_map {

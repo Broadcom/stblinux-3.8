@@ -31,4 +31,6 @@ extern void brcmstb_cpu_die(unsigned int cpu);
 extern int brcmstb_cpu_kill(unsigned int cpu);
 #endif
 
+extern void brcmstb_hook_fault_code(void);
+
 #endif /* __BRCMSTB_COMMON_H__ */

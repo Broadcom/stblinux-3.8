@@ -194,6 +194,7 @@ struct UniMacTSV {
 
 #define EXT_EXT_PWR_MGMT	0x00
 #define EXT_RGMII_OOB_CTRL	0x0C
+#define EXT_GPHY_CTRL		0x1C
 
 /*
  * DMA rings size

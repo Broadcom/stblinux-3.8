@@ -20,6 +20,7 @@ config BCM7145A0
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
+	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
 
 config BCM7366A0
@@ -29,6 +30,7 @@ config BCM7366A0
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
+	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
 
 config BCM7439A0
@@ -38,12 +40,14 @@ config BCM7439A0
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
+	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
 
 config BCM7445A0
 	bool "7445 Ax"
 	select BCM7445
 	select BRCM_GENET_V4
+	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
@@ -53,6 +57,7 @@ config BCM7445B0
 	bool "7445 Bx"
 	select BCM7445
 	select BRCM_GENET_V4
+	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
@@ -92,6 +97,18 @@ config BCMGENET
 	  If your chipset supports power management, disabling this driver
 	  will keep the device permanently powered down.
 
+config BRCM_MOCA
+	tristate "Broadcom MoCA character driver"
+	depends on BRCMSTB && (BRCM_HAS_GENET || BRCM_HAS_MOCA_20_GEN21 || \
+		BRCM_HAS_MOCA_20_GEN22 || BRCM_HAS_MOCA_20_GEN23) && !BRCM_IKOS
+	default y
+	help
+	  Say Y to build the MoCA control path driver.  This is a simple
+	  character driver that allows the MoCA daemon (mocad) to
+	  initialize and configure the MoCA interface.
+
+	  If your chipset supports power management, disabling this driver
+	  will keep the device permanently powered down.
 
 config BRCM_USB
 	tristate "Broadcom STB USB support"
@@ -166,6 +183,60 @@ config BRCM_GENET_VERSION
 	default 3 if BRCM_GENET_V3
 	default 4 if BRCM_GENET_V4
 
+# MoCA controller
+config BRCM_HAS_MOCA
+	bool
+
+# Original MoCA 1.1 (gen1 firmware)
+config BRCM_HAS_MOCA_11
+	bool
+	select BRCM_HAS_MOCA
+
+# Cost-reduced MoCA 1.1 with limited TX RAM (gen1 firmware)
+config BRCM_HAS_MOCA_11_LITE
+	bool
+	select BRCM_HAS_MOCA
+
+# MoCA 1.1 with selected 2.0 features (gen2 firmware)
+config BRCM_HAS_MOCA_11_PLUS
+	bool
+	select BRCM_HAS_MOCA
+
+# MoCA 2.0 (gen3 firmware for 1.1, gen2x firmware for 2.0)
+config BRCM_HAS_MOCA_20_GEN21
+	bool
+	select BRCM_HAS_MOCA
+
+config BRCM_HAS_MOCA_20_GEN22
+	bool
+	select BRCM_HAS_MOCA
+
+config BRCM_HAS_MOCA_20_GEN23
+	bool
+	select BRCM_HAS_MOCA
+
+config BRCM_MOCA_VERS
+	hex
+	default 0x1100 if BRCM_HAS_MOCA_11
+	default 0x1101 if BRCM_HAS_MOCA_11_LITE
+	default 0x1102 if BRCM_HAS_MOCA_11_PLUS
+	default 0x2001 if BRCM_HAS_MOCA_20_GEN21
+	default 0x2002 if BRCM_HAS_MOCA_20_GEN22
+	default 0x2003 if BRCM_HAS_MOCA_20_GEN23
+
+# select for MoCA on GENET_0
+config BRCM_MOCA_ON_GENET_0
+	bool
+	select BRCM_HAS_GENET_0
+
+# select for MoCA on GENET_1
+config BRCM_MOCA_ON_GENET_1
+	bool
+	select BRCM_HAS_GENET_1
+
+# MoCA is MidRF (default is HighRF)
+config BRCM_HAS_MOCA_MIDRF
+	bool
 
 config BRCM_HAS_NAND_MINOR_0
 	bool

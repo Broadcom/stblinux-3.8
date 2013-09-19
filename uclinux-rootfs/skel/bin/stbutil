@@ -62,21 +62,30 @@ function find_mtd_partition()
 function find_thumbdrive()
 {
 	thumbdrive=""
-	cd /sys/block
-	for x in sd*; do
-		if [ -L $x/device ]; then
-			dev=$(readlink $x/device)
-			if [[ "$dev" == *usb* ]]; then
-				if [ -e ${x}/${x}1 ]; then
-					thumbdrive=${x}1
-				else
-					thumbdrive=${x}
-				fi
-				return 0
+	local ret=1
+	local block_dir dev dev_link old_sysfs 
+
+	if [ -d /sys/class/block ]; then
+		unset old_sysfs
+		block_dir="/sys/class/block"
+	else
+		old_sysfs=1
+		block_dir="/sys/block"
+	fi
+	pushd "$block_dir"
+	for dev in sd*; do
+		[ "$old_sysfs" ] && dev_link="$dev/device" || dev_link="$dev"
+		if [[ $(readlink "$dev_link") == *usb* ]]; then
+			thumbdrive="$dev"
+			if [ -e "${dev}/${dev}1" ]; then
+				thumbdrive="${thumbdrive}1"
 			fi
+			ret=0
+			break
 		fi
 	done
-	return 1
+	popd
+	return $ret
 }
 
 function get_mtd_attr()
@@ -194,7 +203,7 @@ function handle_opt_2()
 		# old style
 		cmdline=ubiroot
 	else
-		cmdline="${dt_console_args} ubi.mtd=${rootfs_mtd_name} rootfstype=ubifs root=ubi0:rootfs rw"
+		cmdline="ubi.mtd=${rootfs_mtd_name} rootfstype=ubifs root=ubi0:rootfs rw"
 	fi
 
 	rem_img=ubifs-$(($flash_erasesize / 1024))k-$(($flash_writesize))-${plat}.img
@@ -293,9 +302,9 @@ function handle_opt_4()
 		if ! get_mtd_attr $newpart erasesize new_erasesize; then
 			echo "ERROR: can't get gluebi erasesize"
 		fi
-		dd if=/tmp/rootfs.img of=/dev/mtd${newpart} bs=$new_erasesize
+		dd if=/tmp/rootfs.img of=/dev/mtdblock${newpart} bs=$new_erasesize
 		ubidetach -d 0
-		cmdline="ubi.mtd=rootfs root=/dev/mtdblock${newpart}"
+		cmdline="ubi.mtd=${rootfs_mtd_name} root=/dev/mtdblock${newpart}"
 	else
 		newpart=$rootfs_part
 		dd if=/tmp/rootfs.img of=$mtd
@@ -464,9 +473,6 @@ flash_type=
 flash_erasesize=
 flash_writesize=
 hdd_dev=/dev/sda
-
-# For use with device-tree-based systems
-dt_console_args="console=ttyS0,115200 earlyprintk"
 
 local_dir=
 resp=

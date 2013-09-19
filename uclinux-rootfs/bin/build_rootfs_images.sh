@@ -116,6 +116,12 @@ if [ "$build_nand_ubifs" = "1" ]; then
 	# 1MB erase / 8192B page - large NAND
 	make_ubi_img 1024 8192
 
+	# 2MB erase / 4096B page - large NAND
+	make_ubi_img 2048 4096
+
+	# 2MB erase / 8192B page - large NAND
+	make_ubi_img 2048 8192
+
 else
 	echo "Skipping NAND UBIFS images - set build_nand_ubifs=1 if they are needed"
 	echo ""

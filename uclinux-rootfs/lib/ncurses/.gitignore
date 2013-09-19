@@ -15,6 +15,7 @@ include/hashsize.h
 include/ncurses.h
 include/ncurses_cfg.h
 include/ncurses_def.h
+include/panel.h
 include/parametrized.h
 include/term.h
 include/termcap.h

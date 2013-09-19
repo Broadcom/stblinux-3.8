@@ -21,6 +21,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/console.h>
+#include <linux/clk/clk-brcmstb.h>
 
 #include <asm/arch_timer.h>
 #include <asm/mach/arch.h>
@@ -66,6 +67,8 @@ static void __init brcmstb_map_io(void)
 static void __init brcmstb_machine_init(void)
 {
 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+
+	brcmstb_hook_fault_code();
 }
 
 static void brcmstb_restart(char mode, const char *cmd)
@@ -81,6 +84,7 @@ static void __init timer_init(void)
 {
 	arch_timer_of_register();
 	arch_timer_sched_clock_init();
+	__brcmstb_clk_init();
 }
 
 static void __init brcmstb_init_early(void)

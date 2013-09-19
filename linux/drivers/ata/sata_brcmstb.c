@@ -325,6 +325,9 @@ static void brcm_ahci_setup_quirks(struct platform_device *pdev)
 		brcm_pdata->quirks |= SATA_BRCM_QK_ALT_RST;
 		brcm_pdata->quirks |= SATA_BRCM_QK_NONCQ;
 		break;
+	case 0x74390000: /* 7439a0 */
+		brcm_pdata->quirks |= SATA_BRCM_QK_ALT_RST;
+		break;
 	case 0x74450000: /* 7445a0 */
 		brcm_pdata->quirks |= SATA_BRCM_QK_INIT_PHY;
 		brcm_pdata->quirks |= SATA_BRCM_QK_NONCQ;

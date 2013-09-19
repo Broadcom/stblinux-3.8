@@ -6,18 +6,6 @@ AUTOMOUNT_POINT="/mnt/usb"
 SAVED_DEVPATH="/tmp/saved-usb-devpath"
 AUTOMOUNT_FS="vfat"
 
-HOTPLUG_FW_DIR=/lib/firmware
-
-# userspace firmware loader
-
-if [ "$1" = "firmware" ]; then
-	if [ "$ACTION" = "add" ]; then
-		echo 1 > /sys/$DEVPATH/loading
-		cat $HOTPLUG_FW_DIR/$FIRMWARE > /sys/$DEVPATH/data
-		echo 0 > /sys/$DEVPATH/loading
-	fi
-fi
-
 # network hotplug
 # NOTE: this only operates on real NICs (ethN), not lo/br0/sit0/etc.
 

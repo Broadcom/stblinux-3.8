@@ -361,6 +361,7 @@ if [ "$CONFIG_USER_IPROUTE2" = "y" ]; then
 fi
 
 bool 'iptables'			CONFIG_USER_IPTABLES_IPTABLES
+bool 'iptraf'			CONFIG_USER_IPTRAF_IPTRAF
 bool 'klaxon'			CONFIG_USER_KLAXON_KLAXON
 if [ "$CONFIG_USER_KLAXON_KLAXON" = "y" ]; then
 	bool '  use RFC931'	CONFIG_USER_KLAXON_RFC931
