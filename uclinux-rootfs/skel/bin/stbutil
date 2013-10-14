@@ -31,11 +31,11 @@ function tftp_fetch()
 			return 1
 		fi
 	fi
-        echo "Fetching via tftp: $1:$2"
-        if ! tftp -g $1 -r $2 -l $3; then
-            tftp_err "ERROR: tftp failed.  Aborting."
-	    return 1
-        fi
+	echo "Fetching via tftp: $1:$2"
+	if ! tftp -g $1 -r $2 -l $3; then
+		tftp_err "ERROR: tftp failed.  Aborting."
+		return 1
+	fi
 	return 0
 }
 
@@ -63,7 +63,7 @@ function find_thumbdrive()
 {
 	thumbdrive=""
 	local ret=1
-	local block_dir dev dev_link old_sysfs 
+	local block_dir dev dev_link old_sysfs
 
 	if [ -d /sys/class/block ]; then
 		unset old_sysfs
@@ -72,7 +72,7 @@ function find_thumbdrive()
 		old_sysfs=1
 		block_dir="/sys/block"
 	fi
-	pushd "$block_dir"
+	pushd "$block_dir" > /dev/null
 	for dev in sd*; do
 		[ "$old_sysfs" ] && dev_link="$dev/device" || dev_link="$dev"
 		if [[ $(readlink "$dev_link") == *usb* ]]; then
@@ -84,7 +84,7 @@ function find_thumbdrive()
 			break
 		fi
 	done
-	popd
+	popd > /dev/null
 	return $ret
 }
 

@@ -38,6 +38,12 @@
 #define MOCA_BAND_G		8
 #define MOCA_BAND_MAX		9
 
+#define MOCA_BAND_NAMES { \
+	"highrf", "midrf", "wanrf", \
+	"ext_d", "d_low", "d_high", \
+	"e", "f", "g", \
+}
+
 #define MOCA_BOOT_FLAGS_BONDED	(1 << 0)
 
 #define MOCA_IOC_MAGIC		'M'
@@ -170,10 +176,6 @@ enum {
 	HWREV_MOCA_20_GEN23	= 0x2003,
 };
 
-static char *of_rfb[] = {"highrf", "midrf", "wanrf",
-			 "ext_d", "d_low", "d_high",
-			 "e", "f", "g",
-			 "none"};
 
 #define MOCA_PROTVER_11		0x1100
 #define MOCA_PROTVER_20		0x2000

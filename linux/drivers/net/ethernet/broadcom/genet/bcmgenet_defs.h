@@ -265,6 +265,8 @@
 #define DMA_TX_QTAG_SHIFT		7
 
 /* Rx Specific Dma descriptor bits */
+#define DMA_RX_CHK_V3PLUS		0x8000
+#define DMA_RX_CHK_V12			0x1000
 #define DMA_RX_BRDCAST			0x0040
 #define DMA_RX_MULT				0x0020
 #define DMA_RX_LG				0x0010

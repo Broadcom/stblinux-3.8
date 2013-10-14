@@ -189,8 +189,10 @@ fi
 bool 'mount'			CONFIG_USER_MOUNT_MOUNT
 bool 'umount'			CONFIG_USER_MOUNT_UMOUNT
 bool 'fdisk'			CONFIG_USER_FDISK_FDISK
-bool 'gdisk'			CONFIG_USER_GDISK_GDISK
-if [ "$CONFIG_USER_GDISK_GDISK" = "y" ]; then
+bool 'gdisk'			CONFIG_USER_GPTFDISK_GDISK
+bool 'sgdisk'			CONFIG_USER_GPTFDISK_SGDISK
+if [ "$CONFIG_USER_GPTFDISK_GDISK" = "y" \
+		-o "$CONFIG_USER_GPTFDISK_SGDISK" = "y" ]; then
 	define_bool	CONFIG_LIB_LIBSTDCXX y
 	define_bool	CONFIG_LIB_POPT y
 	define_bool	CONFIG_LIB_LIBGCC y
@@ -899,7 +901,6 @@ if [ "$CONFIG_USER_PERF" = "y" ]; then
 fi
 
 #############################################################################
-
 
 #source ../user/busybox/sysdeps/linux/Config.in
 

@@ -59,11 +59,6 @@
 				 ENET_BRCM_TAG_LEN + ETH_FCS_LEN + ENET_PAD)
 #define DMA_MAX_BURST_LENGTH    0x10
 
-#define GENET_TX_RING_COUNT		16
-#define GENET_RX_RING_COUNT		16
-#define GENET_ALLOC_TX_RING		1
-#define GENET_ALLOC_RX_RING		0
-
 /* misc. configuration */
 #define CLEAR_ALL_HFB			0xFF
 #define DMA_FC_THRESH_HI		(TOTAL_DESC >> 4)
@@ -177,6 +172,19 @@ struct bcmgenet_hw_params {
 	u32		flags;
 };
 
+struct bcmgenet_tx_ring {
+	unsigned int	index;		/* ring index */
+	unsigned int	queue;		/* queue index */
+	struct enet_cb	*cbs;		/* tx ring buffer control block*/
+	unsigned int	size;		/* size of each tx ring */
+	unsigned int	c_index;	/* last consumer index of each ring*/
+	unsigned int	free_bds;	/* # of free bds for each ring */
+	unsigned int	write_ptr;	/* Tx ring write pointer SW copy */
+	unsigned int	prod_index;	/* Tx ring producer index SW copy */
+	unsigned int	cb_ptr;		/* Tx ring initial CB ptr */
+	unsigned int	end_ptr;	/* Tx ring end CB ptr */
+};
+
 /* device context */
 struct bcmgenet_priv {
 	void __iomem *base;
@@ -193,12 +201,7 @@ struct bcmgenet_priv {
 	struct enet_cb *tx_cbs;	/* locaation of tx control block pool */
 	int	num_tx_bds;		/* number of transmit bds */
 
-	struct enet_cb *tx_ring_cbs[17]; /* tx ring buffer control block*/
-	unsigned int tx_ring_size[17];	/* size of each tx ring */
-	unsigned int tx_ring_c_index[17]; /* last consumer index of each ring*/
-	int tx_ring_free_bds[17];	/* # of free bds for each ring */
-	unsigned int tx_ring_write_ptr[17]; /* Tx ring write pointer SW copy */
-	unsigned int tx_ring_prod_index[17];
+	struct bcmgenet_tx_ring tx_rings[17];
 
 	/* receive variables */
 	void __iomem *rx_bds;	/* location of rx bd ring */
@@ -228,6 +231,7 @@ struct bcmgenet_priv {
 	unsigned int irq1_stat;	/* sw copy of irq1 status, for NAPI rx */
 	unsigned int desc_64b_en;
 	unsigned int desc_rxchk_en;
+	unsigned int dma_rx_chk_bit;
 	unsigned int crc_fwd_en;
 	u32 msg_enable;
 

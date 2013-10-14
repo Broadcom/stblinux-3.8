@@ -2160,6 +2160,7 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 	int status = 0, i;
 	const u8 *macaddr;
 	const char *rfb;
+	const char *const of_rfb[MOCA_BAND_MAX + 1] = MOCA_BAND_NAMES;
 
 	memset(&pd, 0, sizeof(pd));
 
@@ -2191,10 +2192,8 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 	/* defaults for optional entries.  All other defaults are 0 */
 	pd.use_dma = 1;
 
-	if (of_property_read_string(of_node, "rf-band", &rfb)) {
-		dev_warn(&pdev->dev, "Defaulting to rf-band %s\n", of_rfb[0]);
-		pd.rf_band = 0;
-	} else {
+	status = of_property_read_string(of_node, "rf-band", &rfb);
+	if (!status) {
 		for (i = 0; i < MOCA_BAND_MAX; i++) {
 			if (strcmp(rfb, of_rfb[i]) == 0) {
 				pd.rf_band = i;
@@ -2203,6 +2202,11 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 				break;
 			}
 		}
+	}
+
+	if (status || i == MOCA_BAND_MAX) {
+		dev_warn(&pdev->dev, "Defaulting to rf-band %s\n", of_rfb[0]);
+		pd.rf_band = 0;
 	}
 
 	/* optional entries */

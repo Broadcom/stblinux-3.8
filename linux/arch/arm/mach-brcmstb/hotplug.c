@@ -163,6 +163,23 @@ int brcmstb_cpu_kill(unsigned int cpu)
 {
 	u32 tmp;
 
+#ifdef CONFIG_BCM7445B0
+	/* HW7445-1175: TI2C master reset non-functional if CPU0 is powered
+	 * off.
+	 *
+	 * Do not allow powering off CPU0, the core CPU hotplug code already
+	 * refuses to power off this CPU because it is the boot CPU, but
+	 * we also need to make sure it does not get powered off by a
+	 * fatal exception in interrupt handler for instance, otherwise
+	 * TI2C master reset will not bring us to reset as the CPU remains
+	 * powered off.
+	 */
+	if (cpu == 0) {
+		pr_warn("SMP: refusing to power off CPU0 on 7445B0\n");
+		return 1;
+	}
+#endif
+
 	pr_info("SMP: Powering down CPU%d...\n", cpu);
 
 	/* Program zone reset */

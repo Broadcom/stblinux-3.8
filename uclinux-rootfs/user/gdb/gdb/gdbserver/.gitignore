@@ -1,4 +1,6 @@
+.deps
 Makefile
+build-gnulib-gdbserver
 config.h
 config.log
 config.status

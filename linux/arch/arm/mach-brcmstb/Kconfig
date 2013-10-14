@@ -67,6 +67,7 @@ config BCM7445C0
 	bool "7445 Cx"
 	select BCM7445
 	select BRCM_GENET_V4
+	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4

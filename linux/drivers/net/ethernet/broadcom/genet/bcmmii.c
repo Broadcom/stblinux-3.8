@@ -197,6 +197,36 @@ void bcmgenet_mii_setup(struct net_device *dev)
 	}
 }
 
+#if defined(CONFIG_BCM7439A0) || defined(CONFIG_BCM7366A0) || \
+	defined(CONFIG_BCM7445C0)
+
+static void bcmgenet_mii_write_exp(struct net_device *dev,
+					int phy_id,
+					u16 reg, u16 value)
+{
+	bcmgenet_mii_write(dev, phy_id, 0x17, 0xf00 | reg);
+	bcmgenet_mii_write(dev, phy_id, 0x15, value);
+}
+
+static void bcmgenet_mii_write_misc(struct net_device *dev,
+					int phy_id,
+					u16 reg, u16 chl, u16 value)
+{
+	int tmp;
+
+	bcmgenet_mii_write(dev, phy_id, 0x18, 0x7);
+
+	tmp = bcmgenet_mii_read(dev, phy_id, 0x18);
+	tmp |= 0x800;
+	bcmgenet_mii_write(dev, phy_id, 0x18, tmp);
+
+	tmp = (chl * 0x2000) | reg;
+	bcmgenet_mii_write(dev, phy_id, 0x17, tmp);
+
+	bcmgenet_mii_write(dev, phy_id, 0x15, value);
+}
+#endif
+
 void bcmgenet_ephy_workaround(struct net_device *dev)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
@@ -219,6 +249,46 @@ void bcmgenet_ephy_workaround(struct net_device *dev)
 	bcmgenet_mii_write(dev, phy_id, 0x17, 0x003a);
 	bcmgenet_mii_write(dev, phy_id, 0x15, 0x2002);
 	return;
+#endif
+
+#if defined(CONFIG_BCM7366A0) || defined(CONFIG_BCM7439A0) || \
+	defined(CONFIG_BCM7445C0)
+	/* write AFE_RXCONFIG_0 */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x38, 0x0000, 0xeb17);
+
+	/* write AFE_RXCONFIG_1 */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x38, 0x0001, 0x9a3f);
+
+	/* write AFE_RX_LP_COUNTER */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x38, 0x0003, 0x7fc7);
+
+	/* write AFE_HPF_TRIM_OTHERS */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x3A, 0x0000, 0x000b);
+
+	/* Increase VCO range to prevent unlocking problem of PLL at low
+	 * temp
+	 */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x0032, 0x0001, 0x0048);
+
+	/* Change Ki to 011 */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x0032, 0x0002, 0x021b);
+
+	/* Disable loading of TVCO buffer to bandgap, set bandgap trim
+	 * to 111
+	 */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x0033, 0x0000, 0x0e20);
+
+	/* Adjust bias current trim by -3 */
+	bcmgenet_mii_write_misc(dev, phy_id, 0x000a, 0x0000, 0x690b);
+
+	/* Switch to CORE_BASE1E */
+	bcmgenet_mii_write(dev, phy_id, 0x1e, 0xd);
+
+	/* Reset R_CAL/RC_CAL Engine */
+	bcmgenet_mii_write_exp(dev, phy_id, 0x00b0, 0x0010);
+
+	/* Disable Reset R_CAL/RC_CAL Engine */
+	bcmgenet_mii_write_exp(dev, phy_id, 0x00b0, 0x0000);
 #endif
 
 	/* workarounds are only needed for 100Mbps PHYs */

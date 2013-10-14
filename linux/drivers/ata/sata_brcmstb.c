@@ -32,6 +32,7 @@
 #include <linux/ahci_platform.h>
 #include <linux/compiler.h>
 #include <scsi/scsi_host.h>
+#include <linux/string.h>
 #include <linux/brcmstb/brcmstb.h>
 
 #include "sata_brcmstb.h"
@@ -347,6 +348,7 @@ static int setup_ahci_pdata(struct platform_device *pdev,
 {
 	int status = 0;
 
+	memset(ahci_pd, 0, sizeof(*ahci_pd));
 	ahci_pd->init = &brcm_ahci_init;
 	ahci_pd->exit = &brcm_ahci_exit;
 	ahci_pd->suspend = &brcm_ahci_suspend;

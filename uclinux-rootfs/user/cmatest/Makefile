@@ -1,5 +1,7 @@
 include $(ROOTDIR)/config.arch
 
+LINUXDIR ?= linux
+
 CFLAGS += -I. -I$(ROOTDIR)/$(LINUXDIR)/include/uapi -Wall -Wextra -Werror -D_GNU_SOURCE
 
 .PHONY: all

@@ -1,30 +1,19 @@
-PASSTHRU		:= clean distclean
+BOGUS_TARGETS		:= FORCE makefile $(ROOTDIR)/config.arch
 
 ifdef CONFIG_USER_GDB
 
-all:
-	make -f Makefile
+.PHONY: all
+all::
+	$(MAKE) -f Makefile
 
 else
-sinclude $(ROOTDIR)/config.arch
 
-TOOL_DIR_PREFIX=$(shell dirname $(shell which $(CC)))/..
-UCLIBC_INC = ../../uClibc/include
-UCLIBC_LIB = ../../uClibc/lib
-ifneq (,$(findstring linux,$(CROSS)))
-	TARGET=$(CROSS:linux-=linux)
-else
-	ifneq (,$(findstring uclibc,$(CROSS)))
-		TARGET_ARCH ?= $(CROSS:-uclibc-=)
-		TARGET=$(TARGET_ARCH)-linux
-	else
-#		echo "FIXME: Cannot determine target architecture"
-#		exit 99
-	endif
-endif
+-include $(ROOTDIR)/config.arch
 
+TARGET := $(shell $(CC) -dumpmachine)
 
-all:
+.PHONY: all
+all::
 	if [ ! -e Makefile ]; then \
 	( \
 	AR=$(CROSS)ar						\
@@ -34,7 +23,7 @@ all:
 	CC=$(CROSS)gcc						\
 	GCC=$(CROSS)gcc						\
 	CXX=$(CROSS)g++						\
-	RANLIB=$(CROSS)-ranlib					\
+	RANLIB=$(CROSS)ranlib					\
 	gdb_cv_func_sigsetjmp=yes					\
 	ac_cv_type_uintptr_t=yes					\
 	gt_cv_func_gettext_libintl=yes				\
@@ -44,8 +33,8 @@ all:
 	bash_cv_func_sigsetjmp=present				\
 	bash_cv_have_mbstate_t=yes					\
 	srv_linux_thread_db=yes					\
-	export STD_INC="$(TOOL_DIR_PREFIX)/$(TARGET)/include"; \
-	export GCC_INC="$(TOOL_DIR_PREFIX)/$(TARGET)/include"; \
+	export STD_INC="$(GCCTOOL_DIR_PREFIX)/$(TARGET)/include"; \
+	export GCC_INC="$(GCCTOOL_DIR_PREFIX)/$(TARGET)/include"; \
 	test -f config.cache && rm -f config.cache; \
 	./configure			\
 		--prefix=/	\
@@ -58,19 +47,23 @@ all:
 		--without-included-gettext	\
 	) ; \
 	fi
-	make -f Makefile  CFLAGS+=-L../../../../romfs/lib/
+	$(MAKE) -f Makefile  CFLAGS+=-L../../../../romfs/lib/
 
-#distclean: clean
-#	-rm config.cache
-#	make -f Makefile distclean
-#	rm Makefile
+endif  # CONFIG_USER_GDB
 
-endif
-
-.PHONY: $(PASSTHRU)
-$(PASSTHRU):
-	make -f Makefile $@
-
-romfs:
+.PHONY: romfs
+romfs::
 	$(ROMFSINST) -e CONFIG_USER_GDBSERVER_GDBSERVER /bin/gdbserver
 	$(ROMFSINST) -e CONFIG_USER_GDBSERVER_GDBREPLAY /bin/gdbreplay
+
+
+# These targets must not be passed through to the original Makefile
+.PHONY: $(BOGUS_TARGETS)
+$(BOGUS_TARGETS)::
+
+# Everything else (maybe including clean, distclean) does get passed through
+# # Since this file doesn't contain dependency information, don't parallelize
+# # here.
+.NOTPARALLEL: %
+%:: FORCE
+	$(MAKE) -f Makefile $@

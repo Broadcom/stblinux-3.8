@@ -8,11 +8,12 @@
 /f-exp.c
 /gdb
 /gdbtui
+/go-exp.c
 /init.c
+/jit-reader.h
 /jv-exp.c
 /m2-exp.c
 /objc-exp.c
 /observer.h
 /observer.inc
 /p-exp.c
-/nm.h
