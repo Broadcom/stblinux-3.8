@@ -60,7 +60,7 @@ static int brcmstb_bus_error_handler(unsigned long addr, unsigned int fsr,
 		cap_status & ARB_ERR_CAP_STATUS_WRITE ? 'W' : 'R');
 
 	/* clear the GISB error */
-	BDEV_WR(ARB_ERR_CAP_CLEAR, gisb_arb_base + ARB_ERR_CAP_CLR);
+	BDEV_WR(gisb_arb_base + ARB_ERR_CAP_CLR, ARB_ERR_CAP_CLEAR);
 
 	/*
 	 * If it was an imprecise abort, then we need to correct the

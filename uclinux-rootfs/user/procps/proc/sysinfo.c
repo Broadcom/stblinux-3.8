@@ -219,40 +219,7 @@ static void init_libproc(void){
   // appears to have a non-SMP kernel on a 2-way SMP box.
   // _SC_NPROCESSORS_CONF returns 2, resulting in HZ=512
   // _SC_NPROCESSORS_ONLN returns 1, which should work OK
-#if 1
-// jipeng - replace sysconf() since it always return 1 on SMP system in uClibc
-//	 Here we parse /proc/stat to get number of active CPUs
-#define	MAX_NUM_OF_CPUS		8
-
-	{
-		int fd;
-		int i;
-		char buff[BUFFSIZE];
-		const char* b;
-		char	cpus[4] = "cpu ";
-
-		buff[BUFFSIZE-1] = 0;
-		fd = open("/proc/stat", O_RDONLY, 0);
-		if(fd == -1)
-		{
-			perror("/proc/stat");
-			exit(EXIT_FAILURE);
-		}
-	
-		read(fd,buff,BUFFSIZE-1);
-		for (i = 0; i < MAX_NUM_OF_CPUS; i++) {
-			cpus[3] = '0' + i;
-			b = strstr(buff, cpus);
-			if(!b)
-			break;
-		}
-		smp_num_cpus = i;
-		close(fd);
-	}
-#else
   smp_num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-#endif
-
   if(smp_num_cpus<1) smp_num_cpus=1; /* SPARC glibc is buggy */
 
   if(linux_version_code > LINUX_VERSION(2, 4, 0)){ 

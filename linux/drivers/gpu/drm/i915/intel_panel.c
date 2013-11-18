@@ -321,9 +321,6 @@ void intel_panel_enable_backlight(struct drm_device *dev,
 	if (dev_priv->backlight_level == 0)
 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
 
-	dev_priv->backlight_enabled = true;
-	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-
 	if (INTEL_INFO(dev)->gen >= 4) {
 		uint32_t reg, tmp;
 
@@ -359,12 +356,12 @@ void intel_panel_enable_backlight(struct drm_device *dev,
 	}
 
 set_level:
-	/* Check the current backlight level and try to set again if it's zero.
-	 * On some machines, BLC_PWM_CPU_CTL is cleared to zero automatically
-	 * when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 are written.
+	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
+	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
+	 * registers are set.
 	 */
-	if (!intel_panel_get_backlight(dev))
-		intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+	dev_priv->backlight_enabled = true;
+	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
 }
 
 static void intel_panel_init_backlight(struct drm_device *dev)
@@ -425,6 +422,9 @@ int intel_panel_setup_backlight(struct drm_connector *connector)
 
 	intel_panel_init_backlight(dev);
 
+	if (WARN_ON(dev_priv->backlight))
+		return -ENODEV;
+
 	memset(&props, 0, sizeof(props));
 	props.type = BACKLIGHT_RAW;
 	props.max_brightness = _intel_panel_get_max_backlight(dev);
@@ -450,8 +450,10 @@ int intel_panel_setup_backlight(struct drm_connector *connector)
 void intel_panel_destroy_backlight(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
-	if (dev_priv->backlight)
+	if (dev_priv->backlight) {
 		backlight_device_unregister(dev_priv->backlight);
+		dev_priv->backlight = NULL;
+	}
 }
 #else
 int intel_panel_setup_backlight(struct drm_connector *connector)

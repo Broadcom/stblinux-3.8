@@ -28,6 +28,8 @@
 #include <linux/proc_fs.h>
 #include <linux/ctype.h>
 #include <linux/stddef.h>
+#include <linux/phy.h>
+#include <linux/module.h>
 
 static unsigned char swdata[16];
 
@@ -131,7 +133,8 @@ static unsigned char swdata[16];
 		(((uint16_t)(__x) & (uint16_t)0xff00UL) >>  8) )); \
 })
 
-void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
+static void ethsw_mdio_rreg(struct net_device *dev, int page, int reg,
+				unsigned char *data, int len)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int phy_id;
@@ -140,14 +143,14 @@ void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *d
 
 	phy_id = priv->sw_addr;
 	v = (page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT) | REG_PPM_REG16_MDIO_ENABLE;
-	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 
 	v = (reg << REG_PPM_REG17_REG_NUMBER_SHIFT) | REG_PPM_REG17_OP_READ;
-	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
+	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
 
 	for (i = 0; i < 5; i++)
 	{
-		v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG17);
+		v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17);
 
 		if ((v & (REG_PPM_REG17_OP_WRITE | REG_PPM_REG17_OP_READ)) == REG_PPM_REG17_OP_DONE)
 			break;
@@ -164,32 +167,32 @@ void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *d
 	switch (len) 
 	{
 		case 1:
-			v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			data[0] = (unsigned char)v;
 			break;
 		case 2:
-			v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)v;
 			break;
 		case 4:
-			vm[0] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
-			vm[1] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[0] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[1] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
 			((unsigned short *)data)[0] = (unsigned short)vm[0];
 			((unsigned short *)data)[1] = (unsigned short)vm[1];
 			break;
 		case 6:
-			vm[0] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG26);
-			vm[1] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
-			vm[2] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[0] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26);
+			vm[1] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[2] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)vm[2];
 			((unsigned short *)data)[1] = (unsigned short)vm[1];
 			((unsigned short *)data)[2] = (unsigned short)vm[0];
 			break;
 		case 8:
-			vm[0] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG27);
-			vm[1] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG26);
-			vm[2] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG25);
-			vm[3] = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[0] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG27);
+			vm[1] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26);
+			vm[2] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[3] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)vm[3];
 			((unsigned short *)data)[1] = (unsigned short)vm[2];
 			((unsigned short *)data)[2] = (unsigned short)vm[1];
@@ -197,10 +200,11 @@ void ethsw_mdio_rreg(struct net_device *dev, int page, int reg, unsigned char *d
 			break;
 	}
 	v = page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT;
-	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 }
 
-void ethsw_mdio_wreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
+static void ethsw_mdio_wreg(struct net_device *dev, int page, int reg,
+				unsigned char *data, int len)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int phy_id;
@@ -209,50 +213,50 @@ void ethsw_mdio_wreg(struct net_device *dev, int page, int reg, unsigned char *d
 
 	phy_id = priv->sw_addr;
 	v = (page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT) | REG_PPM_REG16_MDIO_ENABLE;
-	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 
 	switch (len) 
 	{
 		case 1:
 			v = data[0];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			break;
 		case 2:
 			v = ((unsigned short *)data)[0];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			break;
 		case 4:
 			v = ((unsigned short *)data)[0];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			break;
 		case 6:
 			v = ((unsigned short *)data)[0];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			v = ((unsigned short *)data)[2];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
 			break;
 		case 8:
 			v = ((unsigned short *)data)[0];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			v = ((unsigned short *)data)[2];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
 			v = ((unsigned short *)data)[3];
-			priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG27, v);
+			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG27, v);
 			break;
 	}
 
 	v = (reg << REG_PPM_REG17_REG_NUMBER_SHIFT) | REG_PPM_REG17_OP_WRITE;
-	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
+	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
 
 	for (i = 0; i < 5; i++)
 	{
-		v = priv->mii.mdio_read(dev, phy_id, REG_PSEUDO_PHY_MII_REG17);
+		v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17);
 
 		if ((v & (REG_PPM_REG17_OP_WRITE | REG_PPM_REG17_OP_READ)) == REG_PPM_REG17_OP_DONE)
 			break;
@@ -264,10 +268,11 @@ void ethsw_mdio_wreg(struct net_device *dev, int page, int reg, unsigned char *d
 		printk("ethsw_mdio_wreg: timeout!\n");
 
 	v = page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT;
-	priv->mii.mdio_write(dev, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 }
 
-static void ethsw_rreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
+static void ethsw_rreg(struct net_device *dev, int page, int reg,
+			unsigned char *data, int len)
 {
 	if (((len != 1) && (len % 2) != 0) || len > 8)
 		panic("ethsw_rreg: wrong length!\n");
@@ -275,7 +280,8 @@ static void ethsw_rreg(struct net_device *dev, int page, int reg, unsigned char 
 	ethsw_mdio_rreg(dev, page, reg, data, len);
 }
 
-static void ethsw_wreg(struct net_device *dev, int page, int reg, unsigned char *data, int len)
+static void ethsw_wreg(struct net_device *dev, int page, int reg,
+			unsigned char *data, int len)
 {
 	if (((len != 1) && (len % 2) != 0) || len > 8)
 		panic("ethsw_wreg: wrong length!\n");
@@ -283,7 +289,7 @@ static void ethsw_wreg(struct net_device *dev, int page, int reg, unsigned char 
 	ethsw_mdio_wreg(dev, page, reg, data, len);
 }
 
-int ethsw_config_learning(struct net_device *dev)
+static int ethsw_config_learning(struct net_device *dev)
 {
 	unsigned char v8;
 	unsigned short v16;
@@ -298,7 +304,7 @@ int ethsw_config_learning(struct net_device *dev)
 	return 0;
 }
 
-void ethsw_switch_unmanage_mode(struct net_device *dev)
+static void ethsw_switch_unmanage_mode(struct net_device *dev)
 {
 	unsigned char v8;
 	unsigned short v16;
@@ -321,7 +327,7 @@ void ethsw_switch_unmanage_mode(struct net_device *dev)
 	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P8, (unsigned char *)&v16, sizeof(v16));
 }
 
-int ethsw_reset_ports(struct net_device *dev)
+static int ethsw_reset_ports(struct net_device *dev)
 {
 	unsigned long flags;
 	int i;
@@ -373,7 +379,7 @@ int ethsw_reset_ports(struct net_device *dev)
 }
 
 
-void ethsw_print_reg(struct net_device *dev, int reg_page, int reg_addr, int reg_len, char *reg_name) 
+static void ethsw_print_reg(struct net_device *dev, int reg_page, int reg_addr, int reg_len, char *reg_name) 
 {
 	unsigned char swdata[8];
 	unsigned int val;
@@ -399,7 +405,7 @@ void ethsw_print_reg(struct net_device *dev, int reg_page, int reg_addr, int reg
 	printk("\n");
 }
 
-int ethsw_dump_mib(struct net_device *dev, int port) 
+static int ethsw_dump_mib(struct net_device *dev, int port) 
 {
 	int reg_page;
 
@@ -604,7 +610,7 @@ static int proc_set_sw_param(struct file *f, const char *buf, unsigned long cnt,
 }
 
 
-int ethsw_add_proc_files(struct net_device *dev)
+static int ethsw_add_proc_files(struct net_device *dev)
 {
 	struct proc_dir_entry *p;
 
@@ -622,17 +628,86 @@ int ethsw_add_proc_files(struct net_device *dev)
 	return 0;
 }
 
-int ethsw_del_proc_files(void)
+static int bcm53x25_ethsw_init(struct phy_device *phydev)
 {
-	remove_proc_entry("switch", NULL);
+	struct net_device *dev = phydev->attached_dev;
+
+	ethsw_reset_ports(dev);
+	ethsw_switch_unmanage_mode(dev);
+	ethsw_config_learning(dev);
 
 	return 0;
 }
 
-void bcmgenet_ethsw_init(struct net_device *dev)
+static int bcm53x25_config_aneg(struct phy_device *phydev)
 {
-	ethsw_add_proc_files(dev);
-	ethsw_reset_ports(dev);
-	ethsw_switch_unmanage_mode(dev);
-	ethsw_config_learning(dev);
+	return 0;
 }
+
+static int bcm53x25_read_status(struct phy_device *phydev)
+{
+	phydev->duplex = DUPLEX_FULL;
+	phydev->speed = SPEED_1000;
+	phydev->link = 1;
+	phydev->state = PHY_RUNNING;
+
+	netif_carrier_on(phydev->attached_dev);
+	phydev->adjust_link(phydev->attached_dev);
+
+	return 0;
+}
+
+static int bcm53x25_probe(struct phy_device *phydev)
+{
+	struct net_device *dev = phydev->attached_dev;
+
+	/* Make sure that we match either the pseudo-PHY addreess or
+	 * address 0 as this is the default PHY addressing supported
+	 * for BCM53xxx switches
+	 */
+	if (phydev->addr != 0x1e && phydev->addr != 0) {
+		dev_err(&phydev->dev, "invalid PHY address %d\n",
+			phydev->addr);
+		return -ENODEV;
+	}
+
+	phydev->supported = SUPPORTED_1000baseT_Full;
+	phydev->advertising = phydev->supported;
+
+	ethsw_add_proc_files(dev);
+
+	return 0;
+}
+
+static void bcm53x25_remove(struct phy_device *phydev)
+{
+	remove_proc_entry("switch", NULL);
+}
+
+static struct phy_driver bcm53x25_driver[] = {
+	{
+		/* Match all BCM53125 revisions */
+		.phy_id		= 0x03625f20,
+		.phy_id_mask 	= 0x1ffffff0,
+		.name		= "Broadcom BCM53125",
+		.features	= PHY_GBIT_FEATURES,
+		.probe		= bcm53x25_probe,
+		.remove		= bcm53x25_remove,
+		.config_init	= bcm53x25_ethsw_init,
+		.config_aneg	= bcm53x25_config_aneg,
+		.read_status	= bcm53x25_read_status,
+		.driver		= { .owner = THIS_MODULE },
+	},
+};
+
+static int __init bcm53x25_init(void)
+{
+	return phy_drivers_register(bcm53x25_driver,
+			ARRAY_SIZE(bcm53x25_driver));
+}
+
+module_init(bcm53x25_init);
+
+MODULE_DESCRIPTION("Broadcom BCM53x25 switch driver");
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Broadcom Corporation");

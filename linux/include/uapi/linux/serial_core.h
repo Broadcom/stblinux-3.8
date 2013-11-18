@@ -51,8 +51,11 @@
 #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
 #define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
 #define PORT_BRCM_TRUMANAGE	25
-#define PORT_BRCM_BUGGY_DW	26	/* Broadcom buggy DW UART */
-#define PORT_MAX_8250	26	/* max port ID */
+#define PORT_ALTR_16550_F32 26	/* Altera 16550 UART with 32 FIFOs */
+#define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
+#define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
+#define PORT_BRCM_BUGGY_DW	29	/* Broadcom buggy DW UART */
+#define PORT_MAX_8250	29	/* max port ID */
 
 /*
  * ARM specific type numbers.  These are not currently guaranteed

@@ -72,6 +72,12 @@ config BCM63XX_PHY
 	---help---
 	  Currently supports the 6348 and 6358 PHYs.
 
+config BCM7XXX_PHY
+	tristate "Drivers for Broadcom 7xxx SOCs internal PHY"
+	depends on BRCMSTB
+	---help---
+	  Currently supports the 65, 40 and 28nm 7xxx SoCs.
+
 config BCM87XX_PHY
 	tristate "Driver for Broadcom BCM8706 and BCM8727 PHYs"
 	help

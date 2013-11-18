@@ -32,6 +32,7 @@
 #include <linux/clk.h>
 #include <linux/mii.h>
 #include <linux/if_vlan.h>
+#include <linux/phy.h>
 
 #include "bcmgenet_map.h"
 
@@ -215,10 +216,15 @@ struct bcmgenet_priv {
 
 	/* other misc variables */
 	struct bcmgenet_hw_params *hw_params;
-	struct mii_if_info mii;		/* mii interface info */
 	struct mutex mdio_mutex;	/* mutex for mii_read/write */
 	wait_queue_head_t	wq;		/* mii wait queue */
-	struct timer_list timer;	/* Link status timer */
+	struct phy_device *phydev;
+	struct mii_bus *mii_bus;
+	int old_duplex;
+	int old_link;
+	int old_pause;
+	phy_interface_t phy_interface;
+	u32 phy_supported;
 	int irq0;	/* regular IRQ */
 	int	irq1;	/* ring buf IRQ */
 	int	phy_addr;
@@ -236,7 +242,6 @@ struct bcmgenet_priv {
 	u32 msg_enable;
 
 	struct work_struct bcmgenet_irq_work;	/* bottom half work */
-	struct work_struct bcmgenet_link_work;	/* GPHY link status work */
 	struct clk *clk;
 	int dev_opened;		/* device opened. */
 	int dev_asleep;		/* device is at sleep */
@@ -253,6 +258,9 @@ struct bcmgenet_priv {
 	u32 int0_mask;
 	u32 int1_mask;
 	u32 rbuf_ctrl;
+
+	struct mutex mib_mutex;
+	struct bcmgenet_mib_counters mib;
 };
 
 /* Extension registers accessors */

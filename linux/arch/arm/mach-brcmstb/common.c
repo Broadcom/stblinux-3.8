@@ -30,6 +30,8 @@
 #include <asm/hardware/gic.h>
 
 #include <linux/brcmstb/brcmstb.h>
+#include <linux/phy.h>
+#include <linux/phy_fixed.h>
 
 #include "common.h"
 
@@ -64,11 +66,23 @@ static void __init brcmstb_map_io(void)
 	iotable_init(brcmstb_io_map, ARRAY_SIZE(brcmstb_io_map));
 }
 
+/* Fixed PHY for MoCA, need to be registered before the fixed MDIO bus is
+ * probed
+ */
+static struct fixed_phy_status fixed_phy_status = {
+	.link	= 1,
+	.speed	= SPEED_1000,
+	.duplex	= DUPLEX_FULL,
+};
+
 static void __init brcmstb_machine_init(void)
 {
 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
 
+
 	brcmstb_hook_fault_code();
+
+	fixed_phy_add(PHY_POLL, 0, &fixed_phy_status);
 }
 
 static void brcmstb_restart(char mode, const char *cmd)

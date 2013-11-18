@@ -350,8 +350,10 @@ static int tftp_protocol(
 	} else { /* tftp */
 		/* Open file (must be after changing user) */
 		local_fd = CMD_GET(option_mask32) ? STDOUT_FILENO : STDIN_FILENO;
-		if (NOT_LONE_DASH(local_file))
-			local_fd = xopen(local_file, open_mode);
+		if (NOT_LONE_DASH(local_file)) {
+			/* Modified by Broadcom Corporation 2013-10-28 */
+			local_fd = xopen3(local_file, open_mode, 0755);
+		}
 /* Removing #if, or using if() statement instead of #if may lead to
  * "warning: null argument where non-null required": */
 #if ENABLE_TFTP

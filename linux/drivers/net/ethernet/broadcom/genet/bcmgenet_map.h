@@ -69,12 +69,9 @@ struct status_64 {
 #define DMA_DESC_ADDRESS_LO	0x04	/* lower bits of PA */
 #define DMA_DESC_ADDRESS_HI	0x08	/* upper 32 bits of PA, GENETv4+ */
 
-/*
-** UniMAC TSV or RSV (Transmit Status Vector or Receive Status Vector
-*/
 /* Rx/Tx common counter group.*/
-struct PktCounterSize {
-	u32	cnt_64;		/* RO Recvied/Transmited 64 bytes packet */
+struct bcmgenet_pkt_counters {
+	u32	cnt_64;		/* RO Received/Transmited 64 bytes packet */
 	u32	cnt_127;	/* RO Rx/Tx 127 bytes packet */
 	u32	cnt_255;	/* RO Rx/Tx 65-255 bytes packet */
 	u32	cnt_511;	/* RO Rx/Tx 256-511 bytes packet */
@@ -85,54 +82,65 @@ struct PktCounterSize {
 	u32	cnt_4095;	/* RO Rx/Tx 2048-4095 bytes packet*/
 	u32	cnt_9216;	/* RO Rx/Tx 4096-9216 bytes packet*/
 };
+
 /* RSV, Receive Status Vector */
-struct UniMacRSV {
-	struct PktCounterSize stat_sz;	/* (0x400 - 0x424), stats of received
-			packets classfied by size */
-	u32	rx_pkt;		/* RO (0x428) Receive pkt count*/
-	u32	rx_bytes;	/* RO Receive byte count */
-	u32	rx_mca;		/* RO # of Received multicast pkt */
-	u32	rx_bca;		/* RO # of Receive broadcast pkt */
-	u32	rx_fcs;		/* RO # of Received FCS error  */
-	u32	rx_cf;		/* RO # of Received control frame pkt*/
-	u32	rx_pf;		/* RO # of Received pause frame pkt */
-	u32	rx_uo;		/* RO # of unknown op code pkt */
-	u32	rx_aln;		/* RO # of alignment error count */
-	u32	rx_flr;		/* RO # of frame length out of range count */
-	u32	rx_cde;		/* RO # of code error pkt */
-	u32	rx_fcr;		/* RO # of carrier sense error pkt */
-	u32	rx_ovr;		/* RO # of oversize pkt*/
-	u32	rx_jbr;		/* RO # of jabber count */
-	u32	rx_mtue;	/* RO # of MTU error pkt*/
-	u32	rx_pok;		/* RO # of Received good pkt */
-	u32	rx_uc;		/* RO # of unicast pkt */
-	u32	rx_ppp;		/* RO # of PPP pkt */
+struct bcmgenet_rx_counters {
+	struct  bcmgenet_pkt_counters pkt_cnt;
+	u32	pkt;		/* RO (0x428) Received pkt count*/
+	u32	bytes;		/* RO Received byte count */
+	u32	mca;		/* RO # of Received multicast pkt */
+	u32	bca;		/* RO # of Receive broadcast pkt */
+	u32	fcs;		/* RO # of Received FCS error  */
+	u32	cf;		/* RO # of Received control frame pkt*/
+	u32	pf;		/* RO # of Received pause frame pkt */
+	u32	uo;		/* RO # of unknown op code pkt */
+	u32	aln;		/* RO # of alignment error count */
+	u32	flr;		/* RO # of frame length out of range count */
+	u32	cde;		/* RO # of code error pkt */
+	u32	fcr;		/* RO # of carrier sense error pkt */
+	u32	ovr;		/* RO # of oversize pkt*/
+	u32	jbr;		/* RO # of jabber count */
+	u32	mtue;		/* RO # of MTU error pkt*/
+	u32	pok;		/* RO # of Received good pkt */
+	u32	uc;		/* RO # of unicast pkt */
+	u32	ppp;		/* RO # of PPP pkt */
 	u32	rcrc;		/* RO (0x470),# of CRC match pkt */
 };
 
 /* TSV, Transmit Status Vector */
-struct UniMacTSV {
-	struct PktCounterSize stat_sz;	/* (0x480 - 0x0x4a4), statistics of
-			xmited packets classified by size */
-	u32	tx_pkt;		/* RO (0x4a8) Transmited pkt */
-	u32	tx_mca;		/* RO # of xmited multicast pkt */
-	u32	tx_bca;		/* RO # of xmited broadcast pkt */
-	u32	tx_pf;		/* RO # of xmited pause frame count */
-	u32	tx_cf;		/* RO # of xmited control frame count */
-	u32	tx_fcs;		/* RO # of xmited FCS error count */
-	u32	tx_ovr;		/* RO # of xmited oversize pkt */
-	u32	tx_drf;		/* RO # of xmited deferral pkt */
-	u32	tx_edf;		/* RO # of xmited Excessive deferral pkt*/
-	u32	tx_scl;		/* RO # of xmited single collision pkt */
-	u32	tx_mcl;		/* RO # of xmited multiple collision pkt*/
-	u32	tx_lcl;		/* RO # of xmited late collision pkt */
-	u32	tx_ecl;		/* RO # of xmited excessive collision pkt*/
-	u32	tx_frg;		/* RO # of xmited fragments pkt*/
-	u32	tx_ncl;		/* RO # of xmited total collision count */
-	u32	tx_jbr;		/* RO # of xmited jabber count*/
-	u32	tx_bytes;	/* RO # of xmited byte count */
-	u32	tx_pok;		/* RO # of xmited good pkt */
-	u32	tx_uc;		/* RO (0x0x4f0)# of xmited unitcast pkt */
+struct bcmgenet_tx_counters {
+	struct bcmgenet_pkt_counters pkt_cnt;
+	u32	pkts;		/* RO (0x4a8) Transmited pkt */
+	u32	mca;		/* RO # of xmited multicast pkt */
+	u32	bca;		/* RO # of xmited broadcast pkt */
+	u32	pf;		/* RO # of xmited pause frame count */
+	u32	cf;		/* RO # of xmited control frame count */
+	u32	fcs;		/* RO # of xmited FCS error count */
+	u32	ovr;		/* RO # of xmited oversize pkt */
+	u32	drf;		/* RO # of xmited deferral pkt */
+	u32	edf;		/* RO # of xmited Excessive deferral pkt*/
+	u32	scl;		/* RO # of xmited single collision pkt */
+	u32	mcl;		/* RO # of xmited multiple collision pkt*/
+	u32	lcl;		/* RO # of xmited late collision pkt */
+	u32	ecl;		/* RO # of xmited excessive collision pkt*/
+	u32	frg;		/* RO # of xmited fragments pkt*/
+	u32	ncl;		/* RO # of xmited total collision count */
+	u32	jbr;		/* RO # of xmited jabber count*/
+	u32	bytes;		/* RO # of xmited byte count */
+	u32	pok;		/* RO # of xmited good pkt */
+	u32	uc;		/* RO (0x0x4f0)# of xmited unitcast pkt */
+};
+
+struct bcmgenet_mib_counters {
+	struct bcmgenet_rx_counters rx;
+	struct bcmgenet_tx_counters tx;
+	u32	rx_runt_cnt;
+	u32	rx_runt_fcs;
+	u32	rx_runt_fcs_align;
+	u32	rx_runt_bytes;
+	u32	rbuf_ovflow_cnt;
+	u32	rbuf_err_cnt;
+	u32	mdf_err_cnt;
 };
 
 #define UMAC_HD_BKP_CTRL	0x004
@@ -143,10 +151,15 @@ struct UniMacTSV {
 
 #define UMAC_TX_FLUSH		0x334
 
+#define UMAC_MIB_START		0x400
+
 #define UMAC_MDIO_CMD		0x614
+#define UMAC_RBUF_OVFL_CNT	0x61C
 #define UMAC_MPD_CTRL		0x620
 #define UMAC_MPD_PW_MS		0x624
 #define UMAC_MPD_PW_LS		0x628
+#define UMAC_RBUF_ERR_CNT	0x634
+#define UMAC_MDF_ERR_CNT	0x638
 #define UMAC_MDF_CTRL		0x650
 #define UMAC_MDF_ADDR		0x654
 #define UMAC_MIB_CTRL		0x580

@@ -23,6 +23,15 @@ config BCM7145A0
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
 
+config BCM7145B0
+	bool "7145 Bx"
+	select BCM7145
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_1
+	select BRCM_HAS_BSPI_V4
+	select BRCM_HAS_MOCA_20_GEN23
+	select BRCM_MSPI_64B_WORDS
+
 config BCM7366A0
 	bool "7366 Ax"
 	select BCM7366
@@ -73,6 +82,16 @@ config BCM7445C0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
 
+config BCM7445D0
+	bool "7445 Dx"
+	select BCM7445
+	select BRCM_GENET_V4
+	select BRCM_HAS_MOCA_20_GEN23
+	select BRCM_HAS_NAND_MAJOR_7
+	select BRCM_HAS_NAND_MINOR_1
+	select BRCM_HAS_BSPI_V4
+	select BRCM_MSPI_64B_WORDS
+
 endchoice
 
 
@@ -90,6 +109,9 @@ config BCMGENET
 	default y
 	select CRC32
 	select MII
+	select PHYLIB
+	select FIXED_PHY
+	select BCM7XXX_PHY
 	help
 	  Say Y to support the internal 10/100/1000 GENET MAC/PHY on
 	  Broadcom set-top chips.  This driver also supports the datapath

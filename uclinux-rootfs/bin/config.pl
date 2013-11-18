@@ -588,6 +588,7 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 			$eglibc{"OPTION_EGLIBC_ADVANCED_INET6"} = "y";
 			$busybox{"CONFIG_FEATURE_IPV6"} = "y";
 			$busybox{"CONFIG_PING6"} = "y";
+			$busybox{"CONFIG_UDHCPC6"} = "y";
 		} elsif($mod eq "docsis") {
 
 			# enable tftp server for DOCSIS firmware download

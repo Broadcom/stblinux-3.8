@@ -6,16 +6,14 @@ access to NAND flash chips.
 Required properties:
 - compatible     : should contain "brcm,brcmnand" and an appropriate version
                    compatibility string, like "brcm,brcmnand-v7.0"
-- reg            : the register start and length for NAND and (optionally, see
-                  'flash-dma' property) FLASH_DMA blocks
+- reg            : the register start and length for NAND and (if present)
+                   FLASH_DMA blocks
+- reg-names      : a list of the names corresponding to the previous register
+		   ranges. Should contain "nand" and (if FLASH_DMA is
+                   available) "flash-dma".
 - interrupts     : The HIF interrupt, for both NAND CTLRDY and FLASH_DMA_DONE
 - #address-cells : <1> - subnodes give the chip-select number
 - #size-cells    : <0>
-
-Optional properties:
-- flash-dma      : boolean, indicating controller support for FLASH_DMA; if set,
-		   then the appropriate register range must be included in the
-                   reg property
 
 Each controller (compatible: "brcm,brcmnand") may contain one or more subnodes
 to represent enabled chip-selects which (may) contain NAND flash chips. Their
@@ -40,8 +38,8 @@ nand@f0442800 {
 	compatible = "brcm,brcmnand-v7.0", "brcm,brcmnand";
 	reg = <0xF0442800 0x600>,
 	      <0xF0443000 0x100>;
+	reg-names = "nand", "flash-dma";
 	interrupts = <0 32 0>;
-	flash-dma;
 
 	#address-cells = <1>;
 	#size-cells = <0>;
