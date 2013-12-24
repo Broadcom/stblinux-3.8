@@ -2157,7 +2157,7 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 	struct moca_platform_data pd;
 	struct device_node *of_node = pdev->dev.of_node, *enet_node;
 	phandle enet_ph;
-	int status = 0, i;
+	int status = 0, i = 0;
 	const u8 *macaddr;
 	const char *rfb;
 	const char *const of_rfb[MOCA_BAND_MAX + 1] = MOCA_BAND_NAMES;

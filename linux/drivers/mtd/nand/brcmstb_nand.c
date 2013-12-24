@@ -1189,11 +1189,14 @@ static int brcmstb_nand_write_oob_raw(struct mtd_info *mtd,
 	struct nand_chip *chip, int page)
 {
 	struct brcmstb_nand_host *host = chip->priv;
+	int ret;
 
 	WR_ACC_CONTROL(host->cs, WR_ECC_EN, 0);
-	return brcmstb_nand_write(mtd, chip, (u64)page << chip->page_shift, NULL,
+	ret = brcmstb_nand_write(mtd, chip, (u64)page << chip->page_shift, NULL,
 		(u8 *)chip->oob_poi);
 	WR_ACC_CONTROL(host->cs, WR_ECC_EN, 1);
+
+	return ret;
 }
 
 /***********************************************************************
@@ -1794,7 +1797,7 @@ static int brcmstb_nand_probe(struct platform_device *pdev)
 
 	/* IRQ */
 	ctrl->irq = platform_get_irq(pdev, 0);
-	if (ctrl->irq < 0) {
+	if ((int)ctrl->irq < 0) {
 		dev_err(dev, "no IRQ defined\n");
 		return -ENODEV;
 	}

@@ -1576,9 +1576,6 @@ static void bcmgenet_power_up(struct bcmgenet_priv *priv, int mode)
 	default:
 		break;
 	}
-
-	if (priv->phydev)
-		phy_init_hw(priv->phydev);
 }
 
 /* ioctl handle special commands that are not present in ethtool. */

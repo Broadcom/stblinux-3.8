@@ -12,7 +12,9 @@ version.c
 xml-builtin.c
 
 # MIPS
+mips-dsp-linux.c
 mips-linux.c
+mips64-dsp-linux.c
 mips64-linux.c
 
 # ARM

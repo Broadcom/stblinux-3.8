@@ -20,11 +20,13 @@
 
 #include <linux/smp.h>
 
+#ifdef CONFIG_SMP
 extern void brcmstb_secondary_startup(void);
 extern void brcmstb_cpu_boot(unsigned int cpu);
 extern void brcmstb_cpu_power_on(unsigned int cpu);
 extern int brcmstb_cpu_get_power_state(unsigned int cpu);
 extern struct smp_operations brcmstb_smp_ops;
+#endif
 
 #ifdef CONFIG_HOTPLUG_CPU
 extern void brcmstb_cpu_die(unsigned int cpu);

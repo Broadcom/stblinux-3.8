@@ -1,8 +1,26 @@
+/*/engine.c
+/*/engine.h
 /*/gentmap
-/*/run
 /*/hw-config.h
+/*/icache.c
+/*/icache.h
+/*/idecode.c
+/*/idecode.h
+/*/irun.c
+/*/itable.c
+/*/itable.h
+/*/model.c
+/*/model.h
+/*/run
+/*/semantics.c
+/*/semantics.h
+/*/support.c
+/*/support.h
 /*/targ-*
+/*/tmp-igen
 /*/tconfig.h
 /*/version.c
 
 /common/cconfig.h
+
+/igen/igen

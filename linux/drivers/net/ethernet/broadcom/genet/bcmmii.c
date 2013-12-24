@@ -216,8 +216,10 @@ void bcmgenet_mii_reset(struct net_device *dev)
 	bcmgenet_mii_read(priv->mii_bus, priv->phy_addr, 0x1d);
 
 	/* call the PHY driver specific init routine */
-	if (priv->phydev && priv->phydev->drv)
-		priv->phydev->drv->config_init(priv->phydev);
+	if (priv->phydev) {
+		phy_init_hw(priv->phydev);
+		phy_start_aneg(priv->phydev);
+	}
 }
 
 /* 7366a0 EXT GPHY block comes with the CFG_IDDQ_BIAS and CFG_EXT_PWR_DOWN
@@ -340,10 +342,12 @@ static int bcmgenet_mii_alloc(struct bcmgenet_priv *priv)
 	/* This is the correct thing to do, but libphy needs fixing
 	 * with respect to ignoring interrupts
 	 */
-	if (priv->phy_type == BRCM_PHY_TYPE_INT)
-		bus->irq[priv->phy_addr] = PHY_IGNORE_INTERRUPT;
-	else
-		bus->irq[priv->phy_addr] = PHY_POLL;
+	if (priv->phy_addr < PHY_MAX_ADDR) {
+		if (priv->phy_type == BRCM_PHY_TYPE_INT)
+			bus->irq[priv->phy_addr] = PHY_IGNORE_INTERRUPT;
+		else
+			bus->irq[priv->phy_addr] = PHY_POLL;
+	}
 
 	ret = mdiobus_register(bus);
 	if (ret)

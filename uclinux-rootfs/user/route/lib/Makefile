@@ -9,7 +9,6 @@ OBJS = activate.o ether.o inet6.o irda.o proc.o tunnel.o af.o fddi.o \
 	sockets.o econet.o inet.o ipx_sr.o ppp_ac.o tr.o
 
 CFLAGS += -D_GNU_SOURCE -D__USE_BSD -Ilib -I../ -I../include -I../../pppd/pppd
-CFLAGS += $(INCNET)
 
 
 all: $(LIB) $(EXEC)

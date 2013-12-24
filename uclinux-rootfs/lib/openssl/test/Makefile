@@ -149,7 +149,7 @@ install:
 tags:
 	ctags $(SRC)
 
-tests:	exe apps $(TESTS)
+tests:	exe $(TESTS)
 
 apps:
 	@(cd ..; $(MAKE) DIRS=apps all)
@@ -367,34 +367,34 @@ BUILD_CMD=shlib_target=; if [ -n "$(SHARED_LIBS)" ]; then \
 		link_app.$${shlib_target}
 
 $(RSATEST)$(EXE_EXT): $(RSATEST).o $(DLIBCRYPTO)
-	@target=$(RSATEST); $(BUILD_CMD)
+	+@target=$(RSATEST); $(BUILD_CMD)
 
 $(BNTEST)$(EXE_EXT): $(BNTEST).o $(DLIBCRYPTO)
-	@target=$(BNTEST); $(BUILD_CMD)
+	+@target=$(BNTEST); $(BUILD_CMD)
 
 $(ECTEST)$(EXE_EXT): $(ECTEST).o $(DLIBCRYPTO)
-	@target=$(ECTEST); $(BUILD_CMD)
+	+@target=$(ECTEST); $(BUILD_CMD)
 
 $(EXPTEST)$(EXE_EXT): $(EXPTEST).o $(DLIBCRYPTO)
-	@target=$(EXPTEST); $(BUILD_CMD)
+	+@target=$(EXPTEST); $(BUILD_CMD)
 
 $(IDEATEST)$(EXE_EXT): $(IDEATEST).o $(DLIBCRYPTO)
-	@target=$(IDEATEST); $(BUILD_CMD)
+	+@target=$(IDEATEST); $(BUILD_CMD)
 
 $(MD2TEST)$(EXE_EXT): $(MD2TEST).o $(DLIBCRYPTO)
-	@target=$(MD2TEST); $(BUILD_CMD)
+	+@target=$(MD2TEST); $(BUILD_CMD)
 
 $(SHATEST)$(EXE_EXT): $(SHATEST).o $(DLIBCRYPTO)
-	@target=$(SHATEST); $(BUILD_CMD)
+	+@target=$(SHATEST); $(BUILD_CMD)
 
 $(SHA1TEST)$(EXE_EXT): $(SHA1TEST).o $(DLIBCRYPTO)
-	@target=$(SHA1TEST); $(BUILD_CMD)
+	+@target=$(SHA1TEST); $(BUILD_CMD)
 
 $(SHA256TEST)$(EXE_EXT): $(SHA256TEST).o $(DLIBCRYPTO)
-	@target=$(SHA256TEST); $(BUILD_CMD)
+	+@target=$(SHA256TEST); $(BUILD_CMD)
 
 $(SHA512TEST)$(EXE_EXT): $(SHA512TEST).o $(DLIBCRYPTO)
-	@target=$(SHA512TEST); $(BUILD_CMD)
+	+@target=$(SHA512TEST); $(BUILD_CMD)
 
 FIPS_BUILD_CMD=shlib_target=; if [ -n "$(SHARED_LIBS)" ]; then \
 		shlib_target="$(SHLIB_TARGET)"; \
@@ -426,106 +426,106 @@ FIPS_CRYPTO_BUILD_CMD=shlib_target=; if [ -n "$(SHARED_LIBS)" ]; then \
 		link_app.$${shlib_target}
 
 $(FIPS_SHATEST)$(EXE_EXT): $(FIPS_SHATEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_SHATEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_SHATEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_AESTEST)$(EXE_EXT): $(FIPS_AESTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_AESTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_AESTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_DESTEST)$(EXE_EXT): $(FIPS_DESTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_DESTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_DESTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_HMACTEST)$(EXE_EXT): $(FIPS_HMACTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_HMACTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_HMACTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_RANDTEST)$(EXE_EXT): $(FIPS_RANDTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_RANDTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_RANDTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_RSAVTEST)$(EXE_EXT): $(FIPS_RSAVTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_RSAVTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_RSAVTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_RSASTEST)$(EXE_EXT): $(FIPS_RSASTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_RSASTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_RSASTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_RSAGTEST)$(EXE_EXT): $(FIPS_RSAGTEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_RSAGTEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_RSAGTEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_DSATEST)$(EXE_EXT): $(FIPS_DSATEST).o $(DLIBCRYPTO)
-	@target=$(FIPS_DSATEST); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_DSATEST); $(FIPS_BUILD_CMD)
 
 $(FIPS_DSSVS)$(EXE_EXT): $(FIPS_DSSVS).o $(DLIBCRYPTO)
-	@target=$(FIPS_DSSVS); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_DSSVS); $(FIPS_BUILD_CMD)
 
 $(FIPS_RNGVS)$(EXE_EXT): $(FIPS_RNGVS).o $(DLIBCRYPTO)
-	@target=$(FIPS_RNGVS); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_RNGVS); $(FIPS_BUILD_CMD)
 
 $(FIPS_TEST_SUITE)$(EXE_EXT): $(FIPS_TEST_SUITE).o $(DLIBCRYPTO)
-	@target=$(FIPS_TEST_SUITE); $(FIPS_BUILD_CMD)
+	+@target=$(FIPS_TEST_SUITE); $(FIPS_BUILD_CMD)
 
 $(RMDTEST)$(EXE_EXT): $(RMDTEST).o $(DLIBCRYPTO)
-	@target=$(RMDTEST); $(BUILD_CMD)
+	+@target=$(RMDTEST); $(BUILD_CMD)
 
 $(MDC2TEST)$(EXE_EXT): $(MDC2TEST).o $(DLIBCRYPTO)
-	@target=$(MDC2TEST); $(BUILD_CMD)
+	+@target=$(MDC2TEST); $(BUILD_CMD)
 
 $(MD4TEST)$(EXE_EXT): $(MD4TEST).o $(DLIBCRYPTO)
-	@target=$(MD4TEST); $(BUILD_CMD)
+	+@target=$(MD4TEST); $(BUILD_CMD)
 
 $(MD5TEST)$(EXE_EXT): $(MD5TEST).o $(DLIBCRYPTO)
-	@target=$(MD5TEST); $(BUILD_CMD)
+	+@target=$(MD5TEST); $(BUILD_CMD)
 
 $(HMACTEST)$(EXE_EXT): $(HMACTEST).o $(DLIBCRYPTO)
-	@target=$(HMACTEST); $(BUILD_CMD)
+	+@target=$(HMACTEST); $(BUILD_CMD)
 
 $(RC2TEST)$(EXE_EXT): $(RC2TEST).o $(DLIBCRYPTO)
-	@target=$(RC2TEST); $(BUILD_CMD)
+	+@target=$(RC2TEST); $(BUILD_CMD)
 
 $(BFTEST)$(EXE_EXT): $(BFTEST).o $(DLIBCRYPTO)
-	@target=$(BFTEST); $(BUILD_CMD)
+	+@target=$(BFTEST); $(BUILD_CMD)
 
 $(CASTTEST)$(EXE_EXT): $(CASTTEST).o $(DLIBCRYPTO)
-	@target=$(CASTTEST); $(BUILD_CMD)
+	+@target=$(CASTTEST); $(BUILD_CMD)
 
 $(RC4TEST)$(EXE_EXT): $(RC4TEST).o $(DLIBCRYPTO)
-	@target=$(RC4TEST); $(BUILD_CMD)
+	+@target=$(RC4TEST); $(BUILD_CMD)
 
 $(RC5TEST)$(EXE_EXT): $(RC5TEST).o $(DLIBCRYPTO)
-	@target=$(RC5TEST); $(BUILD_CMD)
+	+@target=$(RC5TEST); $(BUILD_CMD)
 
 $(DESTEST)$(EXE_EXT): $(DESTEST).o $(DLIBCRYPTO)
-	@target=$(DESTEST); $(BUILD_CMD)
+	+@target=$(DESTEST); $(BUILD_CMD)
 
 $(RANDTEST)$(EXE_EXT): $(RANDTEST).o $(DLIBCRYPTO)
-	@target=$(RANDTEST); $(BUILD_CMD)
+	+@target=$(RANDTEST); $(BUILD_CMD)
 
 $(DHTEST)$(EXE_EXT): $(DHTEST).o $(DLIBCRYPTO)
-	@target=$(DHTEST); $(BUILD_CMD)
+	+@target=$(DHTEST); $(BUILD_CMD)
 
 $(DSATEST)$(EXE_EXT): $(DSATEST).o $(DLIBCRYPTO)
-	@target=$(DSATEST); $(BUILD_CMD)
+	+@target=$(DSATEST); $(BUILD_CMD)
 
 $(METHTEST)$(EXE_EXT): $(METHTEST).o $(DLIBCRYPTO)
-	@target=$(METHTEST); $(BUILD_CMD)
+	+@target=$(METHTEST); $(BUILD_CMD)
 
 $(SSLTEST)$(EXE_EXT): $(SSLTEST).o $(DLIBSSL) $(DLIBCRYPTO)
-	@target=$(SSLTEST); $(FIPS_CRYPTO_BUILD_CMD)
+	+@target=$(SSLTEST); $(FIPS_CRYPTO_BUILD_CMD)
 
 $(ENGINETEST)$(EXE_EXT): $(ENGINETEST).o $(DLIBCRYPTO)
-	@target=$(ENGINETEST); $(BUILD_CMD)
+	+@target=$(ENGINETEST); $(BUILD_CMD)
 
 $(EVPTEST)$(EXE_EXT): $(EVPTEST).o $(DLIBCRYPTO)
-	@target=$(EVPTEST); $(BUILD_CMD)
+	+@target=$(EVPTEST); $(BUILD_CMD)
 
 $(ECDSATEST)$(EXE_EXT): $(ECDSATEST).o $(DLIBCRYPTO)
-	@target=$(ECDSATEST); $(BUILD_CMD)
+	+@target=$(ECDSATEST); $(BUILD_CMD)
 
 $(ECDHTEST)$(EXE_EXT): $(ECDHTEST).o $(DLIBCRYPTO)
-	@target=$(ECDHTEST); $(BUILD_CMD)
+	+@target=$(ECDHTEST); $(BUILD_CMD)
 
 $(IGETEST)$(EXE_EXT): $(IGETEST).o $(DLIBCRYPTO)
-	@target=$(IGETEST); $(BUILD_CMD)
+	+@target=$(IGETEST); $(BUILD_CMD)
 
 jpaketest$(EXE_EXT): jpaketest.o $(DLIBCRYPTO)
-	@target=jpaketest; $(BUILD_CMD)
+	+@target=jpaketest; $(BUILD_CMD)
 
 #$(AESTEST).o: $(AESTEST).c
 #	$(CC) -c $(CFLAGS) -DINTERMEDIATE_VALUE_KAT -DTRACE_KAT_MCT $(AESTEST).c
@@ -538,7 +538,7 @@ jpaketest$(EXE_EXT): jpaketest.o $(DLIBCRYPTO)
 #	fi
 
 dummytest$(EXE_EXT): dummytest.o $(DLIBCRYPTO)
-	@target=dummytest$; $(BUILD_CMD)
+	+@target=dummytest$; $(BUILD_CMD)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 

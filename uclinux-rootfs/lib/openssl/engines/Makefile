@@ -109,6 +109,7 @@ install:
 			  mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx ); \
 		done; \
 	fi
+	+@target=install; $(RECURSIVE_MAKE)
 
 tags:
 	ctags $(SRC)

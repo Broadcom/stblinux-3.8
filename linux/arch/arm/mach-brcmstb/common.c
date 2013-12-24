@@ -154,7 +154,7 @@ DT_MACHINE_START(BRCMSTB, "Broadcom STB (Flattened Device Tree)")
 	.init_machine	= brcmstb_machine_init,
 	.dt_compat	= brcmstb_match,
 	.restart	= brcmstb_restart,
-	.smp		= &brcmstb_smp_ops,
+	.smp		= smp_ops(brcmstb_smp_ops),
 	.init_early	= brcmstb_init_early,
 MACHINE_END
 

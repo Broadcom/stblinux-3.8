@@ -59,7 +59,7 @@
 #include <linux/gfp.h>
 #include <linux/migrate.h>
 #include <linux/string.h>
-#ifdef CONFIG_BRCMSTB
+#if defined(CONFIG_BRCMSTB) && defined(CONFIG_CMA)
 #include <linux/brcmstb/cma_driver.h>
 #endif
 
@@ -1764,7 +1764,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 			goto next_page;
 		}
 
-#ifdef CONFIG_BRCMSTB
+#if defined(CONFIG_BRCMSTB) && defined(CONFIG_CMA)
 		/* handle direct I/O on CMA regions */
 		if (!cma_dev_get_page(mm, vma, start,
 				       pages ? &pages[i] : NULL)) {

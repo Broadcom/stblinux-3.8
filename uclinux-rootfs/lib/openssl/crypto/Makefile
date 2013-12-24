@@ -82,11 +82,11 @@ testapps:
 	@if [ -z "$(THIS)" ]; then $(MAKE) -f $(TOP)/Makefile reflect THIS=$@; fi
 
 subdirs:
-	@target=all; $(RECURSIVE_MAKE)
+	+@target=all; $(RECURSIVE_MAKE)
 
 files:
 	$(PERL) $(TOP)/util/files.pl Makefile >> $(TOP)/MINFO
-	@target=files; $(RECURSIVE_MAKE)
+	+@target=files; $(RECURSIVE_MAKE)
 
 links:
 	@$(PERL) $(TOP)/util/mklink.pl ../include/openssl $(EXHEADER)
@@ -97,7 +97,7 @@ links:
 # lib: and $(LIB): are splitted to avoid end-less loop
 lib:	buildinf.h $(LIB) subdirs
 	@touch lib
-$(LIB):	$(LIBOBJ)
+$(LIB):	$(LIBOBJ) | subdirs
 	$(ARX) $(LIB) $(LIBOBJ)
 	$(RANLIB) $(LIB) || echo Never mind.
 
@@ -107,7 +107,7 @@ shared: buildinf.h lib subdirs
 	fi
 
 libs:
-	@target=lib; $(RECURSIVE_MAKE)
+	+@target=lib; $(RECURSIVE_MAKE)
 
 install:
 	@[ -n "$(INSTALLTOP)" ] # should be set by top Makefile...
@@ -116,7 +116,7 @@ install:
 	(cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl/$$i; \
 	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl/$$i ); \
 	done;
-	@target=install; $(RECURSIVE_MAKE)
+	+@target=install; $(RECURSIVE_MAKE)
 
 lint:
 	@target=lint; $(RECURSIVE_MAKE)

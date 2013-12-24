@@ -95,6 +95,9 @@ static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 	/* write AFE_HPF_TRIM_OTHERS */
 	phy_write_misc(phydev, 0x3A, 0x0000, 0x000b);
 
+	/* write AFTE_TX_CONFIG */
+	phy_write_misc(phydev, 0x39, 0x0000, 0x0800);
+
 	/* Increase VCO range to prevent unlocking problem of PLL at low
 	 * temp
 	 */

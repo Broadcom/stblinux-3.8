@@ -10,10 +10,9 @@ export CC CFLAGS
 
 .PHONY: all
 all::
-	if [ ! -e .configured ]; then \
+	if [ ! -e Makefile ]; then \
 		./Configure linux-generic32 || exit 1 ; \
 	fi
-	touch .configured
 	$(MAKE) -f Makefile
 	rm -f lib
 	ln -s . lib
@@ -23,8 +22,8 @@ romfs::
 
 .PHONY: clean distclean
 clean distclean::
-	rm -f .configured
 	$(MAKE) -f Makefile clean
+	rm -f Makefile
 
 # These targets must not be passed through to the original Makefile
 .PHONY: $(BOGUS_TARGETS)

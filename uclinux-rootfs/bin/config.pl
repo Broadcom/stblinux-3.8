@@ -46,6 +46,7 @@ my $eglibc_defaults = "defaults/config.eglibc";
 my $uclibc_defaults = "defaults/config.uClibc";
 my $busybox_defaults = "defaults/config.busybox";
 my $vendor_defaults = "defaults/config.vendor";
+my $arch_defaults_common = "defaults/config.arch-common";
 my $arch_defaults_le = "defaults/config.arch-le";
 my $arch_defaults_be = "defaults/config.arch-be";
 my $arch_defaults_arm = "defaults/config.arch-arm";
@@ -61,6 +62,10 @@ my $uclibc_config = "lib/uClibc/.config";
 my $busybox_config = "user/busybox/.config";
 my $vendor_config = "config/.config";
 my $arch_config = "config.arch";
+my %arch_config_options = (
+	"ARCHSPECIFIC" => "",
+	"LIBCDIR" => "uClibc",
+);
 
 my @patchlist = ("lttng", "android", "newubi");
 my %use_patch = ( );
@@ -358,6 +363,37 @@ sub test_opt($$)
 	exit $result;
 }
 
+sub gen_arch_config($)
+{
+	my $arch = shift;
+	my $out = "";
+	my $arch_defaults = $arch eq "arm" ? $arch_defaults_arm :
+		($be ? $arch_defaults_be : $arch_defaults_le);
+
+	unlink($arch_config);
+	open(IN_ARCH, "<$arch_defaults") or
+		die "can't open $arch_defaults: $!";
+	while(<IN_ARCH>) {
+		$arch_config_options{"ARCHSPECIFIC"} .= $_;
+	}
+	chomp $arch_config_options{"ARCHSPECIFIC"};
+	close(IN_ARCH);
+	open(IN_COMMON, "<$arch_defaults_common") or
+		die "can't open $arch_defaults_common: $!";
+	while(<IN_COMMON>) {
+		foreach my $key (keys %arch_config_options) {
+			my $searchstr = "\@CONFIG_PL_$key\@";
+			s/$searchstr/$arch_config_options{$key}/;
+		}
+		$out .= $_;
+	}
+	close(IN_COMMON);
+	open(OUT, ">$arch_config") or
+		die "can't open $arch_config: $!";
+	print OUT "$out";
+	close(OUT);
+}
+
 #
 # MAIN
 #
@@ -390,28 +426,6 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 		}
 		unlink(".target");
 	}
-
-	unlink($arch_config);
-	copy($ARCH eq "arm" ? $arch_defaults_arm :
-		($be ? $arch_defaults_be : $arch_defaults_le), $arch_config) or
-		die "can't create $arch_config";
-
-	# This section is temporary and will be removed for SWLINUX-2680
-	open(F, "<$arch_config")
-		or die "can't read $arch_config";
-	my @lines = <F>;
-	close(F);
-	open(F, ">$arch_config")
-		or die "can't read $arch_config";
-	foreach(@lines) {
-		if (m/LIBCDIR/) {
-			s/\@CONFIG_PL_LIBCDIR\@/uClibc/;
-		}
-		print F;
-	}
-	close(F);
-	# End temporary section
-
 
 	unlink($linux_config);
 	system("make -C $LINUXDIR ARCH=$ARCH brcmstb_defconfig");
@@ -725,22 +739,7 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 
 			$vendor{"CONFIG_USER_PERF"} = "y";
 		} elsif($mod eq "eglibc") {
-			# This section is temporary and will be cleaned up for
-			# SWLINUX-2680
-			open(F, "<$arch_config")
-				or die "can't read $arch_config";
-			my @lines = <F>;
-			close(F);
-			open(F, ">$arch_config")
-				or die "can't read $arch_config";
-			foreach(@lines) {
-				if (m/LIBCDIR/) {
-					s/uClibc/eglibc/;
-				}
-				print F;
-			}
-			close(F);
-			# End temporary section
+			$arch_config_options{"LIBCDIR"} = "eglibc";
 		} else {
 			print "\n";
 			print "ERROR: Unrecognized suffix '$mod' in '$tgt'\n";
@@ -847,6 +846,9 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	# fix up the kernel defconfig (due to CONFIG_BCM* munging)
 	system("make -C $LINUXDIR ARCH=$ARCH brcmstb_new_defconfig");
 	unlink($linux_new_defaults);
+
+	gen_arch_config($ARCH);
+
 } elsif($cmd eq "save_defaults") {
 	get_tgt(shift @ARGV);
 

@@ -228,7 +228,11 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
 
 static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
 {
+#if defined(CONFIG_BRCMSTB)
+	clk->features = CLOCK_EVT_FEAT_ONESHOT;
+#else
 	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
+#endif
 	clk->name = "arch_sys_timer";
 	clk->rating = 450;
 	if (arch_timer_use_virtual) {
@@ -344,7 +348,11 @@ static struct clocksource clocksource_counter = {
 	.rating	= 400,
 	.read	= arch_counter_read,
 	.mask	= CLOCKSOURCE_MASK(56),
+#if defined(CONFIG_BRCMSTB)
+	.flags	= (CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_VALID_FOR_HRES),
+#else
 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+#endif
 };
 
 static struct cyclecounter cyclecounter = {

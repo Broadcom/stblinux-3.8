@@ -3,16 +3,19 @@
 
 /ada-exp.c
 /ada-lex.c
+/build-gnulib/
 /c-exp.c
 /cp-name-parser.c
 /f-exp.c
 /gdb
+/gdb-gdb.gdb
 /gdbtui
 /go-exp.c
 /init.c
 /jit-reader.h
 /jv-exp.c
 /m2-exp.c
+/nm.h
 /objc-exp.c
 /observer.h
 /observer.inc
