@@ -151,7 +151,6 @@ struct brcm_nand_dma_desc {
 #define REG_TIMING_2(cs) (BCHP_NAND_TIMING_2_CS0 + ((cs) * REG_SPACING))
 
 #define CORR_ERROR_COUNT (BDEV_RD(BCHP_NAND_CORR_ERROR_COUNT))
-#define UNCORR_ERROR_COUNT (BDEV_RD(BCHP_NAND_UNCORR_ERROR_COUNT))
 
 #define WR_CORR_THRESH(cs, val) do { \
 	u32 contents = BDEV_RD(BCHP_NAND_CORR_STAT_THRESHOLD); \
@@ -181,7 +180,6 @@ struct brcm_nand_dma_desc {
 	 (BCHP_NAND_TIMING_2_CS1 + (((cs) - 1) << 4)))
 
 #define CORR_ERROR_COUNT (1)
-#define UNCORR_ERROR_COUNT (1)
 
 #define WR_CORR_THRESH(cs, val) do { \
 	BDEV_WR(BCHP_NAND_CORR_STAT_THRESHOLD, \
@@ -233,8 +231,12 @@ struct brcmstb_nand_controller {
 	struct nand_hw_control	controller;
 	volatile void __iomem	*flash_dma_base;
 	unsigned int		irq;
+	unsigned int		dma_irq;
+	bool			irq_cascaded;
 	int			cmd_pending;
+	bool			dma_pending;
 	struct completion	done;
+	struct completion	dma_done;
 
 	/* List of NAND hosts (one for each chip-select) */
 	struct list_head host_list;
@@ -242,8 +244,6 @@ struct brcmstb_nand_controller {
 	struct brcm_nand_dma_desc *dma_descs;
 	unsigned int		num_dma_descs;
 	dma_addr_t		dma_pa;
-
-	int dma_count;
 
 	u32			nand_cs_nand_select;
 	u32			nand_cs_nand_xor;
@@ -419,6 +419,14 @@ static inline dma_addr_t flash_dma_get_desc_pa(
 {
 	return ctrl->dma_pa + (idx * sizeof(struct brcm_nand_dma_desc));
 }
+
+/* Low-level operation types: command, address, write, or read */
+enum brcmstb_nand_llop_type {
+	LL_OP_CMD,
+	LL_OP_ADDR,
+	LL_OP_WR,
+	LL_OP_RD,
+};
 
 /***********************************************************************
  * Internal support functions
@@ -652,29 +660,48 @@ static int write_oob_to_regs(int i, const u8 *oob, int sas, int sector_1k)
 	return tbytes;
 }
 
+static irqreturn_t brcmstb_nand_ctlrdy_irq(int irq, void *data)
+{
+	struct brcmstb_nand_controller *ctrl = data;
+
+	/* Discard all NAND_CTLRDY interrupts during DMA */
+	if (ctrl->dma_pending)
+		return IRQ_HANDLED;
+
+#ifdef HW7445_988_WORKAROUND
+	/* HW7445-988: ignore certain interrupts */
+	if (ctrl->skip_irq > 0) {
+		ctrl->skip_irq--;
+		return IRQ_HANDLED;
+	}
+#endif
+	complete(&ctrl->done);
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t brcmstb_nand_dma_irq(int irq, void *data)
+{
+	struct brcmstb_nand_controller *ctrl = data;
+
+	complete(&ctrl->dma_done);
+
+	return IRQ_HANDLED;
+}
+
+/*
+ * High-level HIF interrupt handler; used only if we aren't using a
+ * properly-cascaded L2 interrupt controller driver
+ */
 static irqreturn_t brcmstb_nand_irq(int irq, void *data)
 {
 	struct brcmstb_nand_controller *ctrl = data;
 
-	if (has_flash_dma(ctrl) && flash_dma_irq_done(ctrl)) {
-		if (ctrl->dma_count) {
-			ctrl->dma_count = 0;
-			complete(&ctrl->done);
-		}
-		return IRQ_HANDLED;
-	}
+	if (has_flash_dma(ctrl) && flash_dma_irq_done(ctrl))
+		return brcmstb_nand_dma_irq(irq, data);
 
 	if (HIF_TEST_IRQ(NAND_CTLRDY)) {
 		HIF_ACK_IRQ(NAND_CTLRDY);
-#ifdef HW7445_988_WORKAROUND
-		/* HW7445-988: ignore certain interrupts */
-		if (ctrl->skip_irq > 0) {
-			ctrl->skip_irq--;
-			return IRQ_HANDLED;
-		}
-#endif
-		complete(&ctrl->done);
-		return IRQ_HANDLED;
+		return brcmstb_nand_ctlrdy_irq(irq, data);
 	}
 	return IRQ_NONE;
 }
@@ -728,6 +755,41 @@ static int brcmstb_nand_waitfunc(struct mtd_info *mtd, struct nand_chip *this)
 	return BDEV_RD_F(NAND_INTFC_STATUS, FLASH_STATUS);
 }
 
+static int brcmstb_nand_low_level_op(struct brcmstb_nand_host *host,
+		enum brcmstb_nand_llop_type type, u32 data, bool last_op)
+{
+	struct mtd_info *mtd = &host->mtd;
+	struct nand_chip *chip = &host->chip;
+	u32 tmp;
+
+	tmp = data & BCHP_NAND_LL_OP_DATA_MASK;
+	switch (type) {
+	case LL_OP_CMD:
+		tmp |= BCHP_NAND_LL_OP_CLE_MASK;
+		tmp |= BCHP_NAND_LL_OP_WE_MASK;
+		break;
+	case LL_OP_ADDR:
+		tmp |= BCHP_NAND_LL_OP_ALE_MASK;
+		tmp |= BCHP_NAND_LL_OP_WE_MASK;
+		break;
+	case LL_OP_WR:
+		tmp |= BCHP_NAND_LL_OP_WE_MASK;
+		break;
+	case LL_OP_RD:
+		tmp |= BCHP_NAND_LL_OP_RE_MASK;
+		break;
+	}
+	if (last_op)
+		tmp |= BCHP_NAND_LL_OP_RETURN_IDLE_MASK;
+
+	DBG("%s: cmd 0x%lx\n", __func__, (unsigned long)tmp);
+
+	BDEV_WR_RB(BCHP_NAND_LL_OP, tmp);
+
+	brcmstb_nand_send_cmd(host, CMD_LOW_LEVEL_OP);
+	return brcmstb_nand_waitfunc(mtd, chip);
+}
+
 static void brcmstb_nand_cmdfunc(struct mtd_info *mtd, unsigned command,
 	int column, int page_addr)
 {
@@ -768,6 +830,11 @@ static void brcmstb_nand_cmdfunc(struct mtd_info *mtd, unsigned command,
 #if CONTROLLER_VER >= 40
 	case NAND_CMD_PARAM:
 		native_cmd = CMD_PARAMETER_READ;
+		break;
+	case NAND_CMD_SET_FEATURES:
+	case NAND_CMD_GET_FEATURES:
+		brcmstb_nand_low_level_op(host, LL_OP_CMD, command, false);
+		brcmstb_nand_low_level_op(host, LL_OP_ADDR, column, false);
 		break;
 #endif
 	}
@@ -819,6 +886,15 @@ static uint8_t brcmstb_nand_read_byte(struct mtd_info *mtd)
 			ret = BDEV_RD(FC(host->last_byte >> 2)) >>
 				(24 - ((host->last_byte & 0x03) << 3));
 		break;
+	case NAND_CMD_GET_FEATURES:
+		if (host->last_byte >= ONFI_SUBFEATURE_PARAM_LEN) {
+			ret = 0;
+		} else {
+			bool last = host->last_byte ==
+				ONFI_SUBFEATURE_PARAM_LEN - 1;
+			brcmstb_nand_low_level_op(host, LL_OP_RD, 0, last);
+			ret = BDEV_RD(BCHP_NAND_LL_RDDATA) & 0xff;
+		}
 #endif
 	}
 
@@ -834,6 +910,23 @@ static void brcmstb_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 
 	for (i = 0; i < len; i++, buf++)
 		*buf = brcmstb_nand_read_byte(mtd);
+}
+
+static void brcmstb_nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
+{
+	int i;
+	struct nand_chip *chip = mtd->priv;
+	struct brcmstb_nand_host *host = chip->priv;
+
+	switch (host->last_cmd) {
+	case NAND_CMD_SET_FEATURES:
+		for (i = 0; i < len; i++)
+			brcmstb_nand_low_level_op(host, LL_OP_WR, buf[i], (i + 1) == len);
+		break;
+	default:
+		BUG();
+		break;
+	}
 }
 
 /* Copied from nand_base.c to support custom brcmstb_check_exceptions() */
@@ -879,9 +972,8 @@ static int brcmstb_nand_fill_dma_desc(struct brcmstb_nand_host *host,
  */
 static void brcmstb_nand_dma_run(struct brcmstb_nand_host *host, dma_addr_t desc)
 {
-	struct mtd_info *mtd = &host->mtd;
-	struct nand_chip *chip = &host->chip;
 	struct brcmstb_nand_controller *ctrl = host->ctrl;
+	unsigned long timeo = msecs_to_jiffies(100);
 
 	flash_dma_writel(ctrl, FLASH_DMA_FIRST_DESC, desc & 0xffffffff);
 	(void)flash_dma_readl(ctrl, FLASH_DMA_FIRST_DESC);
@@ -889,14 +981,17 @@ static void brcmstb_nand_dma_run(struct brcmstb_nand_host *host, dma_addr_t desc
 	(void)flash_dma_readl(ctrl, FLASH_DMA_FIRST_DESC_EXT);
 
 	/* Start FLASH_DMA engine */
-	HIF_DISABLE_IRQ(NAND_CTLRDY);
+	ctrl->dma_pending = true;
 	mb();
 	flash_dma_writel(ctrl, FLASH_DMA_CTRL, 0x03); /* wake | run */
 
-	brcmstb_nand_waitfunc(mtd, chip);
-
-	HIF_ACK_IRQ(NAND_CTLRDY);
-	HIF_ENABLE_IRQ(NAND_CTLRDY);
+	if (wait_for_completion_timeout(&ctrl->dma_done, timeo) <= 0) {
+		dev_err(&host->pdev->dev,
+				"timeout waiting for DMA; status %#x, error status %#x\n",
+				flash_dma_readl(ctrl, FLASH_DMA_STATUS),
+				flash_dma_readl(ctrl, FLASH_DMA_ERROR_STATUS));
+	}
+	ctrl->dma_pending = false;
 	flash_dma_writel(ctrl, FLASH_DMA_CTRL, 0); /* force stop */
 }
 
@@ -908,8 +1003,6 @@ static int brcmstb_nand_dma_trans(struct brcmstb_nand_host *host, u64 addr,
 	int dir = dma_cmd == CMD_PAGE_READ ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
 	int step = len, offs, i;
 
-	ctrl->cmd_pending = dma_cmd;
-	ctrl->dma_count = 1;
 	buf_pa = dma_map_single(&host->pdev->dev, buf, len, dir);
 
 	/* CRNAND-34: DMA reads must be split into fine-grained linked-lists */
@@ -994,7 +1087,7 @@ static int brcmstb_nand_read(struct mtd_info *mtd,
 	if (err_addr != 0) {
 		dev_warn(&host->pdev->dev, "uncorrectable error at 0x%llx\n",
 			(unsigned long long)err_addr);
-		mtd->ecc_stats.failed += UNCORR_ERROR_COUNT;
+		mtd->ecc_stats.failed++;
 		/* NAND layer expects zero on ECC errors */
 		return 0;
 	}
@@ -1002,11 +1095,12 @@ static int brcmstb_nand_read(struct mtd_info *mtd,
 	err_addr = BDEV_RD(BCHP_NAND_ECC_CORR_ADDR) |
 		((u64)(BDEV_RD(BCHP_NAND_ECC_CORR_EXT_ADDR) & 0xffff) << 32);
 	if (err_addr) {
+		unsigned int corrected = CORR_ERROR_COUNT;
 		dev_info(&host->pdev->dev, "corrected error at 0x%llx\n",
 			(unsigned long long)err_addr);
-		mtd->ecc_stats.corrected += CORR_ERROR_COUNT;
-		/* NAND layer expects zero on ECC errors */
-		return 0;
+		mtd->ecc_stats.corrected += corrected;
+		/* Always exceed the software-imposed threshold */
+		return max(mtd->bitflip_threshold, corrected);
 	}
 
 	return 0;
@@ -1568,10 +1662,9 @@ static int brcmstb_nand_init_cs(struct brcmstb_nand_host *host)
 	chip->waitfunc = brcmstb_nand_waitfunc;
 	chip->read_byte = brcmstb_nand_read_byte;
 	chip->read_buf = brcmstb_nand_read_buf;
+	chip->write_buf = brcmstb_nand_write_buf;
 
 	chip->ecc.mode = NAND_ECC_HW;
-	chip->ecc.size = 512;
-	chip->ecc.layout = &brcmstb_nand_dummy_layout;
 	chip->ecc.read_page = brcmstb_nand_read_page;
 	chip->ecc.read_subpage = brcmstb_nand_read_subpage;
 	chip->ecc.write_page = brcmstb_nand_write_page;
@@ -1596,13 +1689,17 @@ static int brcmstb_nand_init_cs(struct brcmstb_nand_host *host)
 		return -ENXIO;
 
 	/* nand_scan_tail() needs this to be set up */
-	chip->ecc.strength = host->hwcfg.ecc_level;
-
-	if (nand_scan_tail(mtd) || chip->scan_bbt(mtd))
-		return -ENXIO;
+	chip->ecc.strength = host->hwcfg.ecc_level
+				<< host->hwcfg.sector_size_1k;
+	chip->ecc.size = host->hwcfg.sector_size_1k ? 1024 : 512;
+	/* only use our internal HW threshold */
+	mtd->bitflip_threshold = 1;
 
 	chip->ecc.layout = brcmstb_choose_ecc_layout(host);
 	if (!chip->ecc.layout)
+		return -ENXIO;
+
+	if (nand_scan_tail(mtd) || chip->scan_bbt(mtd))
 		return -ENXIO;
 
 	/* Update ecclayout info after nand_scan_tail() */
@@ -1625,9 +1722,12 @@ static int brcmstb_nand_suspend(struct device *dev)
 	ctrl->nand_cs_nand_xor = BDEV_RD(BCHP_NAND_CS_NAND_XOR);
 	ctrl->corr_stat_threshold =
 		BDEV_RD(BCHP_NAND_CORR_STAT_THRESHOLD);
-	ctrl->hif_intr2 = HIF_ENABLED_IRQ(NAND_CTLRDY);
+
+	if (!ctrl->irq_cascaded)
+		ctrl->hif_intr2 = HIF_ENABLED_IRQ(NAND_CTLRDY);
 	if (has_flash_dma(ctrl)) {
-		ctrl->hif_intr2 |= flash_dma_irq_enabled(ctrl);
+		if (!ctrl->irq_cascaded)
+			ctrl->hif_intr2 |= flash_dma_irq_enabled(ctrl);
 		ctrl->flash_dma_mode = flash_dma_readl(ctrl, FLASH_DMA_MODE);
 	}
 
@@ -1661,8 +1761,8 @@ static int brcmstb_nand_resume(struct device *dev)
 	BDEV_WR_RB(BCHP_NAND_CORR_STAT_THRESHOLD,
 			ctrl->corr_stat_threshold);
 
-	HIF_ACK_IRQ(NAND_CTLRDY);
-	if (ctrl->hif_intr2) {
+	if (!ctrl->irq_cascaded && ctrl->hif_intr2) {
+		HIF_ACK_IRQ(NAND_CTLRDY);
 		HIF_ENABLE_IRQ(NAND_CTLRDY);
 		if (has_flash_dma(ctrl))
 			flash_dma_irq_enable(ctrl);
@@ -1717,6 +1817,29 @@ static int brcmstb_nand_alloc_dma_descrs(struct device *dev,
 	return 0;
 }
 
+static int brcmstb_nand_check_irq_cascade(struct device *dev,
+		struct brcmstb_nand_controller *ctrl)
+{
+	struct device_node *dn = dev->of_node, *int_parent;
+	int ret, intlen;
+
+	int_parent = of_parse_phandle(dn, "interrupt-parent", 0);
+	if (!int_parent) {
+		ctrl->irq_cascaded = false;
+		return 0;
+	}
+
+	ret = of_property_read_u32(int_parent, "#interrupt-cells", &intlen);
+	if (ret)
+		return -EINVAL;
+	if (intlen == 1) {
+		dev_info(dev, "using HIF_INTR2 cascaded IRQ\n");
+		ctrl->irq_cascaded = true;
+	}
+
+	return 0;
+}
+
 static int brcmstb_nand_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -1736,9 +1859,14 @@ static int brcmstb_nand_probe(struct platform_device *pdev)
 	dev_set_drvdata(dev, ctrl);
 
 	init_completion(&ctrl->done);
+	init_completion(&ctrl->dma_done);
 	spin_lock_init(&ctrl->controller.lock);
 	init_waitqueue_head(&ctrl->controller.wq);
 	INIT_LIST_HEAD(&ctrl->host_list);
+
+	ret = brcmstb_nand_check_irq_cascade(dev, ctrl);
+	if (ret)
+		return ret;
 
 	/*
 	 * NAND
@@ -1779,6 +1907,23 @@ static int brcmstb_nand_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 
+		if (ctrl->irq_cascaded) {
+			ctrl->dma_irq = platform_get_irq(pdev, 1);
+			if ((int)ctrl->dma_irq < 0) {
+				dev_err(dev, "missing FLASH_DMA IRQ\n");
+				return -ENODEV;
+			}
+
+			ret = devm_request_irq(dev, ctrl->dma_irq,
+					brcmstb_nand_dma_irq, 0, DRV_NAME,
+					ctrl);
+			if (ret < 0) {
+				dev_err(dev, "can't allocate IRQ %d: error %d\n",
+						ctrl->dma_irq, ret);
+				return ret;
+			}
+		}
+
 		dev_info(dev, "enabling FLASH_DMA\n");
 	}
 
@@ -1802,13 +1947,20 @@ static int brcmstb_nand_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	HIF_ACK_IRQ(NAND_CTLRDY);
-	HIF_ENABLE_IRQ(NAND_CTLRDY);
-	if (has_flash_dma(ctrl))
-		flash_dma_irq_enable(ctrl);
+	if (!ctrl->irq_cascaded) {
+		HIF_ACK_IRQ(NAND_CTLRDY);
+		HIF_ENABLE_IRQ(NAND_CTLRDY);
+		if (has_flash_dma(ctrl))
+			flash_dma_irq_enable(ctrl);
+	}
 
-	ret = devm_request_irq(dev, ctrl->irq, brcmstb_nand_irq, IRQF_SHARED,
-		DRV_NAME, ctrl);
+	if (ctrl->irq_cascaded) {
+		ret = devm_request_irq(dev, ctrl->irq, brcmstb_nand_ctlrdy_irq,
+				0, DRV_NAME, ctrl);
+	} else {
+		ret = devm_request_irq(dev, ctrl->irq, brcmstb_nand_irq,
+				IRQF_SHARED, DRV_NAME, ctrl);
+	}
 	if (ret < 0) {
 		dev_err(dev, "can't allocate IRQ %d: error %d\n",
 			ctrl->irq, ret);
@@ -1845,9 +1997,11 @@ static int brcmstb_nand_probe(struct platform_device *pdev)
 	return 0;
 
 out:
-	HIF_DISABLE_IRQ(NAND_CTLRDY);
-	if (has_flash_dma(ctrl))
-		flash_dma_irq_disable(ctrl);
+	if (!ctrl->irq_cascaded) {
+		HIF_DISABLE_IRQ(NAND_CTLRDY);
+		if (has_flash_dma(ctrl))
+			flash_dma_irq_disable(ctrl);
+	}
 	return ret;
 }
 
@@ -1860,8 +2014,10 @@ static int brcmstb_nand_remove(struct platform_device *pdev)
 	list_for_each_entry(host, &ctrl->host_list, node)
 		nand_release(mtd);
 
-	HIF_DISABLE_IRQ(NAND_CTLRDY);
-	flash_dma_irq_disable(ctrl);
+	if (!ctrl->irq_cascaded) {
+		HIF_DISABLE_IRQ(NAND_CTLRDY);
+		flash_dma_irq_disable(ctrl);
+	}
 
 	dev_set_drvdata(&pdev->dev, NULL);
 

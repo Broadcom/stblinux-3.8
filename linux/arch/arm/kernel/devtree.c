@@ -36,12 +36,40 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
 	return alloc_bootmem_align(size, align);
 }
 
+static void __init relocate_dtb(void)
+{
+	u64 i;
+	phys_addr_t phys_start, phys_end;
+	int nid;
+
+	/*
+	 * See if we can move the DTB somewhere below where it is currently.
+	 */
+	for_each_free_mem_range(i, MAX_NUMNODES, &phys_start, &phys_end, &nid) {
+		u32 dtb_size = be32_to_cpu(initial_boot_params->totalsize);
+		void *virt_new_dtb;
+
+		if ((phys_end - phys_start) < dtb_size)
+			continue;
+
+		virt_new_dtb = (void *)__phys_to_virt(phys_start);
+		pr_info("moving dtb from %x to %x\n",
+			virt_to_phys(initial_boot_params), phys_start);
+		memmove(virt_new_dtb, initial_boot_params, dtb_size);
+		initial_boot_params = virt_new_dtb;
+
+		return;
+	}
+}
+
 void __init arm_dt_memblock_reserve(void)
 {
 	u64 *reserve_map, base, size;
 
 	if (!initial_boot_params)
 		return;
+
+	relocate_dtb();
 
 	/* Reserve the dtb region */
 	memblock_reserve(virt_to_phys(initial_boot_params),

@@ -33,19 +33,9 @@
 #include <linux/mii.h>
 #include <linux/if_vlan.h>
 #include <linux/phy.h>
+#include <linux/brcmstb/brcmstb.h>
 
 #include "bcmgenet_map.h"
-
-#define BRCM_PHY_ID_AUTO	0x100
-#define BRCM_PHY_ID_NONE	0x101
-
-#define BRCM_PHY_TYPE_INT	1
-#define BRCM_PHY_TYPE_EXT_MII	2
-#define BRCM_PHY_TYPE_EXT_RVMII	3
-#define BRCM_PHY_TYPE_EXT_RGMII	4
-#define BRCM_PHY_TYPE_EXT_RGMII_IBS	5
-#define BRCM_PHY_TYPE_EXT_RGMII_NO_ID	6
-#define BRCM_PHY_TYPE_MOCA	7
 
 /* total number of Buffer Descriptors, same for Rx/Tx */
 #define TOTAL_DESC				256
@@ -219,6 +209,7 @@ struct bcmgenet_priv {
 	struct mutex mdio_mutex;	/* mutex for mii_read/write */
 	wait_queue_head_t	wq;		/* mii wait queue */
 	struct phy_device *phydev;
+	struct device_node *phy_dn;
 	struct mii_bus *mii_bus;
 	int old_duplex;
 	int old_link;
@@ -246,6 +237,7 @@ struct bcmgenet_priv {
 	int dev_opened;		/* device opened. */
 	int dev_asleep;		/* device is at sleep */
 	struct platform_device *pdev;
+	unsigned int old_dt_binding;
 
 	/* WOL */
 	unsigned long	wol_enabled;

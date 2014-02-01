@@ -35,4 +35,13 @@ extern int brcmstb_cpu_kill(unsigned int cpu);
 
 extern void brcmstb_hook_fault_code(void);
 
+#ifdef CONFIG_CMA
+extern void __init cma_reserve(void);
+extern void __init cma_register(void);
+#else
+static inline void cma_reserve(void) { }
+static inline void cma_register(void) { }
+#endif
+
+
 #endif /* __BRCMSTB_COMMON_H__ */

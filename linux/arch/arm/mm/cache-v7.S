@@ -315,6 +315,7 @@ v7_dma_inv_range:
 	cmp	r0, r1
 	blo	1b
 	dsb
+	issue_brcmstb_mega_barrier
 	mov	pc, lr
 ENDPROC(v7_dma_inv_range)
 
@@ -337,6 +338,7 @@ v7_dma_clean_range:
 	cmp	r0, r1
 	blo	1b
 	dsb
+	issue_brcmstb_mega_barrier
 	mov	pc, lr
 ENDPROC(v7_dma_clean_range)
 
@@ -359,6 +361,7 @@ ENTRY(v7_dma_flush_range)
 	cmp	r0, r1
 	blo	1b
 	dsb
+	issue_brcmstb_mega_barrier
 	mov	pc, lr
 ENDPROC(v7_dma_flush_range)
 

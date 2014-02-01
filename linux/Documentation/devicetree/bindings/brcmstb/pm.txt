@@ -1,0 +1,39 @@
+** Broadcom STB Power Management
+
+Broadcom STB power management involves several hardware components which are
+documented here.
+
+* Always-On control block (AON CTRL)
+
+This hardware provides control registers for the "always-on" (even in low-power
+modes) hardware, such as the Power Management State Machine (PMSM).
+
+Required properties:
+- compatible     : should contain "brcm,brcmstb-aon-ctrl"
+- reg            : the register start and length for the AON CTRL block
+
+Example:
+
+aon-ctrl@f0410000 {
+	compatible = "brcm,brcmstb-aon-ctrl";
+	reg = <0xf0410000 0x400>;
+};
+
+* DDR PHY control
+
+Control registers for the DDR PHY(s) present on the SoC.
+
+Required properties:
+- compatible     : should contain "brcm,brcmstb-ddr-phy-v225.1"
+- reg            : the register start and length pair(s) for the DDR PHY
+		   control block(s), with each block being listed in index
+                   order (i.e., DDR-0, DDR-1, etc.)
+
+Example:
+
+ddr-phy {
+	compatible = "brcm,brcmstb-ddr-phy-v225.1";
+	reg = <0xf1106000 0x24c
+	       0xf1186000 0x24c
+	       0xf1206000 0x24c>;
+};

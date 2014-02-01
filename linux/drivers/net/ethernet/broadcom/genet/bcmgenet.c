@@ -2335,13 +2335,10 @@ static void restore_state(struct bcmgenet_priv *priv)
 
 }
 
-/* init_umac: Initializes the uniMac controller */
-static int init_umac(struct bcmgenet_priv *priv)
+static int reset_umac(struct bcmgenet_priv *priv)
 {
-	u32 reg, cpu_mask_clear;
-	int timeout = 0;
-
-	dev_dbg(&priv->pdev->dev, "bcmgenet: init_umac\n");
+	unsigned int timeout = 0;
+	u32 reg;
 
 	/* 7358a0/7552a0: bad default in RBUF_FLUSH_CTRL.umac_sw_rst */
 	bcmgenet_rbuf_ctrl_set(priv, 0);
@@ -2364,6 +2361,21 @@ static int init_umac(struct bcmgenet_priv *priv)
 			"timeout waiting for MAC to come out of resetn\n");
 		return -ETIMEDOUT;
 	}
+
+	return 0;
+}
+
+/* init_umac: Initializes the uniMac controller */
+static int init_umac(struct bcmgenet_priv *priv)
+{
+	int ret;
+	u32 reg, cpu_mask_clear;
+
+	dev_dbg(&priv->pdev->dev, "bcmgenet: init_umac\n");
+
+	ret = reset_umac(priv);
+	if (ret)
+		return ret;
 
 	bcmgenet_umac_writel(priv, 0, UMAC_CMD);
 	/* clear tx/rx counter */
@@ -2772,6 +2784,13 @@ static irqreturn_t bcmgenet_isr0(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static void bcmgenet_clock_init(struct bcmgenet_priv *priv)
+{
+	priv->clk = clk_get(&priv->pdev->dev, "enet");
+	priv->clk_wol = clk_get(&priv->pdev->dev, "enet-wol");
+	bcmgenet_clock_enable(priv);
+}
+
 /* bcmgenet_init_dev: initialize uniMac devie
  * allocate Tx/Rx buffer descriptors pool, Tx control block pool.
  */
@@ -2780,10 +2799,6 @@ static int bcmgenet_init_dev(struct bcmgenet_priv *priv)
 	int ret;
 	u32 reg;
 	u8 major;
-
-	priv->clk = clk_get(&priv->pdev->dev, "enet");
-	priv->clk_wol = clk_get(&priv->pdev->dev, "enet-wol");
-	bcmgenet_clock_enable(priv);
 
 	reg = bcmgenet_sys_readl(priv, SYS_REV_CTRL);
 	major = (reg >> 24 & 0x0f);
@@ -2951,7 +2966,7 @@ static int bcmgenet_wol_resume(struct bcmgenet_priv *priv)
 	if (priv->sw_type && priv->phydev)
 		phy_init_hw(priv->phydev);
 	/* Speed settings must be restored */
-	bcmgenet_mii_init(priv->dev);
+	bcmgenet_mii_config(priv->dev);
 
 	if (priv->phydev)
 		priv->phydev->adjust_link(priv->dev);
@@ -3423,7 +3438,7 @@ static void bcmgenet_set_hw_params(struct bcmgenet_priv *priv)
 		pr_warn("GENET does not support 40-bits PA\n");
 #endif
 
-	pr_info("Configuration for version: %d\n"
+	pr_debug("Configuration for version: %d\n"
 		"TXq: %1d, RXq: %1d, BDs: %1d\n"
 		"BP << en: %2d, BP msk: 0x%05x\n"
 		"HFB count: %2d, QTAQ msk: 0x%05x\n"
@@ -3440,6 +3455,36 @@ static void bcmgenet_set_hw_params(struct bcmgenet_priv *priv)
 		params->words_per_bd);
 }
 
+static void bcmgenet_of_parse(struct device_node *dn,
+				struct bcmgenet_priv *priv)
+{
+	u32 propval;
+
+	priv->phy_type = BRCM_PHY_TYPE_INT;
+	priv->phy_addr = 10;
+	priv->phy_speed = SPEED_1000;
+
+	if (!of_property_read_u32(dn, "phy-type", &propval)) {
+		priv->old_dt_binding = 1;
+		priv->phy_type = propval;
+	}
+	if (!of_property_read_u32(dn, "phy-id", &propval))
+		priv->phy_addr = propval;
+	if (!of_property_read_u32(dn, "phy-speed", &propval))
+		priv->phy_speed = propval;
+
+	if (!of_property_read_u32(dn, "ethsw-type", &propval)) {
+		/* one-shot initialization; never poll for link status */
+		priv->sw_type = propval;
+
+		/* switch pseudo-PHY is stored in sw_addr */
+		priv->sw_addr = priv->phy_addr;
+		/* switch real MDIO bus PHY id is 0 */
+		if (priv->phy_addr != BRCM_PHY_ID_NONE)
+			priv->phy_addr = 0;
+	}
+}
+
 static int bcmgenet_drv_probe(struct platform_device *pdev)
 {
 	struct device_node *dn = pdev->dev.of_node;
@@ -3447,7 +3492,6 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 	struct net_device *dev;
 	const void *macaddr;
 	struct resource *r;
-	u32 propval;
 	int err = -EIO;
 
 	/* Up to GENET_MAX_MQ_CNT + 1 TX queues and a single RX queue */
@@ -3530,41 +3574,30 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 	/* Mii wait queue */
 	init_waitqueue_head(&priv->wq);
 
-	priv->phy_type = BRCM_PHY_TYPE_INT;
-	priv->phy_addr = 10;
-	priv->phy_speed = SPEED_1000;
-
-	if (!of_property_read_u32(dn, "phy-type", &propval))
-		priv->phy_type = propval;
-	if (!of_property_read_u32(dn, "phy-id", &propval))
-		priv->phy_addr = propval;
-	if (!of_property_read_u32(dn, "phy-speed", &propval))
-		priv->phy_speed = propval;
-
-	priv->ext_phy = priv->phy_type != BRCM_PHY_TYPE_INT;
 	priv->pdev = pdev;
+
+	bcmgenet_of_parse(dn, priv);
+
+	bcmgenet_clock_init(priv);
+
+	err = reset_umac(priv);
+	if (err)
+		goto err_clk_disable;
+
+	err = bcmgenet_mii_init(dev);
+	if (err)
+		goto err_clk_disable;
 
 	/* Init GENET registers, Tx/Rx buffers */
 	err = bcmgenet_init_dev(priv);
 	if (err)
-		goto err;
-
-	if (!of_property_read_u32(dn, "ethsw-type", &propval)) {
-		/* one-shot initialization; never poll for link status */
-		priv->sw_type = propval;
-
-		/* switch pseudo-PHY is stored in sw_addr */
-		priv->sw_addr = priv->phy_addr;
-		/* switch real MDIO bus PHY id is 0 */
-		priv->phy_addr = 0;
-	}
-	bcmgenet_mii_init(dev);
+		goto err_clk_disable;
 
 	INIT_WORK(&priv->bcmgenet_irq_work, bcmgenet_irq_task);
 
 	err = register_netdev(dev);
 	if (err)
-		goto err_clk_disable;
+		goto err_uninit;
 
 	if (!priv->ext_phy && priv->phydev)
 		priv->phydev->adjust_link(dev);
@@ -3574,9 +3607,10 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 
 	return 0;
 
+err_uninit:
+	bcmgenet_uninit_dev(priv);
 err_clk_disable:
 	bcmgenet_clock_disable(priv);
-	bcmgenet_uninit_dev(priv);
 err:
 	free_netdev(dev);
 	return err;

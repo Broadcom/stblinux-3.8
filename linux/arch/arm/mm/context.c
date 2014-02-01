@@ -49,6 +49,33 @@ static DEFINE_PER_CPU(atomic64_t, active_asids);
 static DEFINE_PER_CPU(u64, reserved_asids);
 static cpumask_t tlb_flush_pending;
 
+#ifdef CONFIG_ARM_ERRATA_798181
+void a15_erratum_get_cpumask(int this_cpu, struct mm_struct *mm,
+			     cpumask_t *mask)
+{
+	int cpu;
+	unsigned long flags;
+	u64 context_id, asid;
+
+	raw_spin_lock_irqsave(&cpu_asid_lock, flags);
+	context_id = mm->context.id.counter;
+	for_each_online_cpu(cpu) {
+		if (cpu == this_cpu)
+			continue;
+		/*
+		 * We only need to send an IPI if the other CPUs are
+		 * running the same ASID as the one being invalidated.
+		 */
+		asid = per_cpu(active_asids, cpu).counter;
+		if (asid == 0)
+			asid = per_cpu(reserved_asids, cpu);
+		if (context_id == asid)
+			cpumask_set_cpu(cpu, mask);
+	}
+	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
+}
+#endif
+
 #ifdef CONFIG_ARM_LPAE
 static void cpu_set_reserved_ttbr0(void)
 {
@@ -209,8 +236,11 @@ void check_and_switch_context(struct mm_struct *mm, struct task_struct *tsk)
 		atomic64_set(&mm->context.id, asid);
 	}
 
-	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending))
+	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending)) {
 		local_flush_tlb_all();
+		if (erratum_a15_798181())
+			; // do nothing
+	}
 
 	atomic64_set(&per_cpu(active_asids, cpu), asid);
 	cpumask_set_cpu(cpu, mm_cpumask(mm));

@@ -5,6 +5,12 @@ config ARCH_BRCMSTB
 	select ARM_GIC
 	select BRCMSTB
 	select MIGHT_HAVE_PCI
+	select ARM_ERRATA_798181 if SMP
+	select REGULATOR
+	select ARCH_HAS_CPUFREQ
+	select HAVE_CLK
+	select ARCH_HAS_OPP
+	select PM_OPP if PM
 	help
 	  This enables support for Broadcom ARM-based set-top box chipsets.
 
@@ -22,6 +28,7 @@ config BCM7145A0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7145B0
 	bool "7145 Bx"
@@ -31,6 +38,7 @@ config BCM7145B0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7366A0
 	bool "7366 Ax"
@@ -41,6 +49,7 @@ config BCM7366A0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7439A0
 	bool "7439 Ax"
@@ -51,6 +60,7 @@ config BCM7439A0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7445A0
 	bool "7445 Ax"
@@ -61,6 +71,7 @@ config BCM7445A0
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7445B0
 	bool "7445 Bx"
@@ -71,6 +82,7 @@ config BCM7445B0
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7445C0
 	bool "7445 Cx"
@@ -81,6 +93,7 @@ config BCM7445C0
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 config BCM7445D0
 	bool "7445 Dx"
@@ -91,6 +104,7 @@ config BCM7445D0
 	select BRCM_HAS_NAND_MINOR_1
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_USE_MEGA_BARRIER
 
 endchoice
 
@@ -136,6 +150,7 @@ config BRCM_MOCA
 config BRCM_USB
 	tristate "Broadcom STB USB support"
 	depends on BRCMSTB && USB
+	select USB_XHCI_PLATFORM if USB_XHCI_HCD
 	default y
 	help
 	  Say Y to enable the drivers for the onchip USB controllers.
@@ -319,4 +334,9 @@ config BRCM_MSPI_LEGACY
 
 # MSPI can transfer either 64b or 8b per slot
 config BRCM_MSPI_64B_WORDS
+	bool
+
+# Apply the mega-barrier prior to DMA operations to workaround
+# issue noted in HW7445-1301 and derivatives.
+config BRCMSTB_USE_MEGA_BARRIER
 	bool

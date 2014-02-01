@@ -487,6 +487,8 @@ static void __init setup_processor(void)
 	elf_hwcap &= ~HWCAP_THUMB;
 #endif
 
+	erratum_a15_798181_init();
+
 	feat_v6_fixup();
 
 	cacheid_init();

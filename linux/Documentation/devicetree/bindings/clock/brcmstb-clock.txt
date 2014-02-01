@@ -1,0 +1,46 @@
+Device Tree Clock bindings for brcmstb
+
+In addition to the platform bindings provided in-tree, the brcmstb common
+clock driver supports the following clock providers/consumers:
+
+	- CPU clock dividers (provider/consumer)
+
+=== CPU clock divider ===
+
+The CPU divider node serves as the sole clock for the CPU complex. It supports
+power-of-2 clock division, with a divider of "1" as the default highest-speed
+setting.
+
+Required properties:
+- compatible : shall be one of the following:
+	"brcm,brcmstb-cpu-clk-div"
+- reg : address and width of the divider configuration register
+- #clock-cells : shall be set to 0
+- clocks : phandle of clock provider which provides the source clock
+	   (this would typically be a "fixed-clock" type PLL)
+- div-table : list of (raw_value,divider) ordered pairs that correspond to the
+	      allowed clock divider settings
+- div-shift-width : least-significant bit position and width of divider value
+
+example:
+	cpupll: cpupll@0 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <1500000000>;
+	};
+
+	cpuclk: cpu-clk-div@0 {
+		compatible = "brcm,brcmstb-cpu-clk-div";
+		reg = <0xf03e257c 0x4>;
+		#clock-cells = <0>;
+		clocks = <&cpupll>;
+		div-table = <0x00 1 0x11 2 0x12 4 0x13 8 0x14 16>;
+		div-shift-width = <0 5>;
+	};
+
+	cpus {
+		cpu@0 {
+			clocks = <&cpuclk>;
+		};
+	};
+

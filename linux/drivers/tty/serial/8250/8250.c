@@ -488,22 +488,36 @@ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
 	return readl(p->membase + offset);
 }
 
-static void safer_mem_serial_out(struct uart_port *p, int offset, int value)
-{
-	struct uart_8250_port *up =
-		container_of(p, struct uart_8250_port, port);
-	if (offset == UART_LCR)
-		wait_for_xmitr(up, BOTH_EMPTY);
-	mem_serial_out(p, offset, value);
-}
-
+/*
+ * SWLINUX-2411: Chips with UARTs marked BuggyDW have an unresettable "busy
+ * detect" interrupt that can be triggered by writing LCR when UART is busy
+ * (one case is when receive data is present in RBR).  Work around this by:
+ * 1. preventing UART from receiving more characters by putting into loopback
+ *    mode,
+ * 2. clearing and initializing FIFOs
+ * 3. waiting for data to be flushed out of TX and RX shift registers
+ * 4. clearing and initializing FIFOs
+ * 5. reading RBR to remove remaining characters
+ */
 static void safer_mem32_serial_out(struct uart_port *p, int offset, int value)
 {
 	struct uart_8250_port *up =
 		container_of(p, struct uart_8250_port, port);
-	if (offset == UART_LCR)
+	if (offset == UART_LCR) {
+		unsigned int old_mcr;
+		old_mcr = mem32_serial_in(p, UART_MCR);
 		wait_for_xmitr(up, BOTH_EMPTY);
-	mem32_serial_out(p, offset, value);
+		mem32_serial_out(p, UART_MCR, UART_MCR_LOOP);
+		serial8250_clear_and_reinit_fifos(up);
+		/* empirically determined delay */
+		udelay(80);
+		serial8250_clear_and_reinit_fifos(up);
+		mem32_serial_out(p, offset, value);
+		mem32_serial_out(p, UART_MCR, old_mcr);
+		(void) mem32_serial_in(p, UART_RX);
+	} else {
+		mem32_serial_out(p, offset, value);
+	}
 }
 
 static unsigned int io_serial_in(struct uart_port *p, int offset)
@@ -538,8 +552,6 @@ static void set_io_from_upio(struct uart_port *p)
 	case UPIO_MEM:
 		p->serial_in = mem_serial_in;
 		p->serial_out = mem_serial_out;
-		if (p->flags & UPF_SAFER_LCR_WRITES)
-			p->serial_out = safer_mem_serial_out;
 		break;
 
 	case UPIO_MEM32:
@@ -2348,7 +2360,6 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
 	unsigned char cval, fcr = 0;
 	unsigned long flags;
 	unsigned int baud, quot;
-	unsigned int lsr;
 	int fifo_bug = 0;
 
 	switch (termios->c_cflag & CSIZE) {
@@ -2496,14 +2507,6 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
 			serial_port_out(port, UART_OMAP_OSC_12M_SEL, 0);
 	}
 
-	if (port->flags & UPF_SAFER_LCR_WRITES) {
-		/* We'll break IRQ if we don't discard RX chars here */
-		lsr = serial_in(up, UART_LSR);
-		while (lsr & (UART_LSR_DR)) {
-			(void) serial_in(up, UART_RX);
-			lsr = serial_in(up, UART_LSR);
-		}
-	}
 	/*
 	 * For NatSemi, switch to bank 2 not bank 1, to avoid resetting EXCR2,
 	 * otherwise just set DLAB

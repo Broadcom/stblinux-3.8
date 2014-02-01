@@ -102,6 +102,8 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
 bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 				 int count);
 
+int cma_assign_device(struct device *dev, phys_addr_t addr);
+
 #else
 
 #define MAX_CMA_AREAS	(0)

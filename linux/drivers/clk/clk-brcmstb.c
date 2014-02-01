@@ -14,11 +14,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+#define pr_fmt(fmt) "clk-brcmstb: " fmt
 
+#include <linux/io.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_platform.h>
+#include <linux/slab.h>
+#include <linux/kernel.h>
+#include <linux/err.h>
 #include <linux/clk.h>
 #include <linux/clkdev.h>
 #include <linux/clk-provider.h>
-#include <linux/clk-private.h>
 #include <linux/brcmstb/brcmstb.h>
 
 struct bcm_clk {
@@ -132,13 +139,13 @@ brcmstb_clk_init(struct bcm_clk *brcmstb_clk_table, int lim)
 					    CLK_IGNORE_UNUSED));
 
 		if (IS_ERR(clk))
-			pr_err("clk-brcmstb: %s clk_register failed\n",
+			pr_err("%s clk_register failed\n",
 				brcmstb_clk->name);
 
 		ret = clk_register_clkdev(clk, brcmstb_clk->name, NULL);
 
 		if (ret)
-			pr_err("clk-brcmstb: %s clk device registration failed\n",
+			pr_err("%s clk device registration failed\n",
 			       brcmstb_clk->name);
 	}
 }
@@ -188,12 +195,161 @@ bmoca_clk_prepare(struct clk_hw *hw)
 	return 0;
 }
 
-void __init
-__brcmstb_clk_init(void)
+static void __init bmoca_clk_init(void)
 {
 	/*
 	 * MoCA clk init
 	 */
 	brcmstb_clk_init(brcmstb_moca_clk_table,
 			 ARRAY_SIZE(brcmstb_moca_clk_table));
+}
+
+static DEFINE_SPINLOCK(lock);
+
+static int cpu_clk_div_pos __initdata;
+static int cpu_clk_div_width __initdata;
+
+static int __init parse_cpu_clk_div_dimensions(struct device_node *np)
+{
+	struct property *prop;
+	const __be32 *p = NULL;
+	int len;
+	int elem_cnt;
+	const char *propname = "div-shift-width";
+
+	prop = of_find_property(np, propname, &len);
+	if (!prop) {
+		pr_err("%s property undefined\n", propname);
+		return -EINVAL;
+	}
+
+	elem_cnt = len / sizeof(u32);
+
+	if (elem_cnt != 2) {
+		pr_err("%s should have only 2 elements\n", propname);
+		return -EINVAL;
+	}
+
+	p = of_prop_next_u32(prop, p, &cpu_clk_div_pos);
+	of_prop_next_u32(prop, p, &cpu_clk_div_width);
+
+	return 0;
+}
+
+static struct clk_div_table *cpu_clk_div_table;
+
+static int __init parse_cpu_clk_div_table(struct device_node *np)
+{
+	struct property *prop;
+	const __be32 *p = NULL;
+	struct clk_div_table *cur_tbl_ptr;
+	int len;
+	int elem_cnt;
+	int i;
+	const char *propname = "div-table";
+
+	prop = of_find_property(np, propname, &len);
+	if (!prop) {
+		pr_err("%s property undefined\n", propname);
+		return -EINVAL;
+	}
+
+	elem_cnt = len / sizeof(u32);
+
+	if (elem_cnt < 2) {
+		pr_err("%s should have at least 2 elements\n", propname);
+		return -EINVAL;
+	}
+
+	if ((elem_cnt % 2) != 0) {
+		pr_err("%s should have even number of elements\n", propname);
+		return -EINVAL;
+	}
+
+	/* need room for last sentinel entry */
+	len += 2 * sizeof(u32);
+
+	cpu_clk_div_table = kmalloc(len, GFP_KERNEL);
+	if (!cpu_clk_div_table)
+		return -ENOMEM;
+
+	cur_tbl_ptr = cpu_clk_div_table;
+
+	for (i = 0; i < elem_cnt; i += 2) {
+		p = of_prop_next_u32(prop, p, &cur_tbl_ptr->val);
+		p = of_prop_next_u32(prop, p, &cur_tbl_ptr->div);
+
+		cur_tbl_ptr++;
+	}
+
+	/* last entry should be zeroed out */
+	cur_tbl_ptr->val = 0;
+	cur_tbl_ptr->div = 0;
+
+	return 0;
+}
+
+static void __init cpu_clk_div_setup(struct device_node *np)
+{
+	struct clk *clk;
+	void __iomem *reg;
+	struct platform_device *pdev = NULL;
+	int rc;
+
+	pdev = of_find_device_by_node(np);
+	if (!pdev) {
+		pr_err("no platform_device for cpu clk divider\n");
+		return;
+	}
+
+	reg = of_iomap(np, 0);
+	if (!reg) {
+		pr_err("unable to iomap cpu clk divider register!\n");
+		return;
+	}
+
+	rc = parse_cpu_clk_div_dimensions(np);
+	if (rc)
+		goto err;
+
+	rc = parse_cpu_clk_div_table(np);
+	if (rc)
+		goto err;
+
+	clk = clk_register_divider_table(&pdev->dev, "cpu-clk-div",
+					 of_clk_get_parent_name(np, 0), 0, reg,
+					 cpu_clk_div_pos, cpu_clk_div_width,
+					 0, cpu_clk_div_table, &lock);
+	if (IS_ERR(clk))
+		goto err;
+
+	rc = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+	if (rc) {
+		pr_err("error adding clock provider (%d)\n", rc);
+		goto err;
+	}
+
+	return;
+
+err:
+	kfree(cpu_clk_div_table);
+	cpu_clk_div_table = NULL;
+
+	if (reg)
+		iounmap(reg);
+}
+
+static const __initconst struct of_device_id brcmstb_clk_match[] = {
+	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+	{ .compatible = "brcm,brcmstb-cpu-clk-div", .data = cpu_clk_div_setup, },
+	{}
+};
+
+void __init brcmstb_clocks_init(void)
+{
+	/* DT-based clock config */
+	of_clk_init(brcmstb_clk_match);
+
+	/* Static clock config */
+	bmoca_clk_init();
 }

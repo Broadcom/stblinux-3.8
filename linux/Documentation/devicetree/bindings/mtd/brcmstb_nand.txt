@@ -11,7 +11,9 @@ Required properties:
 - reg-names      : a list of the names corresponding to the previous register
 		   ranges. Should contain "nand" and (if FLASH_DMA is
                    available) "flash-dma".
-- interrupts     : The HIF interrupt, for both NAND CTLRDY and FLASH_DMA_DONE
+- interrupts     : The HIF L2 interrupts for NAND_CLTRDY and (if FLASH_DMA is
+                   available) FLASH_DMA_DONE
+- interrupt-parent: The phandle to the HIF L2 interrupt controller node
 - #address-cells : <1> - subnodes give the chip-select number
 - #size-cells    : <0>
 
@@ -39,7 +41,8 @@ nand@f0442800 {
 	reg = <0xF0442800 0x600>,
 	      <0xF0443000 0x100>;
 	reg-names = "nand", "flash-dma";
-	interrupts = <0 32 0>;
+	interrupt-parent = <&hif_intr2_intc>;
+	interrupts = <24>, <4>;
 
 	#address-cells = <1>;
 	#size-cells = <0>;

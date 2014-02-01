@@ -327,12 +327,41 @@ static void ethsw_switch_unmanage_mode(struct net_device *dev)
 	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P8, (unsigned char *)&v16, sizeof(v16));
 }
 
-static int ethsw_reset_ports(struct net_device *dev)
+static int ethsw_force_speed(struct phy_device *phydev)
 {
+	struct net_device *dev = phydev->attached_dev;
+	unsigned char v8;
+
+	v8 = 0;
+	v8 |= (REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS);
+	if (phydev->advertising & (SUPPORTED_1000baseT_Full | SUPPORTED_1000baseT_Half))
+		v8 |= REG_CONTROL_MPSO_SPEED1000;
+	else if (phydev->advertising & (SUPPORTED_100baseT_Full | SUPPORTED_100baseT_Half))
+		v8 |= REG_CONTROL_MPSO_SPEED100;
+	else
+		v8 &= ~(REG_CONTROL_MPSO_SPEED1000 | REG_CONTROL_MPSO_SPEED100);
+	v8 |= (REG_CONTROL_MPSO_RX_FLOW_CONTROL|REG_CONTROL_MPSO_FDX);
+	ethsw_wreg(dev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
+
+	/* checking Switch functional */
+	v8 = 0;
+	ethsw_rreg(dev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
+	if ((v8 & (REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS)) !=
+		(REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS) ||
+		(v8 == 0xff)) {
+		printk(KERN_ERR "error on Ethernet Switch setup 0x%x\n", v8);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int ethsw_reset_ports(struct phy_device *phydev)
+{
+	struct net_device *dev = phydev->attached_dev;
 	unsigned long flags;
 	int i;
 	unsigned char v8;
-	struct bcmgenet_priv *priv = netdev_priv(dev);
 
 	local_irq_save(flags);
 
@@ -346,7 +375,7 @@ static int ethsw_reset_ports(struct net_device *dev)
 	/* Config IMP port RGMII clock delay by DLL disabled and tx_clk aligned timing */
 	ethsw_rreg(dev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
 	v8 &= ~(REG_RGMII_CTRL_DLL_RXC_BYPASS | REG_RGMII_CTRL_TIMING_SEL);
-	if (priv->phy_type == BRCM_PHY_TYPE_EXT_RGMII_NO_ID)
+	if (phydev->interface == PHY_INTERFACE_MODE_RGMII)
 		v8 |= REG_RGMII_CTRL_DLL_RXC_BYPASS;
 	v8 |= REG_RGMII_CTRL_TIMING_SEL;
 	ethsw_wreg(dev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
@@ -358,21 +387,6 @@ static int ethsw_reset_ports(struct net_device *dev)
 	v8 |= REG_IMP_PORT_CONTROL_RX_BCST_EN;
 	ethsw_wreg(dev, PAGE_CONTROL, REG_IMP_PORT_CONTROL, &v8, 1);
 
-	v8 = 0;
-	v8 |= (REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS);
-	v8 |= (REG_CONTROL_MPSO_RX_FLOW_CONTROL|REG_CONTROL_MPSO_SPEED1000|REG_CONTROL_MPSO_FDX);
-	ethsw_wreg(dev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
-
-	/* checking Switch functional */
-	v8 = 0;
-	ethsw_rreg(dev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
-	if ((v8 & (REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS)) !=
-		(REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS) ||
-		(v8 == 0xff)) {
-		printk(KERN_ERR "error on Ethernet Switch setup 0x%x\n", v8);
-		local_irq_restore(flags);
-		return -1;
-	}
 	local_irq_restore(flags);
 
 	return 0;
@@ -474,6 +488,7 @@ static void str_to_num(char* in, char* out, int len)
 
 static int proc_get_sw_param(char *page, char **start, off_t off, int cnt, int *eof, void *data)
 {
+	struct phy_device *phydev = data;
 	int reg_page  = swdata[0];
 	int reg_addr  = swdata[1];
 	int reg_len   = swdata[2];
@@ -484,6 +499,9 @@ static int proc_get_sw_param(char *page, char **start, off_t off, int cnt, int *
 	*eof = 1;
 
 	if (reg_len == 0)
+		return 0;
+
+	if (!data)
 		return 0;
 
 #if 0
@@ -498,12 +516,12 @@ static int proc_get_sw_param(char *page, char **start, off_t off, int cnt, int *
 	if (reg_page == 0xff) {
 		for (i = 0; i < 8; i++) {
 			if ((0x01 << i) & reg_addr)
-				ethsw_dump_mib((struct net_device *)data, i);
+				ethsw_dump_mib(phydev->attached_dev, i);
 		}
-		ethsw_dump_mib((struct net_device *)data, 8);
+		ethsw_dump_mib(phydev->attached_dev, 8);
 		return 0;
 	}
-	ethsw_rreg((struct net_device *)data, reg_page, reg_addr, swdata + 3, reg_len);
+	ethsw_rreg(phydev->attached_dev, reg_page, reg_addr, swdata + 3, reg_len);
 
 	r += sprintf(page + r, "[%02x:%02x] = ", swdata[0], swdata[1]);
 	switch(reg_len) {
@@ -534,6 +552,7 @@ static int proc_get_sw_param(char *page, char **start, off_t off, int cnt, int *
 
 static int proc_set_sw_param(struct file *f, const char *buf, unsigned long cnt, void *data)
 {
+	struct phy_device *phydev = data;
 	char input[32];
 	int i;
 	int r;
@@ -604,13 +623,13 @@ static int proc_set_sw_param(struct file *f, const char *buf, unsigned long cnt,
 				*(uint32_t *)&swdata[7] = val;
 				break;
 		}
-		ethsw_wreg((struct net_device *)data, reg_page, reg_addr, swdata + 3, reg_len);
+		ethsw_wreg(phydev->attached_dev, reg_page, reg_addr, swdata + 3, reg_len);
 	}
 	return cnt;
 }
 
 
-static int ethsw_add_proc_files(struct net_device *dev)
+static int ethsw_add_proc_files(struct phy_device *phydev)
 {
 	struct proc_dir_entry *p;
 
@@ -621,7 +640,7 @@ static int ethsw_add_proc_files(struct net_device *dev)
 
 	memset(swdata, 0, sizeof(swdata));
 
-	p->data        = dev;
+	p->data        = phydev;
 	p->read_proc   = proc_get_sw_param;
 	p->write_proc  = proc_set_sw_param;
 
@@ -632,7 +651,7 @@ static int bcm53x25_ethsw_init(struct phy_device *phydev)
 {
 	struct net_device *dev = phydev->attached_dev;
 
-	ethsw_reset_ports(dev);
+	ethsw_reset_ports(phydev);
 	ethsw_switch_unmanage_mode(dev);
 	ethsw_config_learning(dev);
 
@@ -641,13 +660,22 @@ static int bcm53x25_ethsw_init(struct phy_device *phydev)
 
 static int bcm53x25_config_aneg(struct phy_device *phydev)
 {
-	return 0;
+	return ethsw_force_speed(phydev);
 }
 
 static int bcm53x25_read_status(struct phy_device *phydev)
 {
 	phydev->duplex = DUPLEX_FULL;
-	phydev->speed = SPEED_1000;
+
+	if (phydev->advertising & (SUPPORTED_1000baseT_Half |
+				SUPPORTED_1000baseT_Full))
+		phydev->speed = SPEED_1000;
+	else if (phydev->advertising & (SUPPORTED_100baseT_Half |
+				SUPPORTED_100baseT_Full))
+		phydev->speed = SPEED_100;
+	else
+		phydev->speed = SPEED_10;
+
 	phydev->link = 1;
 	phydev->state = PHY_RUNNING;
 
@@ -659,8 +687,6 @@ static int bcm53x25_read_status(struct phy_device *phydev)
 
 static int bcm53x25_probe(struct phy_device *phydev)
 {
-	struct net_device *dev = phydev->attached_dev;
-
 	/* Make sure that we match either the pseudo-PHY addreess or
 	 * address 0 as this is the default PHY addressing supported
 	 * for BCM53xxx switches
@@ -671,10 +697,8 @@ static int bcm53x25_probe(struct phy_device *phydev)
 		return -ENODEV;
 	}
 
-	phydev->supported = SUPPORTED_1000baseT_Full;
-	phydev->advertising = phydev->supported;
 
-	ethsw_add_proc_files(dev);
+	ethsw_add_proc_files(phydev);
 
 	return 0;
 }

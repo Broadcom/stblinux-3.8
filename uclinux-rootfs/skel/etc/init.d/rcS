@@ -36,7 +36,7 @@ if [ ! -e /bin/login ]; then
 fi
 
 # Set up MoCA link, if present
-[ -e /dev/bmoca0 ] && mocacfg boot
+# [ -e /dev/bmoca0 ] && mocacfg boot
 
 cmdline=`cat /proc/cmdline`
 

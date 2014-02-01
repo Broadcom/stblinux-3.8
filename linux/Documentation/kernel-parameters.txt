@@ -427,6 +427,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
 
 	bootmem_debug	[KNL] Enable bootmem allocator debug messages.
 
+	brcm_cma_kern_rsv=nn[M]	[ARM,KNL]
+			(On systems with high-memory memblocks)
+			The kernel reservation for the low-memory memblock.
+			Default: 256M
+
+	brcm_cma_low_kern_rsv_pct=	[ARM,KNL]
+			(On systems without high-memory memblocks)
+			The percentage of memory to reserve for the kernel.
+			Default: 25
+
+	brcm_cma_mb_low_lim=nn[M]	[ARM,KNL]
+			(On systems without high-memory memblocks)
+			The smallest-size memblock needed in order to reserve
+			a CMA region.
+			Default: 32M
+
 	bttv.card=	[HW,V4L] bttv (bt848 + bt878 based grabber cards)
 	bttv.radio=	Most important insmod options are available as
 			kernel args too.

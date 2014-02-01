@@ -595,6 +595,7 @@ CONFIG_SWAPONOFF=y
 # CONFIG_SWITCH_ROOT is not set
 CONFIG_UMOUNT=y
 CONFIG_FEATURE_UMOUNT_ALL=y
+CONFIG_FSTRIM=y
 
 #
 # Common options for mount/umount

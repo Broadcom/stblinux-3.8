@@ -22,6 +22,7 @@
 
 #include <linux/of.h>
 #include <linux/cdev.h>
+#include <linux/dma-contiguous.h>
 #include <linux/dma-mapping.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
@@ -32,6 +33,10 @@
 #include <linux/brcmstb/cma_driver.h>
 #include <linux/mmzone.h>
 #include <linux/vmalloc.h>
+#include <linux/memblock.h>
+#include <asm/div64.h>
+#include <asm/setup.h>
+#include "common.h"
 
 extern phys_addr_t dma_contiguous_def_base;
 
@@ -47,6 +52,244 @@ struct cma_root_dev {
 	struct cma_devs_list cma_devs;
 	struct mem_range *cached_region;
 };
+
+struct cma_pdev_data {
+	phys_addr_t start;
+	phys_addr_t size;
+};
+
+struct cma_region_rsv_data {
+	int nr_regions_valid;
+	struct cma_pdev_data regions[NR_BANKS];
+	long long unsigned prm_kern_rsv_mb;
+	long long unsigned prm_low_lim_mb;
+	int prm_low_kern_rsv_pct;
+};
+
+/* CMA region reservation */
+
+static struct cma_region_rsv_data cma_data __initdata = {
+	.prm_kern_rsv_mb = 256 << 20,
+	.prm_low_lim_mb = 32 << 20,
+	.prm_low_kern_rsv_pct = 20,
+};
+
+/*
+ * The default kernel reservation on systems with low and high-memory. The
+ * size of the memblock minus this variable will be given to CMA
+ */
+static int __init cma_kern_rsv_set(char *p)
+{
+	cma_data.prm_kern_rsv_mb = memparse(p, NULL);
+	return !cma_data.prm_kern_rsv_mb ? -EINVAL : 0;
+}
+early_param("brcm_cma_kern_rsv", cma_kern_rsv_set);
+
+/*
+ * The lowest low-memory memblock size needed in order to reserve a cma region
+ * on systems with no high-memory.
+ */
+static int __init cma_mb_low_lim_set(char *p)
+{
+	cma_data.prm_low_lim_mb = memparse(p, NULL);
+	return !cma_data.prm_low_lim_mb ? -EINVAL : 0;
+}
+early_param("brcm_cma_mb_low_lim", cma_mb_low_lim_set);
+
+/*
+ * The percentage of memory reserved for the kernel on systems with no
+ * high-memory.
+ */
+static int __init cma_low_kern_rsv_pct_set(char *p)
+{
+	return (get_option(&p, &cma_data.prm_low_kern_rsv_pct) == 0) ?
+		-EINVAL : 0;
+}
+early_param("brcm_cma_low_kern_rsv_pct", cma_low_kern_rsv_pct_set);
+
+static int __init cma_calc_rsv_range(int bank_nr, phys_addr_t *base,
+					phys_addr_t *size)
+{
+	/*
+	 * In DT, the 'reg' property in the 'memory' node is typically
+	 * arranged as follows:
+	 *
+	 *	<base0 size0 base1 size1 [...] baseN sizeN>
+	 *
+	 * where N = the number of logical partitions in the memory map.
+	 *
+	 * The 'logical partitions' are typically memory controllers.
+	 *
+	 * According to ARM DEN 0001C, systems typically populate DRAM at high
+	 * PAs in the physical address space. However, system limitations
+	 * require placement of DRAM at low PAs. To that end, there is a need
+	 * to provide contiguous memory in low-memory regions, to support the
+	 * needs of system peripherals.
+	 *
+	 * Further, the current ARM kernel exploits large linear mappings in
+	 * low-memory, to reduce TLB pressure and increase overall system
+	 * performance. In a 3G/1G user/kernel memory split, the 1G portion of
+	 * kernel address space is further broken down into a low and high
+	 * memory region. The high-memory region is defined by the kernel
+	 * to be used for vmalloc (see arch/arm/mm/mmu.c).
+	 *
+	 * The code below will workaround the aforementioned demands on
+	 * low-memory (which resides in bank_nr = 0), and any special
+	 * kernel-specific boundaries.
+	 *
+	 */
+	if (bank_nr == 0) {
+		if ((meminfo.nr_banks == 1) && !meminfo.bank[bank_nr].highmem) {
+			u32 rem;
+			u64 tmp;
+
+			if (meminfo.bank[bank_nr].size <
+				cma_data.prm_low_lim_mb) {
+				/* don't bother */
+				pr_err("low memory block too small\n");
+				return -EINVAL;
+			}
+
+			/* kernel reserves X percent, cma gets the rest */
+			tmp = ((u64)meminfo.bank[bank_nr].size) *
+					(100 - cma_data.prm_low_kern_rsv_pct);
+			rem = do_div(tmp, 100);
+			*size = tmp + rem;
+		} else {
+			if (meminfo.bank[bank_nr].size >=
+				cma_data.prm_kern_rsv_mb) {
+				*size = meminfo.bank[bank_nr].size -
+					cma_data.prm_kern_rsv_mb;
+			} else {
+				pr_debug("bank start=%xh size=%xh is smaller than cma_data.prm_kern_rsv_mb=%llxh - skipping\n",
+					meminfo.bank[bank_nr].start,
+					meminfo.bank[bank_nr].size,
+					cma_data.prm_kern_rsv_mb);
+				return -EINVAL;
+			}
+		}
+
+		if (*base != 0) {
+			pr_warn("low memory bank doesn't start at 0 - adjusting\n");
+			*base = 0;
+		}
+	} else
+		*size = meminfo.bank[bank_nr].size;
+
+	return 0;
+}
+
+/*
+ * Create maximum-sized CMA regions for each memblock.
+ *
+ * This function MUST be called by the platform 'reserve' function.
+ *
+ * Notes:
+ * - Memblocks are initially generated based on the ranges specified in the
+ *   DT memory node.
+ *
+ * - After initialization by the DT memory node, a memblock may be split,
+ *   depending on whether it spans a special memory region (such as the
+ *   arm_lowmem_limit).
+ *
+ * - The kernel lives in valuable low-memory. Therefore, it is not possible to
+ *   create a CMA region which spans the entire low-memory memblock. Thus a
+ *   "fudge" constant, param_cma_kern_rsv, is used to adjust the low-memory
+ *   CMA region.
+ */
+void __init cma_reserve(void)
+{
+	int rc;
+	int iter;
+	phys_addr_t base = 0;
+	phys_addr_t size = 0;
+
+	for_each_bank(iter, &meminfo) {
+		base = meminfo.bank[iter].start;
+
+		if (cma_calc_rsv_range(iter, &base, &size))
+			continue;
+
+		pr_debug("reserve: %x, %x\n", base, size);
+		rc = dma_contiguous_reserve_area(size, &base, 0);
+		if (rc) {
+			pr_err("reservation failed (base=%xh,size=%xh,rc=%d)\n",
+				base, size, rc);
+			/*
+			 * This will help us see if a stray memory reservation
+			 * is fragmenting the memblock.
+			 */
+			memblock_debug = 1;
+			memblock_dump_all();
+			memblock_debug = 0;
+		} else {
+			/* use the lowest memblock for default allocations */
+			if (iter == 0) {
+				pr_debug("setting cma default base\n");
+				dma_contiguous_def_base = base;
+			}
+		}
+
+		if (cma_data.nr_regions_valid == NR_BANKS)
+			pr_err("cma_data.regions overflow\n");
+		else {
+			cma_data.regions[cma_data.nr_regions_valid].start =
+				base;
+			cma_data.regions[cma_data.nr_regions_valid].size = size;
+			cma_data.nr_regions_valid++;
+		}
+	}
+}
+
+static struct platform_device * __init cma_register_dev_one(int id,
+							phys_addr_t start,
+							phys_addr_t size)
+{
+	struct platform_device *pdev;
+	struct cma_pdev_data *data;
+
+	data = kmalloc(sizeof(struct cma_pdev_data), GFP_KERNEL);
+	if (!data)
+		return NULL;
+
+	data->start = start;
+	data->size = size;
+
+	pdev = platform_device_register_data(NULL, "brcm-cma", id, data,
+						sizeof(struct cma_pdev_data));
+	if (!pdev) {
+		pr_err("couldn't register pdev for %d,%xh,%xh\n", id, start,
+			size);
+		kfree(data);
+	}
+
+	return pdev;
+}
+
+/*
+ * Registers platform devices for the regions that were reserved in earlyboot.
+ *
+ * This function should be called from machine initialization.
+ */
+void __init cma_register(void)
+{
+	int i;
+	int id = 0;
+	struct platform_device *pdev;
+
+	for (i = 0; i < cma_data.nr_regions_valid; i++) {
+		pdev = cma_register_dev_one(id, cma_data.regions[i].start,
+						cma_data.regions[i].size);
+		if (!pdev) {
+			pr_err("couldn't register device");
+			continue;
+		}
+
+		id++;
+	}
+}
+
+/* CMA driver implementation */
 
 /* Mutex for serializing accesses to private variables */
 static DEFINE_MUTEX(cma_dev_mutex);
@@ -770,16 +1013,6 @@ static int cma_drvr_alloc_devno(struct device *dev)
 	return ret;
 }
 
-static int cma_drvr_get_node_num(const char *p)
-{
-	char *d = strchr(p, '@');
-	long val;
-
-	if (!d || kstrtol(d + 1, 10, &val))
-		return -EINVAL;
-	return val;
-}
-
 static int cma_drvr_test_cma_dev(struct device *dev)
 {
 	struct page *page;
@@ -797,63 +1030,36 @@ static int cma_drvr_test_cma_dev(struct device *dev)
 	return 0;
 }
 
-static int cma_drvr_parse_fdt(struct platform_device *pdev,
-				     struct cma_dev *cma_dev)
+static int __init cma_drvr_config_platdev(struct platform_device *pdev,
+					struct cma_dev *cma_dev)
 {
-	int minor;
+	int ret;
 	struct device *dev = &pdev->dev;
-	struct device_node *of_node = pdev->dev.of_node;
-	struct device_node *cma_region_node;
-	const __be32 *prop_reg;
+	struct cma_pdev_data *data =
+		(struct cma_pdev_data *)dev->platform_data;
 
-	/*
-	 * Lookup the linked CMA region node and get the memory range
-	 * associated with it.
-	 */
-
-	cma_region_node = of_parse_phandle(of_node, "linux,contiguous-region",
-					   0);
-	if (cma_region_node == NULL) {
-		dev_err(dev, "missing phandle to cma region node\n");
+	if (!data) {
+		dev_err(dev, "platform data not initialized\n");
 		return -EINVAL;
 	}
 
-	prop_reg = of_get_property(cma_region_node, "reg", NULL);
-	if (prop_reg == NULL) {
-		dev_err(dev, "missing reg prop\n");
-		return -EINVAL;
+	cma_dev->range.base = data->start;
+	cma_dev->range.size = data->size;
+	cma_dev->cma_dev_index = pdev->id;
+
+	ret = cma_assign_device(dev, data->start);
+	if (ret) {
+		pr_err("error assigning cma device (%d)\n", ret);
+		goto done;
 	}
-
-	/*
-	 * Obtain the base address from dma-contiguous when node is marked
-	 * as a default region because it is dynamically placed by the kernel.
-	 */
-	if (of_get_property(cma_region_node,
-		"linux,default-contiguous-region", NULL))
-		cma_dev->range.base = dma_contiguous_def_base;
-	else
-		cma_dev->range.base = be32_to_cpup(prop_reg);
-
-	cma_dev->range.size = be32_to_cpup(prop_reg + 1);
-
-	dev_info(dev, "base=%xh size=%xh\n", cma_dev->range.base,
-		cma_dev->range.size);
-
-	/* Derive the node number from device tree */
-	minor = cma_drvr_get_node_num(of_node_full_name(of_node));
-	if ((minor < 0) || (minor > CMA_DEV_MAX)) {
-		dev_err(dev, "node num (%d) exceeds supported (%d)\n", minor,
-			CMA_DEV_MAX);
-		return -EINVAL;
-	}
-	cma_dev->cma_dev_index = minor;
 
 	if (cma_drvr_test_cma_dev(dev)) {
-		dev_err(dev, "test CMA dev failed!\n");
-		return -EINVAL;
+		dev_err(dev, "CMA testing failed!\n");
+		ret = -EINVAL;
 	}
 
-	return 0;
+done:
+	return ret;
 }
 
 static int cma_drvr_init_root_dev(struct device *dev)
@@ -912,7 +1118,7 @@ done:
 	return ret;
 }
 
-static int cma_drvr_probe(struct platform_device *pdev)
+static int __init cma_drvr_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct cma_dev *cma_dev = NULL;
@@ -939,14 +1145,12 @@ static int cma_drvr_probe(struct platform_device *pdev)
 		goto done;
 	}
 
-	/* Extract information from the FDT and instantiate the devices */
-	ret = cma_drvr_parse_fdt(pdev, cma_dev);
+	ret = cma_drvr_config_platdev(pdev, cma_dev);
 	if (ret)
 		goto free_cma_dev;
 
 	INIT_LIST_HEAD(&cma_dev->regions.list);
 	cma_dev->dev = dev;
-	dev->platform_data = cma_dev;
 
 	/*
 	 * Keep a pointer to all of the devs so we don't have to search for it
@@ -967,17 +1171,26 @@ done:
 	return ret;
 }
 
-static const struct of_device_id cma_drvr_of_match[] = {
-	{ .compatible = "brcm,cma-plat-dev", },
-	{},
-};
+int cma_drvr_is_ready(void)
+{
+	return (cma_root_dev != NULL);
+}
 
-static struct platform_driver cma_drvr = {
-	.probe = cma_drvr_probe,
+static struct platform_driver cma_driver = {
 	.driver = {
-		.name = "cma-plat-drvr",
+		.name = "brcm-cma",
 		.owner = THIS_MODULE,
-		.of_match_table = cma_drvr_of_match,
 	},
 };
-module_platform_driver(cma_drvr);
+
+static int __init cma_drvr_init(void)
+{
+	return platform_driver_probe(&cma_driver, cma_drvr_probe);
+}
+module_init(cma_drvr_init);
+
+static void __exit cma_drvr_exit(void)
+{
+	platform_driver_unregister(&cma_driver);
+}
+module_exit(cma_drvr_exit);

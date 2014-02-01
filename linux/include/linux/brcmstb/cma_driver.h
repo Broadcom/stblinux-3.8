@@ -64,5 +64,6 @@ int cma_dev_get_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	unsigned long start, struct page **page);
 void *cma_dev_kva_map(struct page *page, int num_pages, pgprot_t pgprot);
 int cma_dev_kva_unmap(const void *kva);
+int cma_drvr_is_ready(void);
 
 #endif /* __CMA_DRIVER_H__ */

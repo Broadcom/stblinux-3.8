@@ -26,32 +26,98 @@
 #include "common.h"
 
 #define PWR_ZONE_REG(x) BCHP_HIF_CPUBIUCTRL_CPU0_PWR_ZONE_CNTRL_REG_##x
+#define BIOPTR(x) __typesafe_io(BVIRTADDR(x))
 
-static u32 pwr_zone_ctrl_get_base(unsigned int cpu)
+enum {
+	ZONE_MAN_CLKEN_MASK		= (1 << 0),
+	ZONE_MAN_RESET_CNTL_MASK	= (1 << 1),
+	ZONE_MAN_MEM_PWR_MASK		= (1 << 4),
+	ZONE_RESERVED_1_MASK		= (1 << 5),
+	ZONE_MAN_ISO_CNTL_MASK		= (1 << 6),
+	ZONE_MANUAL_CONTROL_MASK	= (1 << 7),
+	ZONE_PWR_DN_REQ_MASK		= (1 << 9),
+	ZONE_PWR_UP_REQ_MASK		= (1 << 10),
+	ZONE_BLK_RST_ASSERT_MASK	= (1 << 10),
+	ZONE_PWR_OFF_STATE_MASK		= (1 << 26),
+	ZONE_PWR_ON_STATE_MASK		= (1 << 26),
+	ZONE_DPG_PWR_STATE_MASK		= (1 << 28),
+	ZONE_MEM_PWR_STATE_MASK		= (1 << 29),
+	ZONE_RESET_STATE_MASK		= (1 << 31),
+};
+
+#if (defined(CONFIG_BCM7445B0) || defined(CONFIG_BCM7445C0) || \
+	defined(CONFIG_BCM7445D0) || defined(CONFIG_BCM7439A0) || \
+	defined(CONFIG_BCM7366A0))
+/* HW7445-1290, HW7439-463, HW7366-422: 2nd'ary CPU cores may fail to boot
+ * ---
+ *
+ * There is a design flaw with the BPCM logic, which requires a manual
+ * software sequencing during CPU power-on/power-off.
+ */
+#define USE_MANUAL_MODE 1
+#else
+#define USE_MANUAL_MODE 0
+#endif
+
+DEFINE_PER_CPU(int, per_cpu_sw_state);
+
+static void __iomem *pwr_ctrl_base(unsigned int cpu)
 {
-	u32 base = BCHP_HIF_CPUBIUCTRL_CPU0_PWR_ZONE_CNTRL_REG;
+	void __iomem *base =
+		BIOPTR(BCHP_HIF_CPUBIUCTRL_CPU0_PWR_ZONE_CNTRL_REG);
 	base += (cpu * 4);
-	BUG_ON(base >= BCHP_HIF_CPUBIUCTRL_L2BIU_PWR_ZONE_CNTRL_REG);
+	BUG_ON(base >= BIOPTR(BCHP_HIF_CPUBIUCTRL_L2BIU_PWR_ZONE_CNTRL_REG));
 	return base;
 }
 
-static u32 pwr_zone_ctrl_rd(unsigned int cpu)
+static u32 pwr_ctrl_rd(unsigned int cpu)
 {
-	u32 base = pwr_zone_ctrl_get_base(cpu);
-	return BDEV_RD(base);
+	void __iomem *base = pwr_ctrl_base(cpu);
+	return readl(base);
 }
 
-static void pwr_zone_ctrl_wr(unsigned int cpu, u32 val)
+static void pwr_ctrl_wr(unsigned int cpu, u32 val)
 {
-	u32 base = pwr_zone_ctrl_get_base(cpu);
-	BDEV_WR(base, val);
-	dsb();
+	void __iomem *base = pwr_ctrl_base(cpu);
+	writel(val, base);
+}
+
+static void pwr_ctrl_set(unsigned int cpu, u32 val, u32 mask)
+{
+	void __iomem *base = pwr_ctrl_base(cpu);
+	writel((readl(base) & mask) | val, base);
+}
+
+static void pwr_ctrl_clr(unsigned int cpu, u32 val, u32 mask)
+{
+	void __iomem *base = pwr_ctrl_base(cpu);
+	writel((readl(base) & mask) & ~val, base);
+}
+
+#define POLL_TMOUT_MS 500
+static int pwr_ctrl_wait_tmout(unsigned int cpu, u32 set, u32 mask)
+{
+	const unsigned long timeo = jiffies + msecs_to_jiffies(POLL_TMOUT_MS);
+	u32 tmp;
+
+	do {
+		tmp = pwr_ctrl_rd(cpu) & mask;
+		if (!set == !tmp)
+			return 0;
+	} while (time_before(jiffies, timeo));
+
+	tmp = pwr_ctrl_rd(cpu) & mask;
+	if (!set == !tmp)
+		return 0;
+
+	return -ETIMEDOUT;
 }
 
 void brcmstb_cpu_boot(unsigned int cpu)
 {
 	unsigned long boot_vector;
 	const int reg_ofs = cpu * 8;
+	u32 tmp;
 
 	pr_info("SMP: Booting CPU%d...\n", cpu);
 
@@ -60,14 +126,18 @@ void brcmstb_cpu_boot(unsigned int cpu)
 	* routine
 	*/
 	boot_vector = virt_to_phys(brcmstb_secondary_startup);
-	BDEV_WR(BCHP_HIF_CONTINUATION_STB_BOOT_HI_ADDR0 + reg_ofs, 0);
-	BDEV_WR(BCHP_HIF_CONTINUATION_STB_BOOT_ADDR0 + reg_ofs, boot_vector);
+	writel_relaxed(0,
+		BIOPTR(BCHP_HIF_CONTINUATION_STB_BOOT_HI_ADDR0 + reg_ofs));
+	writel_relaxed(boot_vector,
+		BIOPTR(BCHP_HIF_CONTINUATION_STB_BOOT_ADDR0 + reg_ofs));
 
 	smp_wmb();
 	flush_cache_all();
 
 	/* unhalt the cpu */
-	BDEV_UNSET(BCHP_HIF_CPUBIUCTRL_CPU_RESET_CONFIG_REG, BIT(cpu));
+	tmp = readl_relaxed(BIOPTR(BCHP_HIF_CPUBIUCTRL_CPU_RESET_CONFIG_REG))
+		& ~BIT(cpu);
+	writel_relaxed(tmp, BIOPTR(BCHP_HIF_CPUBIUCTRL_CPU_RESET_CONFIG_REG));
 }
 
 void brcmstb_cpu_power_on(unsigned int cpu)
@@ -76,23 +146,41 @@ void brcmstb_cpu_power_on(unsigned int cpu)
 	 * The secondary cores power was cut, so we must go through
 	 * power-on initialization.
 	 */
-	u32 tmp;
-
 	pr_info("SMP: Powering up CPU%d...\n", cpu);
 
-	/* Request zone power up */
-	pwr_zone_ctrl_wr(cpu, PWR_ZONE_REG(ZONE_PWR_UP_REQ_MASK));
+	if (USE_MANUAL_MODE) {
+		pwr_ctrl_set(cpu, ZONE_MAN_ISO_CNTL_MASK, 0xffffff00);
+		pwr_ctrl_set(cpu, ZONE_MANUAL_CONTROL_MASK, -1);
+		pwr_ctrl_set(cpu, ZONE_RESERVED_1_MASK, -1);
 
-	/* Wait for the power up FSM to complete */
-	do {
-		tmp = pwr_zone_ctrl_rd(cpu);
-	} while (!(tmp & PWR_ZONE_REG(ZONE_PWR_ON_STATE_MASK)));
+		pwr_ctrl_set(cpu, ZONE_MAN_MEM_PWR_MASK, -1);
+
+		if (pwr_ctrl_wait_tmout(cpu, 1, ZONE_MEM_PWR_STATE_MASK))
+			panic("ZONE_MEM_PWR_STATE_MASK set timeout");
+
+		pwr_ctrl_set(cpu, ZONE_MAN_CLKEN_MASK, -1);
+
+		if (pwr_ctrl_wait_tmout(cpu, 1, ZONE_DPG_PWR_STATE_MASK))
+			panic("ZONE_DPG_PWR_STATE_MASK set timeout");
+
+		pwr_ctrl_clr(cpu, ZONE_MAN_ISO_CNTL_MASK, -1);
+		pwr_ctrl_set(cpu, ZONE_MAN_RESET_CNTL_MASK, -1);
+	} else {
+		/* Request zone power up */
+		pwr_ctrl_wr(cpu, ZONE_PWR_UP_REQ_MASK);
+
+		/* Wait for the power up FSM to complete */
+		if (pwr_ctrl_wait_tmout(cpu, 1, ZONE_PWR_ON_STATE_MASK))
+			panic("ZONE_PWR_ON_STATE_MASK set timeout");
+	}
+
+	per_cpu(per_cpu_sw_state, cpu) = 1;
 }
 
 int brcmstb_cpu_get_power_state(unsigned int cpu)
 {
-	int tmp = pwr_zone_ctrl_rd(cpu);
-	return (tmp & PWR_ZONE_REG(ZONE_RESET_STATE_MASK)) ? 0 : 1;
+	int tmp = pwr_ctrl_rd(cpu);
+	return (tmp & ZONE_RESET_STATE_MASK) ? 0 : 1;
 }
 
 void __ref brcmstb_cpu_die(unsigned int cpu)
@@ -138,6 +226,8 @@ void __ref brcmstb_cpu_die(unsigned int cpu)
 	/* Disable all IRQs for this CPU */
 	arch_local_irq_disable();
 
+	per_cpu(per_cpu_sw_state, cpu) = 0;
+
 	/*
 	 * Final full barrier to ensure everything before this instruction has
 	 * quiesced.
@@ -151,12 +241,6 @@ void __ref brcmstb_cpu_die(unsigned int cpu)
 	/* We should never get here... */
 	nop();
 	panic("Spurious interrupt on CPU %d received!\n", cpu);
-}
-
-static void busy_wait(int i)
-{
-	while (--i != 0)
-		nop();
 }
 
 int brcmstb_cpu_kill(unsigned int cpu)
@@ -180,29 +264,49 @@ int brcmstb_cpu_kill(unsigned int cpu)
 	}
 #endif
 
+	while (per_cpu(per_cpu_sw_state, cpu))
+		;
+
 	pr_info("SMP: Powering down CPU%d...\n", cpu);
 
-	/* Program zone reset */
-	pwr_zone_ctrl_wr(cpu, PWR_ZONE_REG(ZONE_RESET_STATE_MASK) |
-			      PWR_ZONE_REG(ZONE_BLK_RST_ASSERT_MASK) |
-			      PWR_ZONE_REG(ZONE_PWR_DN_REQ_MASK)) ;
+	if (USE_MANUAL_MODE) {
+		pwr_ctrl_set(cpu, ZONE_MANUAL_CONTROL_MASK, -1);
+		pwr_ctrl_clr(cpu, ZONE_MAN_RESET_CNTL_MASK, -1);
+		pwr_ctrl_clr(cpu, ZONE_MAN_CLKEN_MASK, -1);
+		pwr_ctrl_set(cpu, ZONE_MAN_ISO_CNTL_MASK, -1);
+		pwr_ctrl_clr(cpu, ZONE_MAN_MEM_PWR_MASK, -1);
 
-	/* Verify zone reset */
-	tmp = pwr_zone_ctrl_rd(cpu);
-	if (!(tmp & PWR_ZONE_REG(ZONE_RESET_STATE_MASK)))
-		pr_err("%s: Zone reset bit for CPU %d not asserted!\n",
-			__func__, cpu);
+		if (pwr_ctrl_wait_tmout(cpu, 0, ZONE_MEM_PWR_STATE_MASK))
+			panic("ZONE_MEM_PWR_STATE_MASK clear timeout");
 
-	/* Wait for power down */
-	do {
-		tmp = pwr_zone_ctrl_rd(cpu);
-	} while (!(tmp & PWR_ZONE_REG(ZONE_PWR_OFF_STATE_MASK)));
+		pwr_ctrl_clr(cpu, ZONE_RESERVED_1_MASK, -1);
 
-	/* Magic delay from misc_bpcm_arm.c */
-	busy_wait(10000);
+		if (pwr_ctrl_wait_tmout(cpu, 0, ZONE_DPG_PWR_STATE_MASK))
+			panic("ZONE_DPG_PWR_STATE_MASK clear timeout");
+	} else {
+		/* Program zone reset */
+		pwr_ctrl_wr(cpu, ZONE_RESET_STATE_MASK |
+				 ZONE_BLK_RST_ASSERT_MASK |
+				 ZONE_PWR_DN_REQ_MASK) ;
+
+		/* Verify zone reset */
+		tmp = pwr_ctrl_rd(cpu);
+		if (!(tmp & ZONE_RESET_STATE_MASK))
+			pr_err("%s: Zone reset bit for CPU %d not asserted!\n",
+				__func__, cpu);
+
+		/* Wait for power down */
+		if (pwr_ctrl_wait_tmout(cpu, 1, ZONE_PWR_OFF_STATE_MASK))
+			panic("ZONE_PWR_OFF_STATE_MASK set timeout");
+	}
+
+	/* Settle-time from Broadcom-internal DVT reference code */
+	udelay(7);
 
 	/* Assert reset on the CPU */
-	BDEV_SET(BCHP_HIF_CPUBIUCTRL_CPU_RESET_CONFIG_REG, BIT(cpu));
+	tmp = readl_relaxed(BIOPTR(BCHP_HIF_CPUBIUCTRL_CPU_RESET_CONFIG_REG))
+		| BIT(cpu);
+	writel_relaxed(tmp, BIOPTR(BCHP_HIF_CPUBIUCTRL_CPU_RESET_CONFIG_REG));
 
 	return 1;
 }

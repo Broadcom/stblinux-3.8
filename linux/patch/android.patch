@@ -317,7 +317,7 @@ diff -Nur a/linux/Documentation/sync.txt b/linux/Documentation/sync.txt
 diff -Nur a/linux/arch/arm/Kconfig b/linux/arch/arm/Kconfig
 --- a/linux/arch/arm/Kconfig	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/arch/arm/Kconfig	2013-03-20 16:30:15.635114695 -0700
-@@ -1867,6 +1865,15 @@
+@@ -1868,6 +1866,15 @@
  	help
  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
  
@@ -5340,7 +5340,7 @@ diff -Nur a/linux/arch/sparc/mm/init_64.c b/linux/arch/sparc/mm/init_64.c
 diff -Nur a/linux/arch/sparc/mm/tlb.c b/linux/arch/sparc/mm/tlb.c
 --- a/linux/arch/sparc/mm/tlb.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/arch/sparc/mm/tlb.c	2013-03-20 16:30:23.631540648 -0700
-@@ -135,15 +135,8 @@
+@@ -166,15 +166,8 @@
  			mm->context.huge_pte_count++;
  		else
  			mm->context.huge_pte_count--;
@@ -5361,7 +5361,7 @@ diff -Nur a/linux/arch/sparc/mm/tlb.c b/linux/arch/sparc/mm/tlb.c
 diff -Nur a/linux/arch/sparc/mm/tsb.c b/linux/arch/sparc/mm/tsb.c
 --- a/linux/arch/sparc/mm/tsb.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/arch/sparc/mm/tsb.c	2013-03-20 16:30:23.635540860 -0700
-@@ -314,7 +314,7 @@
+@@ -341,7 +341,7 @@
  retry_tsb_alloc:
  	gfp_flags = GFP_KERNEL;
  	if (new_size > (PAGE_SIZE * 2))
@@ -5743,7 +5743,7 @@ diff -Nur a/linux/arch/x86/xen/spinlock.c b/linux/arch/x86/xen/spinlock.c
 diff -Nur a/linux/block/genhd.c b/linux/block/genhd.c
 --- a/linux/block/genhd.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/block/genhd.c	2013-03-20 16:30:11.082872205 -0700
-@@ -1105,6 +1105,22 @@
+@@ -1106,6 +1106,22 @@
  		blk_put_queue(disk->queue);
  	kfree(disk);
  }
@@ -5766,7 +5766,7 @@ diff -Nur a/linux/block/genhd.c b/linux/block/genhd.c
  struct class block_class = {
  	.name		= "block",
  };
-@@ -1123,6 +1139,7 @@
+@@ -1124,6 +1140,7 @@
  	.groups		= disk_attr_groups,
  	.release	= disk_release,
  	.devnode	= block_devnode,
@@ -5814,7 +5814,7 @@ diff -Nur a/linux/drivers/Kconfig b/linux/drivers/Kconfig
 diff -Nur a/linux/drivers/Makefile b/linux/drivers/Makefile
 --- a/linux/drivers/Makefile	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/Makefile	2013-03-20 16:30:59.949475252 -0700
-@@ -108,6 +108,7 @@
+@@ -109,6 +109,7 @@
  obj-y				+= mmc/
  obj-$(CONFIG_MEMSTICK)		+= memstick/
  obj-y				+= leds/
@@ -9062,7 +9062,7 @@ diff -Nur a/linux/drivers/gpu/drm/drm_edid.c b/linux/drivers/gpu/drm/drm_edid.c
  	}
  
  	if (valid_extensions != block[0x7e]) {
-@@ -2021,8 +2020,7 @@
+@@ -2022,8 +2021,7 @@
  	num_modes += add_cvt_modes(connector, edid);
  	num_modes += add_standard_modes(connector, edid);
  	num_modes += add_established_modes(connector, edid);
@@ -9130,7 +9130,7 @@ diff -Nur a/linux/drivers/gpu/drm/i915/i915_debugfs.c b/linux/drivers/gpu/drm/i9
 diff -Nur a/linux/drivers/gpu/drm/i915/i915_drv.h b/linux/drivers/gpu/drm/i915/i915_drv.h
 --- a/linux/drivers/gpu/drm/i915/i915_drv.h	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/gpu/drm/i915/i915_drv.h	2013-03-20 16:30:55.949262166 -0700
-@@ -919,7 +919,7 @@
+@@ -921,7 +921,7 @@
  	bool hw_contexts_disabled;
  	uint32_t hw_context_size;
  
@@ -9152,7 +9152,7 @@ diff -Nur a/linux/drivers/gpu/drm/i915/i915_gem.c b/linux/drivers/gpu/drm/i915/i
  	list_move_tail(&obj->mm_list, &dev_priv->mm.inactive_list);
  
  	list_del_init(&obj->ring_list);
-@@ -3845,7 +3848,7 @@
+@@ -3863,7 +3866,7 @@
  	u32 misccpctl;
  	int i;
  
@@ -9205,7 +9205,7 @@ diff -Nur a/linux/drivers/gpu/drm/i915/i915_reg.h b/linux/drivers/gpu/drm/i915/i
 diff -Nur a/linux/drivers/gpu/drm/i915/intel_crt.c b/linux/drivers/gpu/drm/i915/intel_crt.c
 --- a/linux/drivers/gpu/drm/i915/intel_crt.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/gpu/drm/i915/intel_crt.c	2013-03-20 16:30:55.953262380 -0700
-@@ -800,14 +800,10 @@
+@@ -794,14 +794,10 @@
  	dev_priv->hotplug_supported_mask |= CRT_HOTPLUG_INT_STATUS;
  
  	/*
@@ -9446,9 +9446,9 @@ diff -Nur a/linux/drivers/gpu/drm/i915/intel_display.c b/linux/drivers/gpu/drm/i
 -
 -	/* Acer Aspire 4736Z */
 -	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
- };
- 
- static void intel_init_quirks(struct drm_device *dev)
+
+	/* Acer/eMachines G725 */
+	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
 diff -Nur a/linux/drivers/gpu/drm/i915/intel_drv.h b/linux/drivers/gpu/drm/i915/intel_drv.h
 --- a/linux/drivers/gpu/drm/i915/intel_drv.h	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/gpu/drm/i915/intel_drv.h	2013-03-20 16:30:55.925260888 -0700
@@ -9485,37 +9485,6 @@ diff -Nur a/linux/drivers/gpu/drm/i915/intel_drv.h b/linux/drivers/gpu/drm/i915/
  
  extern int intel_sprite_set_colorkey(struct drm_device *dev, void *data,
  				     struct drm_file *file_priv);
-diff -Nur a/linux/drivers/gpu/drm/i915/intel_panel.c b/linux/drivers/gpu/drm/i915/intel_panel.c
---- a/linux/drivers/gpu/drm/i915/intel_panel.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/drivers/gpu/drm/i915/intel_panel.c	2013-03-20 16:30:55.913260249 -0700
-@@ -321,9 +321,6 @@
- 	if (dev_priv->backlight_level == 0)
- 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
- 
--	dev_priv->backlight_enabled = true;
--	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
--
- 	if (INTEL_INFO(dev)->gen >= 4) {
- 		uint32_t reg, tmp;
- 
-@@ -359,12 +356,12 @@
- 	}
- 
- set_level:
--	/* Check the current backlight level and try to set again if it's zero.
--	 * On some machines, BLC_PWM_CPU_CTL is cleared to zero automatically
--	 * when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 are written.
-+	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
-+	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
-+	 * registers are set.
- 	 */
--	if (!intel_panel_get_backlight(dev))
--		intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-+	dev_priv->backlight_enabled = true;
-+	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
- }
- 
- static void intel_panel_init_backlight(struct drm_device *dev)
 diff -Nur a/linux/drivers/gpu/drm/i915/intel_sprite.c b/linux/drivers/gpu/drm/i915/intel_sprite.c
 --- a/linux/drivers/gpu/drm/i915/intel_sprite.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/gpu/drm/i915/intel_sprite.c	2013-03-20 16:30:55.949262166 -0700
@@ -9678,7 +9647,7 @@ diff -Nur a/linux/drivers/gpu/drm/radeon/atombios_crtc.c b/linux/drivers/gpu/drm
  		/* adjust pm to dpms changes AFTER disabling crtcs */
  		radeon_pm_compute_clocks(rdev);
  		break;
-@@ -1840,8 +1844,6 @@
+@@ -1843,8 +1847,6 @@
  	int i;
  
  	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_OFF);
@@ -9690,7 +9659,7 @@ diff -Nur a/linux/drivers/gpu/drm/radeon/atombios_crtc.c b/linux/drivers/gpu/drm
 diff -Nur a/linux/drivers/gpu/drm/radeon/evergreen.c b/linux/drivers/gpu/drm/radeon/evergreen.c
 --- a/linux/drivers/gpu/drm/radeon/evergreen.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/gpu/drm/radeon/evergreen.c	2013-03-20 16:30:56.065268346 -0700
-@@ -403,19 +403,6 @@
+@@ -431,19 +431,6 @@
  			rdev->pm.current_vddc = voltage->voltage;
  			DRM_DEBUG("Setting: vddc: %d\n", voltage->voltage);
  		}
@@ -13142,47 +13111,6 @@ diff -Nur a/linux/drivers/hid/hid-input.c b/linux/drivers/hid/hid-input.c
  		if (input_register_device(hidinput->input))
  			goto out_cleanup;
  	}
-diff -Nur a/linux/drivers/hid/hid-magicmouse.c b/linux/drivers/hid/hid-magicmouse.c
---- a/linux/drivers/hid/hid-magicmouse.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/drivers/hid/hid-magicmouse.c	2013-03-20 16:30:56.585296047 -0700
-@@ -351,9 +351,10 @@
- 	return 1;
- }
- 
--static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
-+static int magicmouse_setup_input(struct hid_device *hdev, struct hid_input *hi)
- {
- 	int error;
-+	struct input_dev *input = hi->input;
- 
- 	__set_bit(EV_KEY, input->evbit);
- 
-@@ -493,17 +494,6 @@
- 		goto err_free;
- 	}
- 
--	/* We do this after hid-input is done parsing reports so that
--	 * hid-input uses the most natural button and axis IDs.
--	 */
--	if (msc->input) {
--		ret = magicmouse_setup_input(msc->input, hdev);
--		if (ret) {
--			hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
--			goto err_stop_hw;
--		}
--	}
--
- 	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
- 		report = hid_register_report(hdev, HID_INPUT_REPORT,
- 			MOUSE_REPORT_ID);
-@@ -568,6 +558,7 @@
- 	.remove = magicmouse_remove,
- 	.raw_event = magicmouse_raw_event,
- 	.input_mapping = magicmouse_input_mapping,
-+	.input_configured = magicmouse_setup_input,
- };
- 
- static int __init magicmouse_init(void)
 diff -Nur a/linux/drivers/hid/hid-multitouch.c b/linux/drivers/hid/hid-multitouch.c
 --- a/linux/drivers/hid/hid-multitouch.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/hid/hid-multitouch.c	2013-03-20 16:30:56.657299882 -0700
@@ -16628,27 +16556,6 @@ diff -Nur a/linux/drivers/mtd/nand/Kconfig b/linux/drivers/mtd/nand/Kconfig
  config MTD_NAND_RICOH
  	tristate "Ricoh xD card reader"
  	default n
-diff -Nur a/linux/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/linux/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
---- a/linux/drivers/net/ethernet/mellanox/mlx4/en_netdev.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/drivers/net/ethernet/mellanox/mlx4/en_netdev.c	2013-03-20 16:30:51.020999644 -0700
-@@ -1434,7 +1434,7 @@
- 	}
- 
- #ifdef CONFIG_RFS_ACCEL
--	priv->dev->rx_cpu_rmap = alloc_irq_cpu_rmap(priv->mdev->dev->caps.comp_pool);
-+	priv->dev->rx_cpu_rmap = alloc_irq_cpu_rmap(priv->rx_ring_num);
- 	if (!priv->dev->rx_cpu_rmap)
- 		goto err;
- 
-@@ -1597,7 +1597,7 @@
- 		err = -ENOMEM;
- 		goto out;
- 	}
--	priv->tx_cq = kzalloc(sizeof(struct mlx4_en_cq) * MAX_TX_RINGS,
-+	priv->tx_cq = kzalloc(sizeof(struct mlx4_en_cq) * MAX_RX_RINGS,
- 			      GFP_KERNEL);
- 	if (!priv->tx_cq) {
- 		err = -ENOMEM;
 diff -Nur a/linux/drivers/net/ppp/Kconfig b/linux/drivers/net/ppp/Kconfig
 --- a/linux/drivers/net/ppp/Kconfig	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/net/ppp/Kconfig	2013-03-20 16:30:50.756985581 -0700
@@ -17592,7 +17499,7 @@ diff -Nur a/linux/drivers/net/ppp/pppopns.c b/linux/drivers/net/ppp/pppopns.c
 diff -Nur a/linux/drivers/net/tun.c b/linux/drivers/net/tun.c
 --- a/linux/drivers/net/tun.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/net/tun.c	2013-03-20 16:30:53.041107253 -0700
-@@ -1848,6 +1848,12 @@
+@@ -1850,6 +1850,12 @@
  	int vnet_hdr_sz;
  	int ret;
  
@@ -17605,27 +17512,6 @@ diff -Nur a/linux/drivers/net/tun.c b/linux/drivers/net/tun.c
  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
  		if (copy_from_user(&ifr, argp, ifreq_len))
  			return -EFAULT;
-diff -Nur a/linux/drivers/net/usb/cdc_ncm.c b/linux/drivers/net/usb/cdc_ncm.c
---- a/linux/drivers/net/usb/cdc_ncm.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/drivers/net/usb/cdc_ncm.c	2013-03-20 16:30:53.065108532 -0700
-@@ -576,14 +576,9 @@
- 	if ((intf->num_altsetting == 2) &&
- 	    !usb_set_interface(dev->udev,
- 			       intf->cur_altsetting->desc.bInterfaceNumber,
--			       CDC_NCM_COMM_ALTSETTING_MBIM)) {
--		if (cdc_ncm_comm_intf_is_mbim(intf->cur_altsetting))
--			return -ENODEV;
--		else
--			usb_set_interface(dev->udev,
--					  intf->cur_altsetting->desc.bInterfaceNumber,
--					  CDC_NCM_COMM_ALTSETTING_NCM);
--	}
-+			       CDC_NCM_COMM_ALTSETTING_MBIM) &&
-+	    cdc_ncm_comm_intf_is_mbim(intf->cur_altsetting))
-+		return -ENODEV;
- #endif
- 
- 	/* NCM data altsetting is always 1 */
 diff -Nur a/linux/drivers/net/wireless/Kconfig b/linux/drivers/net/wireless/Kconfig
 --- a/linux/drivers/net/wireless/Kconfig	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/net/wireless/Kconfig	2013-03-20 16:30:51.941048654 -0700
@@ -17774,7 +17660,7 @@ diff -Nur a/linux/drivers/net/wireless/rtlwifi/usb.c b/linux/drivers/net/wireles
  	usb_free_urb(urb);
  	return rc;
  }
-@@ -953,8 +941,7 @@
+@@ -954,8 +942,7 @@
  };
  
  int rtl_usb_probe(struct usb_interface *intf,
@@ -17784,7 +17670,7 @@ diff -Nur a/linux/drivers/net/wireless/rtlwifi/usb.c b/linux/drivers/net/wireles
  {
  	int err;
  	struct ieee80211_hw *hw = NULL;
-@@ -989,7 +976,7 @@
+@@ -990,7 +977,7 @@
  	usb_set_intfdata(intf, hw);
  	/* init cfg & intf_ops */
  	rtlpriv->rtlhal.interface = INTF_USB;
@@ -19686,33 +19572,6 @@ diff -Nur a/linux/drivers/staging/zram/zram_drv.c b/linux/drivers/staging/zram/z
  		if (!uncmem) {
  			pr_info("Error allocating temp memory!\n");
  			ret = -ENOMEM;
-diff -Nur a/linux/drivers/staging/zsmalloc/zsmalloc-main.c b/linux/drivers/staging/zsmalloc/zsmalloc-main.c
---- a/linux/drivers/staging/zsmalloc/zsmalloc-main.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/drivers/staging/zsmalloc/zsmalloc-main.c	2013-03-20 16:30:47.892833011 -0700
-@@ -222,9 +222,11 @@
- /*
-  * By default, zsmalloc uses a copy-based object mapping method to access
-  * allocations that span two pages. However, if a particular architecture
-- * performs VM mapping faster than copying, then it should be added here
-- * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-- * page table mapping rather than copying for object mapping.
-+ * 1) Implements local_flush_tlb_kernel_range() and 2) Performs VM mapping
-+ * faster than copying, then it should be added here so that
-+ * USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use page table
-+ * mapping rather than copying
-+ * for object mapping.
- */
- #if defined(CONFIG_ARM)
- #define USE_PGTABLE_MAPPING
-@@ -661,7 +663,7 @@
- 
- 	flush_cache_vunmap(addr, end);
- 	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
--	flush_tlb_kernel_range(addr, end);
-+	local_flush_tlb_kernel_range(addr, end);
- }
- 
- #else /* USE_PGTABLE_MAPPING */
 diff -Nur a/linux/drivers/switch/Kconfig b/linux/drivers/switch/Kconfig
 --- a/linux/drivers/switch/Kconfig	1969-12-31 16:00:00.000000000 -0800
 +++ b/linux/drivers/switch/Kconfig	2013-03-20 16:30:56.141272395 -0700
@@ -25990,7 +25849,7 @@ diff -Nur a/linux/drivers/usb/otg/otg-wakelock.c b/linux/drivers/usb/otg/otg-wak
 diff -Nur a/linux/drivers/usb/serial/ftdi_sio.c b/linux/drivers/usb/serial/ftdi_sio.c
 --- a/linux/drivers/usb/serial/ftdi_sio.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/serial/ftdi_sio.c	2013-03-20 16:30:59.029426242 -0700
-@@ -1886,22 +1886,24 @@
+@@ -1889,22 +1889,24 @@
  {
  	struct ftdi_private *priv = usb_get_serial_port_data(port);
  
@@ -26027,7 +25886,7 @@ diff -Nur a/linux/drivers/usb/serial/ftdi_sio.c b/linux/drivers/usb/serial/ftdi_
 diff -Nur a/linux/drivers/usb/serial/mct_u232.c b/linux/drivers/usb/serial/mct_u232.c
 --- a/linux/drivers/usb/serial/mct_u232.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/serial/mct_u232.c	2013-03-20 16:30:59.017425603 -0700
-@@ -499,15 +499,19 @@
+@@ -496,15 +496,19 @@
  	unsigned int control_state;
  	struct mct_u232_private *priv = usb_get_serial_port_data(port);
  
@@ -26059,7 +25918,7 @@ diff -Nur a/linux/drivers/usb/serial/mct_u232.c b/linux/drivers/usb/serial/mct_u
 diff -Nur a/linux/drivers/usb/serial/option.c b/linux/drivers/usb/serial/option.c
 --- a/linux/drivers/usb/serial/option.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/serial/option.c	2013-03-20 16:30:59.005424964 -0700
-@@ -479,7 +479,6 @@
+@@ -482,7 +482,6 @@
  
  static const struct option_blacklist_info alcatel_x200_blacklist = {
  	.sendsetup = BIT(0) | BIT(1),
@@ -26067,13 +25926,14 @@ diff -Nur a/linux/drivers/usb/serial/option.c b/linux/drivers/usb/serial/option.
  };
  
  static const struct option_blacklist_info zte_0037_blacklist = {
-@@ -576,14 +575,8 @@
+@@ -579,15 +578,9 @@
  	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
  	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
  	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
 -	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
 -		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
 -	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c1f, USB_CLASS_COMM, 0x02, 0xff) },
 -	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
  		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
@@ -26082,7 +25942,7 @@ diff -Nur a/linux/drivers/usb/serial/option.c b/linux/drivers/usb/serial/option.
  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
  		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
-@@ -1222,14 +1215,7 @@
+@@ -1226,14 +1219,7 @@
  	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
  	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
  	},
@@ -26101,7 +25961,7 @@ diff -Nur a/linux/drivers/usb/serial/option.c b/linux/drivers/usb/serial/option.
 diff -Nur a/linux/drivers/usb/serial/quatech2.c b/linux/drivers/usb/serial/quatech2.c
 --- a/linux/drivers/usb/serial/quatech2.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/serial/quatech2.c	2013-03-20 16:30:59.053427521 -0700
-@@ -945,17 +945,19 @@
+@@ -947,17 +947,19 @@
  	struct usb_device *dev = port->serial->dev;
  	struct qt2_port_private *port_priv = usb_get_serial_port_data(port);
  
@@ -26156,7 +26016,7 @@ diff -Nur a/linux/drivers/usb/serial/sierra.c b/linux/drivers/usb/serial/sierra.
 diff -Nur a/linux/drivers/usb/serial/ssu100.c b/linux/drivers/usb/serial/ssu100.c
 --- a/linux/drivers/usb/serial/ssu100.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/serial/ssu100.c	2013-03-20 16:30:59.085429226 -0700
-@@ -506,16 +506,19 @@
+@@ -508,16 +508,19 @@
  {
  	struct usb_device *dev = port->serial->dev;
  
@@ -26187,7 +26047,7 @@ diff -Nur a/linux/drivers/usb/serial/ssu100.c b/linux/drivers/usb/serial/ssu100.
 diff -Nur a/linux/drivers/usb/serial/usb-serial.c b/linux/drivers/usb/serial/usb-serial.c
 --- a/linux/drivers/usb/serial/usb-serial.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/serial/usb-serial.c	2013-03-20 16:30:59.081429012 -0700
-@@ -688,20 +688,10 @@
+@@ -689,20 +689,10 @@
  static void serial_dtr_rts(struct tty_port *port, int on)
  {
  	struct usb_serial_port *p = container_of(port, struct usb_serial_port, port);
@@ -26237,27 +26097,6 @@ diff -Nur a/linux/drivers/usb/serial/usb_wwan.c b/linux/drivers/usb/serial/usb_w
  }
  EXPORT_SYMBOL(usb_wwan_dtr_rts);
  
-diff -Nur a/linux/drivers/usb/storage/initializers.c b/linux/drivers/usb/storage/initializers.c
---- a/linux/drivers/usb/storage/initializers.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/drivers/usb/storage/initializers.c	2013-03-20 16:30:58.885418572 -0700
-@@ -147,7 +147,7 @@
- 	int idProduct;
- 
- 	idesc = &us->pusb_intf->cur_altsetting->desc;
--	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
-+	idProduct = us->pusb_dev->descriptor.idProduct;
- 	/* The first port is CDROM,
- 	 * means the dongle in the single port mode,
- 	 * and a switch command is required to be sent. */
-@@ -169,7 +169,7 @@
- 	int result = 0;
- 
- 	if (usb_stor_huawei_dongles_pid(us)) {
--		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
-+		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
- 			result = usb_stor_huawei_scsi_init(us);
- 		else
- 			result = usb_stor_huawei_feature_init(us);
 diff -Nur a/linux/drivers/usb/storage/unusual_cypress.h b/linux/drivers/usb/storage/unusual_cypress.h
 --- a/linux/drivers/usb/storage/unusual_cypress.h	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/usb/storage/unusual_cypress.h	2013-03-20 16:30:58.889418784 -0700
@@ -26426,16 +26265,18 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  	ops = info->fbcon_par;
  
  	if (!ops)
-@@ -1227,8 +1196,6 @@
+@@ -1227,10 +1196,6 @@
  	ops->flags &= ~FBCON_FLAGS_INIT;
  finished:
  
 -	fbcon_free_font(p, free_font);
+-	if (free_font)
+-		vc->vc_font.data = NULL;
 -
  	if (!con_is_bound(&fb_con))
  		fbcon_exit();
  
-@@ -3010,7 +2977,7 @@
+@@ -3012,7 +2979,7 @@
  {
  	int ret;
  
@@ -26444,7 +26285,7 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  				fbcon_is_default);
  
  	if (!ret)
-@@ -3025,7 +2992,6 @@
+@@ -3027,7 +2994,6 @@
  }
  #endif /* CONFIG_VT_HW_CONSOLE_BINDING */
  
@@ -26452,7 +26293,7 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  static int fbcon_fb_unbind(int idx)
  {
  	int i, new_idx = -1, ret = 0;
-@@ -3052,7 +3018,6 @@
+@@ -3054,7 +3020,6 @@
  	return ret;
  }
  
@@ -26460,7 +26301,7 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  static int fbcon_fb_unregistered(struct fb_info *info)
  {
  	int i, idx;
-@@ -3085,12 +3050,11 @@
+@@ -3087,12 +3052,11 @@
  		primary_device = -1;
  
  	if (!num_registered_fb)
@@ -26474,7 +26315,7 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  static void fbcon_remap_all(int idx)
  {
  	int i;
-@@ -3135,7 +3099,6 @@
+@@ -3137,7 +3101,6 @@
  }
  #endif /* CONFIG_FRAMEBUFFER_DETECT_PRIMARY */
  
@@ -26482,7 +26323,7 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  static int fbcon_fb_registered(struct fb_info *info)
  {
  	int ret = 0, i, idx;
-@@ -3152,7 +3115,7 @@
+@@ -3154,7 +3117,7 @@
  		}
  
  		if (info_idx != -1)
@@ -26491,7 +26332,7 @@ diff -Nur a/linux/drivers/video/console/fbcon.c b/linux/drivers/video/console/fb
  	} else {
  		for (i = first_fb_vc; i <= last_fb_vc; i++) {
  			if (con2fb_map_boot[i] == idx)
-@@ -3288,7 +3251,6 @@
+@@ -3290,7 +3253,6 @@
  		ret = fbcon_fb_unregistered(info);
  		break;
  	case FB_EVENT_SET_CONSOLE_MAP:
@@ -26561,7 +26402,7 @@ diff -Nur a/linux/drivers/video/fbmem.c b/linux/drivers/video/fbmem.c
  		unlock_fb_info(info);
  		break;
  	case FBIOBLANK:
-@@ -1652,9 +1650,7 @@
+@@ -1641,9 +1639,7 @@
  	event.info = fb_info;
  	if (!lock_fb_info(fb_info))
  		return -ENODEV;
@@ -26571,7 +26412,7 @@ diff -Nur a/linux/drivers/video/fbmem.c b/linux/drivers/video/fbmem.c
  	unlock_fb_info(fb_info);
  	return 0;
  }
-@@ -1670,10 +1666,8 @@
+@@ -1659,10 +1655,8 @@
  
  	if (!lock_fb_info(fb_info))
  		return -ENODEV;
@@ -26582,7 +26423,7 @@ diff -Nur a/linux/drivers/video/fbmem.c b/linux/drivers/video/fbmem.c
  	unlock_fb_info(fb_info);
  
  	if (ret)
-@@ -1688,9 +1682,7 @@
+@@ -1677,9 +1671,7 @@
  	num_registered_fb--;
  	fb_cleanup_device(fb_info);
  	event.info = fb_info;
@@ -26592,7 +26433,7 @@ diff -Nur a/linux/drivers/video/fbmem.c b/linux/drivers/video/fbmem.c
  
  	/* this may free fb info */
  	put_fb_info(fb_info);
-@@ -1861,8 +1853,11 @@
+@@ -1850,8 +1842,11 @@
  	err = 1;
  
  	if (!list_empty(&info->modelist)) {
@@ -26893,7 +26734,7 @@ diff -Nur a/linux/drivers/xen/evtchn.c b/linux/drivers/xen/evtchn.c
 diff -Nur a/linux/fs/block_dev.c b/linux/fs/block_dev.c
 --- a/linux/fs/block_dev.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/fs/block_dev.c	2013-03-20 16:31:02.813627822 -0700
-@@ -994,7 +994,6 @@
+@@ -995,7 +995,6 @@
  
  	mutex_lock(&bdev->bd_mutex);
  	check_disk_size_change(disk, bdev);
@@ -27022,23 +26863,10 @@ diff -Nur a/linux/fs/gfs2/bmap.c b/linux/fs/gfs2/bmap.c
  	oldsize = inode->i_size;
  	if (newsize >= oldsize)
  		return do_grow(inode, newsize);
-diff -Nur a/linux/fs/lockd/clntproc.c b/linux/fs/lockd/clntproc.c
---- a/linux/fs/lockd/clntproc.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/fs/lockd/clntproc.c	2013-03-20 16:31:03.645672144 -0700
-@@ -550,9 +550,6 @@
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
- 			break;
--		/* Resend the blocking lock request after a server reboot */
--		if (resp->status ==  nlm_lck_denied_grace_period)
--			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
- 	}
 diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
 --- a/linux/fs/namespace.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/fs/namespace.c	2013-03-20 16:31:03.945688126 -0700
-@@ -1238,14 +1238,6 @@
+@@ -1242,14 +1242,6 @@
  }
  
  /*
@@ -27053,7 +26881,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
   * Now umount can handle mount points as well as block devices.
   * This is important for filesystems which use unnamed block devices.
   *
-@@ -1263,9 +1255,6 @@
+@@ -1267,9 +1259,6 @@
  	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
  		return -EINVAL;
  
@@ -27063,7 +26891,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  	if (!(flags & UMOUNT_NOFOLLOW))
  		lookup_flags |= LOOKUP_FOLLOW;
  
-@@ -1279,6 +1268,10 @@
+@@ -1283,6 +1272,10 @@
  	if (!check_mnt(mnt))
  		goto dput_and_out;
  
@@ -27074,7 +26902,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  	retval = do_umount(mnt, flags);
  dput_and_out:
  	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
-@@ -1302,7 +1295,7 @@
+@@ -1306,7 +1299,7 @@
  
  static int mount_is_safe(struct path *path)
  {
@@ -27083,7 +26911,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return 0;
  	return -EPERM;
  #ifdef notyet
-@@ -1640,7 +1633,7 @@
+@@ -1644,7 +1637,7 @@
  	int type;
  	int err = 0;
  
@@ -27092,7 +26920,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return -EPERM;
  
  	if (path->dentry != path->mnt->mnt_root)
-@@ -1804,7 +1797,7 @@
+@@ -1811,7 +1804,7 @@
  	struct mount *p;
  	struct mount *old;
  	int err = 0;
@@ -27101,7 +26929,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return -EPERM;
  	if (!old_name || !*old_name)
  		return -EINVAL;
-@@ -1940,14 +1933,16 @@
+@@ -1947,14 +1940,16 @@
  			int mnt_flags, const char *name, void *data)
  {
  	struct file_system_type *type;
@@ -27120,7 +26948,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return -EPERM;
  
  	type = get_fs_type(fstype);
-@@ -2572,7 +2567,7 @@
+@@ -2579,7 +2574,7 @@
  	struct mount *new_mnt, *root_mnt;
  	int error;
  
@@ -27215,7 +27043,7 @@ diff -Nur a/linux/fs/nfs/callback_proc.c b/linux/fs/nfs/callback_proc.c
 diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
 --- a/linux/fs/nfs/nfs4proc.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/fs/nfs/nfs4proc.c	2013-03-20 16:31:02.245597564 -0700
-@@ -1463,7 +1463,7 @@
+@@ -1469,7 +1469,7 @@
  	struct nfs4_state_owner *sp = data->owner;
  
  	if (nfs_wait_on_sequence(data->o_arg.seqid, task) != 0)
@@ -27224,7 +27052,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  	/*
  	 * Check if we still need to send an OPEN call, or if we can use
  	 * a delegation instead.
-@@ -1498,7 +1498,6 @@
+@@ -1504,7 +1504,6 @@
  	rcu_read_unlock();
  out_no_action:
  	task->tk_action = NULL;
@@ -27232,7 +27060,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  	nfs4_sequence_done(task, &data->o_res.seq_res);
  }
  
-@@ -2151,7 +2150,7 @@
+@@ -2157,7 +2156,7 @@
  
  	dprintk("%s: begin!\n", __func__);
  	if (nfs_wait_on_sequence(calldata->arg.seqid, task) != 0)
@@ -27241,7 +27069,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  
  	task->tk_msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_OPEN_DOWNGRADE];
  	calldata->arg.fmode = FMODE_READ|FMODE_WRITE;
-@@ -2173,14 +2172,16 @@
+@@ -2179,14 +2178,16 @@
  
  	if (!call_close) {
  		/* Note: exit _without_ calling nfs4_close_done */
@@ -27260,7 +27088,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  	}
  
  	nfs_fattr_init(calldata->res.fattr);
-@@ -2190,12 +2191,8 @@
+@@ -2196,12 +2197,8 @@
  				&calldata->res.seq_res,
  				task) != 0)
  		nfs_release_seqid(calldata->arg.seqid);
@@ -27274,7 +27102,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  }
  
  static const struct rpc_call_ops nfs4_close_ops = {
-@@ -4426,10 +4423,12 @@
+@@ -4432,10 +4429,12 @@
  	struct nfs4_unlockdata *calldata = data;
  
  	if (nfs_wait_on_sequence(calldata->arg.seqid, task) != 0)
@@ -27289,7 +27117,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  	}
  	calldata->timestamp = jiffies;
  	if (nfs4_setup_sequence(calldata->server,
-@@ -4437,11 +4436,6 @@
+@@ -4443,11 +4442,6 @@
  				&calldata->res.seq_res,
  				task) != 0)
  		nfs_release_seqid(calldata->arg.seqid);
@@ -27301,7 +27129,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  }
  
  static const struct rpc_call_ops nfs4_locku_ops = {
-@@ -4582,7 +4576,7 @@
+@@ -4588,7 +4582,7 @@
  
  	dprintk("%s: begin!\n", __func__);
  	if (nfs_wait_on_sequence(data->arg.lock_seqid, task) != 0)
@@ -27310,7 +27138,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  	/* Do we need to do an open_to_lock_owner? */
  	if (!(data->arg.lock_seqid->sequence->flags & NFS_SEQID_CONFIRMED)) {
  		if (nfs_wait_on_sequence(data->arg.open_seqid, task) != 0) {
-@@ -4602,8 +4596,6 @@
+@@ -4608,8 +4602,6 @@
  	nfs_release_seqid(data->arg.open_seqid);
  out_release_lock_seqid:
  	nfs_release_seqid(data->arg.lock_seqid);
@@ -27319,7 +27147,7 @@ diff -Nur a/linux/fs/nfs/nfs4proc.c b/linux/fs/nfs/nfs4proc.c
  	dprintk("%s: done!, ret = %d\n", __func__, data->rpc_status);
  }
  
-@@ -6142,8 +6134,7 @@
+@@ -6155,8 +6134,7 @@
  	status = nfs4_wait_for_completion_rpc_task(task);
  	if (status == 0)
  		status = task->tk_status;
@@ -27343,7 +27171,7 @@ diff -Nur a/linux/fs/nfs/objlayout/objio_osd.c b/linux/fs/nfs/objlayout/objio_os
 diff -Nur a/linux/fs/nfs/pnfs.c b/linux/fs/nfs/pnfs.c
 --- a/linux/fs/nfs/pnfs.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/fs/nfs/pnfs.c	2013-03-20 16:31:02.273599056 -0700
-@@ -505,147 +505,37 @@
+@@ -512,147 +512,37 @@
  }
  EXPORT_SYMBOL_GPL(pnfs_destroy_layout);
  
@@ -27510,7 +27338,7 @@ diff -Nur a/linux/fs/nfs/pnfs.c b/linux/fs/nfs/pnfs.c
  }
  
  /*
-@@ -998,7 +888,7 @@
+@@ -1019,7 +909,7 @@
  	atomic_set(&lo->plh_refcount, 1);
  	INIT_LIST_HEAD(&lo->plh_layouts);
  	INIT_LIST_HEAD(&lo->plh_segs);
@@ -27546,18 +27374,16 @@ diff -Nur a/linux/fs/nfs/pnfs.h b/linux/fs/nfs/pnfs.h
 diff -Nur a/linux/fs/notify/inotify/inotify_user.c b/linux/fs/notify/inotify/inotify_user.c
 --- a/linux/fs/notify/inotify/inotify_user.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/fs/notify/inotify/inotify_user.c	2013-03-20 16:31:02.801627183 -0700
-@@ -576,6 +576,8 @@
+@@ -576,5 +576,7 @@
  
- 	/* don't allow invalid bits: we don't want flags set */
  	mask = inotify_arg_to_mask(arg);
 +	if (unlikely(!(mask & IN_ALL_EVENTS)))
 +		return -EINVAL;
  
  	fsn_mark = fsnotify_find_inode_mark(group, inode);
  	if (!fsn_mark)
-@@ -627,6 +629,8 @@
+@@ -626,5 +629,7 @@
  
- 	/* don't allow invalid bits: we don't want flags set */
  	mask = inotify_arg_to_mask(arg);
 +	if (unlikely(!(mask & IN_ALL_EVENTS)))
 +		return -EINVAL;
@@ -27989,7 +27815,7 @@ diff -Nur a/linux/include/linux/android_aid.h b/linux/include/linux/android_aid.
 diff -Nur a/linux/include/linux/cgroup.h b/linux/include/linux/cgroup.h
 --- a/linux/include/linux/cgroup.h	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/include/linux/cgroup.h	2013-03-20 16:30:42.268533414 -0700
-@@ -448,6 +448,7 @@
+@@ -445,6 +445,7 @@
  	void (*css_offline)(struct cgroup *cgrp);
  	void (*css_free)(struct cgroup *cgrp);
  
@@ -29212,7 +29038,7 @@ diff -Nur a/linux/include/linux/pstore_ram.h b/linux/include/linux/pstore_ram.h
 diff -Nur a/linux/include/linux/sched.h b/linux/include/linux/sched.h
 --- a/linux/include/linux/sched.h	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/include/linux/sched.h	2013-03-20 16:30:42.256532774 -0700
-@@ -1795,6 +1795,9 @@
+@@ -1796,6 +1796,9 @@
  extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
  extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
  
@@ -30882,7 +30708,7 @@ diff -Nur a/linux/init/Kconfig b/linux/init/Kconfig
 diff -Nur a/linux/kernel/cgroup.c b/linux/kernel/cgroup.c
 --- a/linux/kernel/cgroup.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/kernel/cgroup.c	2013-03-20 16:31:01.901579239 -0700
-@@ -2176,6 +2176,24 @@
+@@ -2186,6 +2186,24 @@
  	return retval;
  }
  
@@ -30907,7 +30733,7 @@ diff -Nur a/linux/kernel/cgroup.c b/linux/kernel/cgroup.c
  /*
   * Find the task_struct of the task to attach by vpid and pass it along to the
   * function to attach either it or all tasks in its threadgroup. Will lock
-@@ -2207,9 +2225,18 @@
+@@ -2217,9 +2235,18 @@
  		if (!uid_eq(cred->euid, GLOBAL_ROOT_UID) &&
  		    !uid_eq(cred->euid, tcred->uid) &&
  		    !uid_eq(cred->euid, tcred->suid)) {
@@ -31112,7 +30938,7 @@ diff -Nur a/linux/kernel/futex_compat.c b/linux/kernel/futex_compat.c
 diff -Nur a/linux/kernel/hrtimer.c b/linux/kernel/hrtimer.c
 --- a/linux/kernel/hrtimer.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/kernel/hrtimer.c	2013-03-20 16:31:01.873577747 -0700
-@@ -640,9 +640,21 @@
+@@ -645,9 +645,21 @@
   * and expiry check is done in the hrtimer_interrupt or in the softirq.
   */
  static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
@@ -31136,7 +30962,7 @@ diff -Nur a/linux/kernel/hrtimer.c b/linux/kernel/hrtimer.c
  }
  
  static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-@@ -723,7 +735,8 @@
+@@ -728,7 +740,8 @@
  static inline void
  hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
  static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
@@ -31146,7 +30972,7 @@ diff -Nur a/linux/kernel/hrtimer.c b/linux/kernel/hrtimer.c
  {
  	return 0;
  }
-@@ -982,21 +995,8 @@
+@@ -987,21 +1000,8 @@
  	 *
  	 * XXX send_remote_softirq() ?
  	 */
@@ -31528,7 +31354,7 @@ diff -Nur a/linux/kernel/printk.c b/linux/kernel/printk.c
 diff -Nur a/linux/kernel/sched/core.c b/linux/kernel/sched/core.c
 --- a/linux/kernel/sched/core.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/kernel/sched/core.c	2013-03-20 16:31:01.893578812 -0700
-@@ -7005,13 +7005,24 @@
+@@ -7007,13 +7007,24 @@
  	return (nested == preempt_offset);
  }
  
@@ -31554,7 +31380,7 @@ diff -Nur a/linux/kernel/sched/core.c b/linux/kernel/sched/core.c
  		return;
  	if (time_before(jiffies, prev_jiffy + HZ) && prev_jiffy)
  		return;
-@@ -7571,6 +7582,23 @@
+@@ -7573,6 +7584,23 @@
  	sched_destroy_group(tg);
  }
  
@@ -31578,7 +31404,7 @@ diff -Nur a/linux/kernel/sched/core.c b/linux/kernel/sched/core.c
  static int cpu_cgroup_can_attach(struct cgroup *cgrp,
  				 struct cgroup_taskset *tset)
  {
-@@ -7928,6 +7956,7 @@
+@@ -7930,6 +7958,7 @@
  	.css_free	= cpu_cgroup_css_free,
  	.can_attach	= cpu_cgroup_can_attach,
  	.attach		= cpu_cgroup_attach,
@@ -31814,7 +31640,7 @@ diff -Nur a/linux/kernel/watchdog.c b/linux/kernel/watchdog.c
 diff -Nur a/linux/kernel/workqueue.c b/linux/kernel/workqueue.c
 --- a/linux/kernel/workqueue.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/kernel/workqueue.c	2013-03-20 16:31:01.737570502 -0700
-@@ -1352,7 +1352,7 @@
+@@ -1372,7 +1372,7 @@
  	/* should have been called from irqsafe timer with irq already off */
  	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
  }
@@ -32666,7 +32492,7 @@ diff -Nur a/linux/net/bluetooth/sco.c b/linux/net/bluetooth/sco.c
  	if (IS_ERR(hcon)) {
  		err = PTR_ERR(hcon);
  		goto done;
-@@ -446,17 +449,21 @@
+@@ -447,17 +450,21 @@
  	return 0;
  }
  
@@ -32692,7 +32518,7 @@ diff -Nur a/linux/net/bluetooth/sco.c b/linux/net/bluetooth/sco.c
  	lock_sock(sk);
  
  	if (sk->sk_state != BT_OPEN) {
-@@ -469,7 +476,8 @@
+@@ -470,7 +477,8 @@
  		goto done;
  	}
  
@@ -32702,7 +32528,7 @@ diff -Nur a/linux/net/bluetooth/sco.c b/linux/net/bluetooth/sco.c
  
  	sk->sk_state = BT_BOUND;
  
-@@ -480,27 +488,34 @@
+@@ -481,27 +489,34 @@
  
  static int sco_sock_connect(struct socket *sock, struct sockaddr *addr, int alen, int flags)
  {
@@ -32748,7 +32574,7 @@ diff -Nur a/linux/net/bluetooth/sco.c b/linux/net/bluetooth/sco.c
  
  	err = sco_connect(sk);
  	if (err)
-@@ -624,6 +639,7 @@
+@@ -625,6 +640,7 @@
  		bacpy(&sa->sco_bdaddr, &bt_sk(sk)->dst);
  	else
  		bacpy(&sa->sco_bdaddr, &bt_sk(sk)->src);
@@ -33295,7 +33121,7 @@ diff -Nur a/linux/net/ipv4/tcp.c b/linux/net/ipv4/tcp.c
 diff -Nur a/linux/net/ipv4/tcp_output.c b/linux/net/ipv4/tcp_output.c
 --- a/linux/net/ipv4/tcp_output.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/net/ipv4/tcp_output.c	2013-03-20 16:30:36.668235094 -0700
-@@ -1351,8 +1351,8 @@
+@@ -1350,8 +1350,8 @@
  	return 0;
  }
  
@@ -33306,7 +33132,7 @@ diff -Nur a/linux/net/ipv4/tcp_output.c b/linux/net/ipv4/tcp_output.c
  {
  	const struct tcp_sock *tp = tcp_sk(sk);
  	const struct inet_connection_sock *icsk = inet_csk(sk);
-@@ -1381,15 +1381,11 @@
+@@ -1380,15 +1380,11 @@
  	/* Then reserve room for full set of TCP options and 8 bytes of data */
  	if (mss_now < 48)
  		mss_now = 48;
@@ -33326,7 +33152,7 @@ diff -Nur a/linux/net/ipv4/tcp_output.c b/linux/net/ipv4/tcp_output.c
  }
  
  /* Inverse of above */
-@@ -2934,7 +2930,7 @@
+@@ -2940,7 +2936,7 @@
  	 */
  	if (tp->rx_opt.user_mss && tp->rx_opt.user_mss < tp->rx_opt.mss_clamp)
  		tp->rx_opt.mss_clamp = tp->rx_opt.user_mss;

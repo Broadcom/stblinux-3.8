@@ -508,14 +508,12 @@
 /* Don't shut down DDR PLL */
 #define BRCM_STANDBY_DDR_PLL_ON		0x20
 
-#if defined(CONFIG_BRCM_HAS_AON)
 #if defined(BCHP_AON_CTRL_SYSTEM_DATA_00)
 #define AON_RAM_BASE		BCHP_AON_CTRL_SYSTEM_DATA_00
 #else
 #define AON_RAM_BASE		BCHP_AON_CTRL_SYSTEM_DATA_RAMi_ARRAY_BASE
 #endif
 #define AON_RAM(idx)		(AON_RAM_BASE + (idx << 2))
-#endif
 
 #define UPGTMR_FREQ		27000000
 
@@ -577,7 +575,6 @@ extern int brcm_pcie_enabled;
 extern int brcm_docsis_platform;
 extern int brcm_moca_enabled;
 extern int brcm_usb_enabled;
-extern int brcm_pm_enabled;
 
 #ifdef CONFIG_BRCM_SLOW_TVM_CLOCK
 #define BRCM_BASE_BAUD_TVM	(54000000 / 16)
@@ -725,9 +722,6 @@ ssize_t brcm_pm_store_halt_mode(struct device *dev,
 ssize_t brcm_pm_show_time_at_wakeup(struct device *dev,
 	struct device_attribute *attr, char *buf);
 
-void brcm_irq_standby_enter(int wake_irq);
-void brcm_irq_standby_exit(void);
-
 #ifdef BCHP_PM_L2_CPU_STATUS
 #define TIMER_INTR_MASK		BCHP_PM_L2_CPU_STATUS_TIMER_INTR_MASK
 #ifdef BCHP_PM_L2_CPU_STATUS_WOL_ENET_MASK
@@ -757,11 +751,15 @@ void brcm_irq_standby_exit(void);
 #endif
 #endif
 
-void brcm_pm_wakeup_source_enable(u32 mask, int enable);
-int brcm_pm_wakeup_get_status(u32 mask);
+struct brcmstb_pm_control {
+	void __iomem *aon_ctrl_base;
+	void __iomem *ddr_phy_0_base;
+};
 
-asmlinkage int brcm_pm_standby_asm(int icache_linesz, unsigned long ebase,
-	unsigned int vec_size, unsigned long flags);
+int brcmstb_suspend_init(void);
+int brcmstb_arch_pm_init(struct brcmstb_pm_control *ctrl);
+int brcmstb_arch_pm_do_s2(void);
+
 int brcm_pm_s3_standby(int dcache_linesz, unsigned long options);
 void brcm_pm_s3_cold_boot(void);
 
@@ -772,39 +770,6 @@ void brcm_pm_save_restore_rts(unsigned long reg_addr, u32 *data, int restore);
 #define BRCM_MEM_DMA_SCRAM_BLOCK	1
 #define BRCM_MEM_DMA_SCRAM_MPEG		2
 #define BRCM_MEM_DMA_SCRAM_DTV		3
-
-extern int brcm_pm_hash_enabled;
-
-struct brcm_mem_transfer;
-
-struct brcm_mem_transfer {
-	struct brcm_mem_transfer *next; /* chained transfers */
-	void		*src;
-	void		*dst;
-	dma_addr_t	pa_src; /* remapped by or known to the caller */
-	dma_addr_t	pa_dst; /* remapped by or known to the caller */
-	u32		len;
-	u8		key;
-	u8		mode:2;
-	u8		src_remapped:1;
-	u8		dst_remapped:1;
-	u8		src_dst_remapped:1;
-};
-
-int brcm_mem_dma_transfer(struct brcm_mem_transfer *xfer);
-int brcm_mem_dma_simple_transfer(struct brcm_mem_transfer *xfer);
-
-int brcm_pm_dram_encoder_prepare(struct brcm_mem_transfer *param);
-int brcm_pm_dram_encoder_complete(struct brcm_mem_transfer *param);
-void brcm_pm_dram_encoder_start(void);
-
-struct brcm_dram_encoder_ops {
-	int (*prepare)(struct brcm_mem_transfer *);
-	void (*start)(void);
-	int (*complete)(struct brcm_mem_transfer *);
-};
-
-void brcm_pm_set_dram_encoder(struct brcm_dram_encoder_ops *);
 
 asmlinkage void brcm_pm_irq(void);
 int brcm_pm_deep_sleep(void);
@@ -842,6 +807,22 @@ struct wktmr_time {
 
 void wktmr_read(struct wktmr_time *t);
 unsigned long wktmr_elapsed(struct wktmr_time *t);
+
+#if defined(CONFIG_BRCMSTB_USE_MEGA_BARRIER)
+extern void brcmstb_mega_barrier(void);
+#endif
+
+/* BCMGENET device tree properties */
+#define BRCM_PHY_ID_AUTO	0x100
+#define BRCM_PHY_ID_NONE	0x101
+
+#define BRCM_PHY_TYPE_INT	1
+#define BRCM_PHY_TYPE_EXT_MII	2
+#define BRCM_PHY_TYPE_EXT_RVMII	3
+#define BRCM_PHY_TYPE_EXT_RGMII	4
+#define BRCM_PHY_TYPE_EXT_RGMII_IBS	5
+#define BRCM_PHY_TYPE_EXT_RGMII_NO_ID	6
+#define BRCM_PHY_TYPE_MOCA	7
 
 #endif /* !defined(__ASSEMBLY__) */
 

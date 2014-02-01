@@ -66,9 +66,6 @@ backtrace_helper (struct _Unwind_Context *ctx, void *a)
 /*
  * Perform stack unwinding by using the _Unwind_Backtrace.
  *
- * User application that wants to use backtrace needs to be
- * compiled with -fexceptions option and -rdynamic to get full
- * symbols printed.
  */
 int backtrace (void **array, int size)
 {

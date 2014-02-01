@@ -67,9 +67,7 @@ void sdhci_get_of_property(struct platform_device *pdev)
 		if (of_get_property(np, "sdhci,auto-cmd12", NULL))
 			host->quirks |= SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12;
 
-		if (of_get_property(np, "sdhci,1-bit-only", NULL) ||
-		    (of_property_read_u32(np, "bus-width", &bus_width) == 0 &&
-		    bus_width == 1))
+		if (of_get_property(np, "sdhci,1-bit-only", NULL))
 			host->quirks |= SDHCI_QUIRK_FORCE_1_BIT_DATA;
 
 		if (sdhci_of_wp_inverted(np))
@@ -98,6 +96,25 @@ void sdhci_get_of_property(struct platform_device *pdev)
 
 		if (of_find_property(np, "enable-sdio-wakeup", NULL))
 			host->mmc->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
+
+		/*
+		 * For a 1 bit bus, we can't just avoid setting the 4 or 8
+		 * bit flags because the driver will default to 4 bit later
+		 * if the QUIRKS flag is not set.
+		 */
+		if (of_property_read_u32(np, "bus-width", &bus_width) == 0) {
+			switch (bus_width) {
+			case 8:
+				host->mmc->caps |= MMC_CAP_8_BIT_DATA;
+				break;
+			case 4:
+				host->mmc->caps |= MMC_CAP_4_BIT_DATA;
+				break;
+			case 1:
+				host->quirks |= SDHCI_QUIRK_FORCE_1_BIT_DATA;
+				break;
+			}
+		}
 	}
 }
 #else

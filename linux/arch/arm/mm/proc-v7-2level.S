@@ -7,7 +7,6 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-
 #define TTB_S		(1 << 1)
 #define TTB_RGN_NC	(0 << 3)
 #define TTB_RGN_OC_WBWA	(1 << 3)
@@ -130,8 +129,15 @@ ENDPROC(cpu_v7_set_pte_ext)
 	 *   WRITEBACK		011	10	11	11
 	 *   reserved		110
 	 *   WRITEALLOC		111	10	01	01
+#ifdef CONFIG_BRCMSTB_USE_MEGA_BARRIER
+	 *   Have to mark all device memory as STRONGLY ORDERED
+	 *   to support workaround for H/W bug.
+	 *   DEV_SHARED		100	00
+	 *   DEV_NONSHARED	100	00
+#else
 	 *   DEV_SHARED		100	01
 	 *   DEV_NONSHARED	100	01
+#endif
 	 *   DEV_WC		001	10
 	 *   DEV_CACHED		011	10
 	 *
@@ -143,7 +149,11 @@ ENDPROC(cpu_v7_set_pte_ext)
 	 *   NS1 = PRRR[19] = 1		- normal shareable property
 	 *   NOS = PRRR[24+n] = 1	- not outer shareable
 	 */
+#ifdef CONFIG_BRCMSTB_USE_MEGA_BARRIER
+.equ	PRRR,	0xff0a80a8
+#else
 .equ	PRRR,	0xff0a81a8
+#endif
 .equ	NMRR,	0x40e040e0
 
 	/*
