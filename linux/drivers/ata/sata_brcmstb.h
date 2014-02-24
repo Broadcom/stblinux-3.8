@@ -31,15 +31,18 @@
 
 #define MAX_PORTS			32
 
-#define SATA_MDIO_BANK_OFFSET		0x23C
+#define SATA_MDIO_BANK_OFFSET		0x23c
 #define SATA_MDIO_REG_OFFSET(ofs)	((ofs) * 4)
 #define SATA_MDIO_REG_SPACE_SIZE	0x1000
-#define SATA_MDIO_REG_LENGTH		0x1F00
-#define TXPMD_0_REG_BANK(port)		(0x1A0 + ((port) * 0x10))
+#define SATA_MDIO_REG_LENGTH		0x1f00
+
+/* The older SATA PHY registers duplicated per port registers within the map,
+ * rather than having a separate map per port. */
+#define SATA_MDIO_REG_LEGACY_BANK_OFS	0x10
 
 #define SPD_SETTING_WIDTH		4
 #define SPD_SETTING_PER_U32		(32 / SPD_SETTING_WIDTH)
-#define SPD_SETTING_MASK		0xF
+#define SPD_SETTING_MASK		0xf
 #define SPD_SETTING_SHIFT(port)		\
 	(((port) % SPD_SETTING_PER_U32) * SPD_SETTING_WIDTH)
 
@@ -48,18 +51,25 @@
 #define SATA_TOP_CTRL_BUS_CTRL			0x4
 #define SATA_TOP_CTRL_PHY_CTRL_2		0x10
 #define SATA_TOP_CTRL_PHY_CTRL_4		0x18
-#define SATA_TOP_CTRL_BUS_CTRL_OVERRIDE_HWINIT	(1 << 16)
-#define SATA_TOP_CTRL_PHY_GLOBAL_RESET		(1 << 14)
+#define SATA_TOP_CTRL_BUS_CTRL_OVERRIDE_HWINIT	BIT(16)
+#define SATA_TOP_CTRL_PHY_GLOBAL_RESET		BIT(14)
 
-enum sata_mdio_phy_legacy_regs {
+enum sata_mdio_phy_regs_28nm {
+	PLL_REG_BANK_0 = 0x50,
+	PLL_REG_BANK_0_PLLCONTROL_0 = 0x81,
+	TXPMD_REG_BANK = 0x1c0,
 	TXPMD_CONTROL1 = 0x81,
+	TXPMD_CONTROL1_TX_SSC_EN_FRC = BIT(0),
+	TXPMD_CONTROL1_TX_SSC_EN_FRC_VAL = BIT(1),
 	TXPMD_TX_FREQ_CTRL_CONTROL1 = 0x82,
 	TXPMD_TX_FREQ_CTRL_CONTROL2 = 0x83,
+	TXPMD_TX_FREQ_CTRL_CONTROL2_FMIN_MASK = 0x3ff,
 	TXPMD_TX_FREQ_CTRL_CONTROL3 = 0x84,
+	TXPMD_TX_FREQ_CTRL_CONTROL3_FMAX_MASK = 0x3ff,
 };
 
-enum sata_mdio_phy_regs {
-	PLL_REG_BANK_0 = 0x50,
+enum sata_mdio_phy_regs_legacy {
+	TXPMD_REG_BANK_LEGACY = 0x1a0,
 };
 
 enum sata_brcm_quirks {
@@ -96,6 +106,16 @@ struct sata_brcm_pdata {
 	u32 phy_force_spd[MAX_PORTS / SPD_SETTING_PER_U32];
 	u32 top_ctrl_base_addr;
 	u32 quirks;
+};
+
+struct sata_phy_cfg_ops {
+	void (*cfg_ssc)(void __iomem *base, int port, int ssc_en);
+};
+
+enum sata_phy_mdio_gen {
+	SATA_PHY_MDIO_LEGACY = 0,
+	SATA_PHY_MDIO_28NM,
+	SATA_PHY_MDIO_END,
 };
 
 int brcm_sata3_phy_spd_get(const struct sata_brcm_pdata *pdata, int port);

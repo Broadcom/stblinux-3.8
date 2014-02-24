@@ -84,7 +84,7 @@ static void phy_write_misc(struct phy_device *phydev,
 static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 {
 	/* write AFE_RXCONFIG_0 */
-	phy_write_misc(phydev, 0x38, 0x0000, 0xeb17);
+	phy_write_misc(phydev, 0x38, 0x0000, 0xeb19);
 
 	/* write AFE_RXCONFIG_1 */
 	phy_write_misc(phydev, 0x38, 0x0001, 0x9a3f);

@@ -80,8 +80,9 @@ struct brcm_pm_priv
 #define SYS_MEMC1_STAT	"/sys/devices/platform/brcmstb/memc1_power"
 #define SYS_SATA_STAT	"/sys/devices/platform/brcmstb/sata_power"
 #define SYS_DDR_STAT	"/sys/devices/platform/brcmstb/ddr_timeout"
-#define SYS_STANDBY_FLAGS "/sys/devices/platform/brcmstb/standby_flags"
 #define SYS_TP1_STAT	"/sys/devices/system/cpu/cpu1/online"
+#define SYS_TP2_STAT	"/sys/devices/system/cpu/cpu2/online"
+#define SYS_TP3_STAT	"/sys/devices/system/cpu/cpu3/online"
 #define SYS_CPU_KHZ	"/sys/devices/platform/brcmstb/cpu_khz"
 #define SYS_CPU_PLL	"/sys/devices/platform/brcmstb/cpu_pll"
 #define SYS_CPU_DIV	"/sys/devices/platform/brcmstb/cpu_div"
@@ -488,12 +489,14 @@ int brcm_pm_get_status(void *vctx, struct brcm_pm_state *st)
 	if(sysfs_get(SYS_DDR_STAT, (unsigned int *)&st->ddr_timeout) != 0) {
 		st->ddr_timeout = BRCM_PM_UNDEF;
 	}
-	if(sysfs_get(SYS_STANDBY_FLAGS,
-			(unsigned int *)&st->standby_flags) != 0) {
-		st->standby_flags = BRCM_PM_UNDEF;
-	}
 	if(sysfs_get(SYS_TP1_STAT, (unsigned int *)&st->tp1_status) != 0) {
 		st->tp1_status = BRCM_PM_UNDEF;
+	}
+	if(sysfs_get(SYS_TP2_STAT, (unsigned int *)&st->tp2_status) != 0) {
+		st->tp2_status = BRCM_PM_UNDEF;
+	}
+	if(sysfs_get(SYS_TP3_STAT, (unsigned int *)&st->tp3_status) != 0) {
+		st->tp3_status = BRCM_PM_UNDEF;
 	}
 	if(sysfs_get(SYS_MEMC1_STAT, (unsigned int *)&st->memc1_status) != 0) {
 		st->memc1_status = BRCM_PM_UNDEF;
@@ -592,6 +595,16 @@ int brcm_pm_set_status(void *vctx, struct brcm_pm_state *st)
 		ret |= sysfs_set(SYS_TP1_STAT, st->tp1_status);
 	}
 
+	if(CHANGED(tp2_status))
+	{
+		ret |= sysfs_set(SYS_TP2_STAT, st->tp2_status);
+	}
+
+	if(CHANGED(tp3_status))
+	{
+		ret |= sysfs_set(SYS_TP3_STAT, st->tp3_status);
+	}
+
 	if(CHANGED(cpu_divisor))
 	{
 		ret |= sysfs_set(SYS_CPU_DIV, st->cpu_divisor);
@@ -610,11 +623,6 @@ int brcm_pm_set_status(void *vctx, struct brcm_pm_state *st)
 	if(CHANGED(memc1_status))
 	{
 		ret |= sysfs_set(SYS_MEMC1_STAT, st->memc1_status);
-	}
-
-	if(CHANGED(standby_flags))
-	{
-		ret |= sysfs_set(SYS_STANDBY_FLAGS, st->standby_flags);
 	}
 
 #undef CHANGED

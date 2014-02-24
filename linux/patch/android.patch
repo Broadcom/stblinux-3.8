@@ -27799,8 +27799,8 @@ diff -Nur a/linux/include/linux/android_aid.h b/linux/include/linux/android_aid.
 + *
 + */
 +
-+#ifndef _a/linuxNDROID_AID_H
-+#define _a/linuxNDROID_AID_H
++#ifndef ANDROID_AID_H
++#define ANDROID_AID_H
 +
 +/* AIDs that the kernel treats differently */
 +#define AID_OBSOLETE_000 3001  /* was NET_BT_ADMIN */
@@ -31326,31 +31326,6 @@ diff -Nur a/linux/kernel/power/suspend_time.c b/linux/kernel/power/suspend_time.
 +}
 +module_init(suspend_time_syscore_init);
 +module_exit(suspend_time_syscore_exit);
-diff -Nur a/linux/kernel/printk.c b/linux/kernel/printk.c
---- a/linux/kernel/printk.c	2013-03-15 10:27:25.000000000 -0700
-+++ b/linux/kernel/printk.c	2013-03-20 16:31:01.801573911 -0700
-@@ -55,6 +55,10 @@
- {
- }
- 
-+#ifdef        CONFIG_DEBUG_LL
-+extern void printascii(char *);
-+#endif
-+
- /* printk's without a loglevel use this.. */
- #define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
- 
-@@ -1541,6 +1545,10 @@
- 	 */
- 	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
- 
-+#ifdef	CONFIG_DEBUG_LL
-+	printascii(text);
-+#endif
-+
- 	/* mark and strip a trailing newline */
- 	if (text_len && text[text_len-1] == '\n') {
- 		text_len--;
 diff -Nur a/linux/kernel/sched/core.c b/linux/kernel/sched/core.c
 --- a/linux/kernel/sched/core.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/kernel/sched/core.c	2013-03-20 16:31:01.893578812 -0700

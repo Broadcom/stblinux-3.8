@@ -149,7 +149,7 @@ static void __iomem * brcmstb_ioremap_match(struct of_device_id *matches)
 	if (ret < 0)
 		return ERR_PTR(ret);
 
-	res2 = request_mem_region(res.start, resource_size(&res), NULL);
+	res2 = request_mem_region(res.start, resource_size(&res), dn->full_name);
 	if (!res2)
 		return ERR_PTR(-EIO);
 

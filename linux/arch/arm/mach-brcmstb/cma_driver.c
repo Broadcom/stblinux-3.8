@@ -38,8 +38,6 @@
 #include <asm/setup.h>
 #include "common.h"
 
-extern phys_addr_t dma_contiguous_def_base;
-
 struct cma_devs_list {
 	struct list_head list;
 	struct cma_dev *cma_dev;
@@ -56,6 +54,7 @@ struct cma_root_dev {
 struct cma_pdev_data {
 	phys_addr_t start;
 	phys_addr_t size;
+	int do_prealloc;
 };
 
 struct cma_region_rsv_data {
@@ -222,12 +221,6 @@ void __init cma_reserve(void)
 			memblock_debug = 1;
 			memblock_dump_all();
 			memblock_debug = 0;
-		} else {
-			/* use the lowest memblock for default allocations */
-			if (iter == 0) {
-				pr_debug("setting cma default base\n");
-				dma_contiguous_def_base = base;
-			}
 		}
 
 		if (cma_data.nr_regions_valid == NR_BANKS)
@@ -236,31 +229,29 @@ void __init cma_reserve(void)
 			cma_data.regions[cma_data.nr_regions_valid].start =
 				base;
 			cma_data.regions[cma_data.nr_regions_valid].size = size;
+			/*
+			 * Do a pre-allocation on lowmem regions during CMA
+			 * registration to help prevent allocation failures
+			 * when kernel memory gets fragmented.
+			 */
+			cma_data.regions[cma_data.nr_regions_valid].do_prealloc
+				= meminfo.bank[iter].highmem ? 0 : 1;
 			cma_data.nr_regions_valid++;
 		}
 	}
 }
 
 static struct platform_device * __init cma_register_dev_one(int id,
-							phys_addr_t start,
-							phys_addr_t size)
+	int region_idx)
 {
 	struct platform_device *pdev;
-	struct cma_pdev_data *data;
 
-	data = kmalloc(sizeof(struct cma_pdev_data), GFP_KERNEL);
-	if (!data)
-		return NULL;
-
-	data->start = start;
-	data->size = size;
-
-	pdev = platform_device_register_data(NULL, "brcm-cma", id, data,
-						sizeof(struct cma_pdev_data));
+	pdev = platform_device_register_data(NULL, "brcm-cma", id,
+		&cma_data.regions[region_idx], sizeof(struct cma_pdev_data));
 	if (!pdev) {
-		pr_err("couldn't register pdev for %d,%xh,%xh\n", id, start,
-			size);
-		kfree(data);
+		pr_err("couldn't register pdev for %d,%xh,%xh\n", id,
+			cma_data.regions[region_idx].start,
+			cma_data.regions[region_idx].size);
 	}
 
 	return pdev;
@@ -278,8 +269,7 @@ void __init cma_register(void)
 	struct platform_device *pdev;
 
 	for (i = 0; i < cma_data.nr_regions_valid; i++) {
-		pdev = cma_register_dev_one(id, cma_data.regions[i].start,
-						cma_data.regions[i].size);
+		pdev = cma_register_dev_one(id, i);
 		if (!pdev) {
 			pr_err("couldn't register device");
 			continue;
@@ -1118,11 +1108,39 @@ done:
 	return ret;
 }
 
+static int __init cma_drvr_do_prealloc(struct device *dev,
+	struct cma_dev *cma_dev)
+{
+	int ret;
+	u64 addr;
+	u32 size;
+
+	size = cma_dev->range.size;
+#ifdef CONFIG_BRCMSTB_USE_MEGA_BARRIER
+	/* Every CMA device needs to accomodate the mega-barrier page if a
+	 * pre-allocation is needed.
+	 */
+	if (size > PAGE_SIZE)
+		size -= PAGE_SIZE;
+#endif
+
+	ret = cma_dev_get_mem(cma_dev, &addr, size, 0);
+	if (ret)
+		dev_err(dev, "Unable to pre-allocate 0x%x bytes (%d)", size,
+			ret);
+	else
+		dev_info(dev, "Pre-allocated 0x%x bytes @ 0x%llx", size, addr);
+
+	return ret;
+}
+
 static int __init cma_drvr_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct cma_dev *cma_dev = NULL;
 	int ret = 0;
+	struct cma_pdev_data *data =
+		(struct cma_pdev_data *)dev->platform_data;
 
 	mutex_lock(&cma_dev_mutex);
 
@@ -1160,6 +1178,17 @@ static int __init cma_drvr_probe(struct platform_device *pdev)
 	list_add(&cma_dev->list, &cma_root_dev->cma_devs.list);
 	dev_info(dev, "Added CMA device @ PA=0x%x LEN=%xh\n",
 		 cma_dev->range.base, cma_dev->range.size);
+
+	if (data->do_prealloc) {
+		/*
+		 * Pre-allocation failure isn't truly a probe error because the
+		 * device has been initialized at this point. An error will be
+		 * logged if there is a failure.
+		 */
+		mutex_unlock(&cma_dev_mutex);
+		cma_drvr_do_prealloc(dev, cma_dev);
+		mutex_lock(&cma_dev_mutex);
+	}
 
 	goto done;
 

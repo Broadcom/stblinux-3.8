@@ -373,6 +373,8 @@ static int brcm_ahci_probe(struct platform_device *pdev)
 		goto err_cleanup;
 	}
 
+	memset(&brcm_pdata, 0, sizeof(struct sata_brcm_pdata));
+
 	/*
 	 * Configure the Broadcom AHCI wrapper
 	 */

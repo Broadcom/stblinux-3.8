@@ -26,12 +26,12 @@
 #include <linux/device.h>
 #include <linux/list.h>
 #include <linux/of.h>
+#include <linux/bitops.h>
 
 #include <asm/bug.h>
 #include <asm/signal.h>
 
 #define ARB_TIMER			0x008
-#define ARB_MASTER			0x1e4
 #define ARB_ERR_CAP_CLR			0x7e4
 #define  ARB_ERR_CAP_CLEAR		(1 << 0)
 #define ARB_ERR_CAP_HI_ADDR		0x7e8
@@ -44,11 +44,14 @@
 #define  ARB_ERR_CAP_STATUS_BS_MASK	0x3c
 #define  ARB_ERR_CAP_STATUS_WRITE	(1 << 1)
 #define  ARB_ERR_CAP_STATUS_VALID	(1 << 0)
+#define ARB_ERR_CAP_MASTER		0x7f8
 
 struct brcmstb_gisb_arb_device {
 	void __iomem	*base;
 	struct mutex	lock;
 	struct list_head next;
+	u32 valid_mask;
+	const char *master_names[sizeof(u32) * BITS_PER_BYTE];
 };
 
 static LIST_HEAD(brcmstb_gisb_arb_device_list);
@@ -90,12 +93,26 @@ static ssize_t gisb_arb_set_timeout(struct device *dev,
 	return count;
 }
 
+static const char *
+brcmstb_gisb_master_to_str(struct brcmstb_gisb_arb_device *gdev,
+						u32 masters)
+{
+	u32 mask = gdev->valid_mask & masters;
+
+	if (hweight_long(mask) != 1)
+		return NULL;
+
+	return gdev->master_names[ffs(mask) - 1];
+}
+
 static int brcmstb_gisb_arb_decode_addr(struct brcmstb_gisb_arb_device *gdev,
 					const char *reason)
 {
 	u32 cap_status;
 	unsigned long arb_addr;
 	u32 master;
+	const char *m_name;
+	char m_fmt[11];
 
 	cap_status = ioread32(gdev->base + ARB_ERR_CAP_STATUS);
 
@@ -108,13 +125,19 @@ static int brcmstb_gisb_arb_decode_addr(struct brcmstb_gisb_arb_device *gdev,
 #ifdef CONFIG_PHYS_ADDR_T_64BIT
 	arb_addr |= (u64)ioread32(gdev->base + ARB_ERR_CAP_HI_ADDR) << 32;
 #endif
-	master = ioread32(gdev->base + ARB_MASTER);
+	master = ioread32(gdev->base + ARB_ERR_CAP_MASTER);
 
-	pr_crit("%s: %s at 0x%lx [%c %s], cores: 0x%08x\n",
+	m_name = brcmstb_gisb_master_to_str(gdev, master);
+	if (!m_name) {
+		snprintf(m_fmt, sizeof(m_fmt), "0x%08x", master);
+		m_name = m_fmt;
+	}
+
+	pr_crit("%s: %s at 0x%lx [%c %s], core: %s\n",
 		__func__, reason, arb_addr,
 		cap_status & ARB_ERR_CAP_STATUS_WRITE ? 'W' : 'R',
 		cap_status & ARB_ERR_CAP_STATUS_TIMEOUT ? "timeout" : "",
-		master);
+		m_name);
 
 	/* clear the GISB error */
 	iowrite32(ARB_ERR_CAP_CLEAR, gdev->base + ARB_ERR_CAP_CLR);
@@ -175,9 +198,12 @@ static struct attribute_group gisb_arb_sysfs_attr_group = {
 
 static int brcmstb_gisb_arb_probe(struct platform_device *pdev)
 {
+	struct device_node *dn = pdev->dev.of_node;
 	struct brcmstb_gisb_arb_device *gdev;
 	struct resource *r;
 	int err, timeout_irq, tea_irq;
+	unsigned int num_masters, j = 0;
+	int i, first, last;
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	timeout_irq = platform_get_irq(pdev, 0);
@@ -205,6 +231,31 @@ static int brcmstb_gisb_arb_probe(struct platform_device *pdev)
 				gdev);
 	if (err < 0)
 		return err;
+
+	/* If we do not have a valid mask, assume all masters are enabled */
+	if (of_property_read_u32(dn, "brcm,gisb-arb-master-mask",
+				&gdev->valid_mask))
+		gdev->valid_mask = 0xffffffff;
+
+	/* Proceed with reading the litteral names if we agree on the
+	 * number of masters
+	 */
+	num_masters = of_property_count_strings(dn,
+			"brcm,gisb-arb-master-names");
+	if (hweight_long(gdev->valid_mask) == num_masters) {
+		first = ffs(gdev->valid_mask) - 1;
+		last = fls(gdev->valid_mask) - 1;
+
+		for (i = first; i < last; i++) {
+			if (!(gdev->valid_mask & BIT(i)))
+				continue;
+
+			of_property_read_string_index(dn,
+					"brcm,gisb-arb-master-names", j,
+					&gdev->master_names[i]);
+			j++;
+		}
+	}
 
 	err = sysfs_create_group(&pdev->dev.kobj, &gisb_arb_sysfs_attr_group);
 	if (err)

@@ -10,10 +10,58 @@
 #include <assert.h>
 #include <signal.h>
 #include <errno.h>
+#include <libgen.h>
 #include "cmatest.h"
 
 #define PAGE_SIZE 4096
 #define TEST_BFR_LEN (64 * PAGE_SIZE)
+#define MAX_CMD_NAME_LEN 16
+#define MAX_DESC_LEN 64
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define BUG_PRINT(ret) fprintf(stderr, "bug @ line %d (%d)\n", __LINE__, (ret))
+
+enum cmd_index {
+	CMD_ALLOC = 0,
+	CMD_FREE,
+	CMD_LIST,
+	CMD_LISTALL,
+	CMD_GETPROT,
+	CMD_SETPROT,
+	CMD_UNITTEST,
+	CMD_RESETALL,
+	CMD_MMAP,
+	CMD_NOT_VALID,
+};
+
+struct cmd_arg_desc {
+	enum cmd_index cmd_idx;
+	char cmd_name[MAX_CMD_NAME_LEN];
+	char desc[MAX_DESC_LEN];
+	int num_opts;
+};
+
+static const struct cmd_arg_desc cmds[] = {
+	{ CMD_ALLOC,
+		"alloc",    "<cmadevidx> 0x<num_bytes> 0x<align_bytes>", 3 },
+	{ CMD_FREE,
+		"free",     "<cmadevidx> 0x<PA> 0x<num_bytes>",          3 },
+	{ CMD_LIST,
+		"list",     "<cmadevidx>",                               1 },
+	{ CMD_LISTALL,
+		"listall",  "",                                          0 },
+	{ CMD_GETPROT,
+		"getprot",  "",                                          0 },
+	{ CMD_SETPROT,
+		"setprot",  "<pg_prot val>",                             1 },
+	{ CMD_UNITTEST,
+		"unittest", "",                                          0 },
+	{ CMD_RESETALL,
+		"resetall", "",                                          0 },
+	{ CMD_MMAP,
+		"mmap",     "0x<addr> 0x<len> <test_file>",              3 },
+	{ CMD_NOT_VALID,
+		"",         "",                                         -1 },
+};
 
 static int cma_get_mem(int fd, uint32_t dev_index, uint32_t num_bytes,
 			uint32_t align_bytes, uint64_t *addr)
@@ -163,6 +211,47 @@ static void reset_all(int fd, uint32_t cma_idx)
 		} else
 			break;
 	}
+}
+
+static int list_one(int fd, uint32_t cma_dev_index)
+{
+	int ret;
+	unsigned int i;
+	uint32_t num_regions;
+	uint64_t addr;
+	uint32_t len;
+
+	ret = cma_get_phys_info(fd, cma_dev_index, &addr, &len);
+	if (ret)
+		goto done;
+
+	ret = cma_get_num_regions(fd, cma_dev_index, &num_regions);
+	if (ret) {
+		BUG_PRINT(ret);
+		goto done;
+	}
+
+	printf("num regions = %d\n", num_regions);
+
+	for (i = 0; i < num_regions; i++) {
+		uint32_t memc;
+		uint64_t addr;
+		uint32_t num_bytes;
+
+		ret = cma_get_region_info(fd, cma_dev_index, i, &memc,
+					&addr, &num_bytes);
+		if (ret) {
+			BUG_PRINT(ret);
+			goto done;
+		}
+
+		printf("memc[%d]      = %xh\n", i, memc);
+		printf("addr[%d]      = %llxh\n", i, addr);
+		printf("num_bytes[%d] = %xh\n", i, num_bytes);
+	}
+
+done:
+	return ret;
 }
 
 static void run_unit_tests(int fd)
@@ -502,30 +591,50 @@ cleanup:
 		free(align_va);
 }
 
-static void show_usage(char *argv[])
+static void show_usage(char *argv)
 {
-	printf("usage: %s <command> <device> <args...>\n", argv[0]);
+	int i;
+	char *execname = basename(argv);
+
+	printf("usage: %s <command> <device> <args...>\n", execname);
 	printf("\ncommands <args...>:\n");
-	printf("    alloc   <cmadevidx> 0x<num_bytes> 0x<align_bytes>\n");
-	printf("    free    <cmadevidx> 0x<PA> 0x<num_bytes>\n");
-	printf("    list    <cmadevidx>\n");
-	printf("    getprot\n");
-	printf("    setprot <pg_prot val>\n");
-	printf("    unittest\n");
-	printf("    resetall\n");
-	printf("    mmap    0x<addr> 0x<len> <test_file>\n");
+
+	for (i = 0; i < (int)ARRAY_SIZE(cmds); i++)
+		printf("    %-9s %s\n", cmds[i].cmd_name, cmds[i].desc);
+
 	printf("\nexamples:\n");
-	printf("    %s /dev/brcm_cma0 alloc 2 0x1000 0x0\n", argv[0]);
-	printf("    %s /dev/brcm_cma0 unittest\n\n", argv[0]);
+	printf("    %s /dev/brcm_cma0 alloc 2 0x1000 0x0\n", execname);
+	printf("    %s /dev/brcm_cma0 unittest\n\n", execname);
+}
+
+static enum cmd_index check_cmd(char *exec, const char *str, int num_opts)
+{
+	int i;
+	enum cmd_index cmd_idx = CMD_NOT_VALID;
+
+	for (i = 0; i < (int)ARRAY_SIZE(cmds); i++) {
+		if (strncmp(str, cmds[i].cmd_name, MAX_CMD_NAME_LEN) == 0) {
+			cmd_idx = cmds[i].cmd_idx;
+			break;
+		}
+	}
+
+	if ((cmd_idx == CMD_NOT_VALID) || (num_opts != cmds[i].num_opts)) {
+		show_usage(exec);
+		exit(1);
+	}
+
+	return cmd_idx;
 }
 
 int main(int argc, char *argv[])
 {
 	int fd;
-	int ret;
+	int ret = 0;
+	enum cmd_index cmd_idx;
 
-	if (argc < 2) {
-		show_usage(argv);
+	if (argc < 3) {
+		show_usage(argv[0]);
 		return -1;
 	}
 
@@ -535,16 +644,14 @@ int main(int argc, char *argv[])
 		goto done;
 	}
 
-	if (strcmp(argv[2], "alloc") == 0) {
+	cmd_idx = check_cmd(argv[0], argv[2],
+			argc - 3 /* minus exec, file, cmd */);
+	switch (cmd_idx) {
+	case CMD_ALLOC: {
 		uint32_t cma_dev_index;
 		uint32_t num_bytes;
 		uint32_t align_bytes;
 		uint64_t addr;
-
-		if (argc != 6) {
-			show_usage(argv);
-			return -1;
-		}
 
 		sscanf(argv[3], "%x", &cma_dev_index);
 		sscanf(argv[4], "%x", &num_bytes);
@@ -553,20 +660,17 @@ int main(int argc, char *argv[])
 		ret = cma_get_mem(fd, cma_dev_index, num_bytes, align_bytes,
 			&addr);
 		if (ret) {
-			printf("bug @ line %d (%d)\n", __LINE__, ret);
+			BUG_PRINT(ret);
 			goto done;
 		}
 
 		printf("PA=%llxh\n", addr);
-	} else if (strcmp(argv[2], "free") == 0) {
+		break;
+	}
+	case CMD_FREE: {
 		uint32_t cma_dev_index;
 		uint64_t addr;
 		uint32_t num_bytes;
-
-		if (argc != 6) {
-			show_usage(argv);
-			return -1;
-		}
 
 		sscanf(argv[3], "%x", &cma_dev_index);
 		sscanf(argv[4], "%llx", &addr);
@@ -574,101 +678,75 @@ int main(int argc, char *argv[])
 
 		ret = cma_put_mem(fd, cma_dev_index, addr, num_bytes);
 		if (ret) {
-			printf("bug @ line %d (%d)\n", __LINE__, ret);
+			BUG_PRINT(ret);
 			goto done;
 		}
-	} else if (strcmp(argv[2], "list") == 0) {
-		unsigned int i;
+		break;
+	}
+	case CMD_LIST: {
 		uint32_t cma_dev_index;
-		uint32_t num_regions;
-		uint64_t addr;
-		uint32_t len;
-
-		if (argc != 4) {
-			show_usage(argv);
-			return -1;
-		}
 
 		sscanf(argv[3], "%x", &cma_dev_index);
 
-		ret = cma_get_phys_info(fd, cma_dev_index, &addr, &len);
-		if (ret) {
-			printf("bug @ line %d (%d)\n", __LINE__, ret);
-			goto done;
-		}
-
-		ret = cma_get_num_regions(fd, cma_dev_index, &num_regions);
-		if (ret) {
-			printf("bug @ line %d (%d)\n", __LINE__, ret);
-			goto done;
-		}
-
-		printf("num regions = %d\n", num_regions);
-
-		for (i = 0; i < num_regions; i++) {
-			uint32_t memc;
-			uint64_t addr;
-			uint32_t num_bytes;
-
-			ret = cma_get_region_info(fd, cma_dev_index, i, &memc,
-						&addr, &num_bytes);
-			if (ret) {
-				printf("bug @ line %d (%d)\n", __LINE__, ret);
-				goto done;
-			}
-
-			printf("memc[%d]      = %xh\n", i, memc);
-			printf("addr[%d]      = %llxh\n", i, addr);
-			printf("num_bytes[%d] = %xh\n", i, num_bytes);
-		}
-	} else if (strcmp(argv[2], "getprot") == 0) {
+		ret = list_one(fd, cma_dev_index);
+		break;
+	}
+	case CMD_LISTALL: {
+		uint32_t i;
+		for (i = 0; i < CMA_NUM_RANGES; i++)
+			list_one(fd, i);
+		break;
+	}
+	case CMD_GETPROT: {
 		uint32_t x;
 
 		ret = ioctl(fd, CMA_DEV_IOC_GET_PG_PROT, &x);
 		if (ret) {
-			printf("bug @ line %d (%d)\n", __LINE__, ret);
+			BUG_PRINT(ret);
 			goto done;
 		}
 
 		printf("pg_prot is %d\n", x);
-	} else if (strcmp(argv[2], "setprot") == 0) {
+		break;
+	}
+	case CMD_SETPROT: {
 		uint32_t x;
-
-		if (argc != 4) {
-			show_usage(argv);
-			return -1;
-		}
 
 		sscanf(argv[3], "%x", &x);
 
 		ret = ioctl(fd, CMA_DEV_IOC_SET_PG_PROT, &x);
 		if (ret) {
-			printf("bug @ line %d (%d)\n", __LINE__, ret);
+			BUG_PRINT(ret);
 			goto done;
 		}
-	} else if (strcmp(argv[2], "unittest") == 0) {
+		break;
+	}
+	case CMD_UNITTEST: {
 		run_unit_tests(fd);
-	} else if (strcmp(argv[2], "resetall") == 0) {
+		break;
+	}
+	case CMD_RESETALL: {
 		int i;
 		for (i = 0; i < CMA_NUM_RANGES; i++)
 			reset_all(fd, i);
-	} else if (strcmp(argv[2], "mmap") == 0) {
+		break;
+	}
+	case CMD_MMAP: {
 		uint32_t base;
 		uint32_t len;
-
-		if (argc != 6) {
-			show_usage(argv);
-			return -1;
-		}
 
 		sscanf(argv[3], "%x", &base);
 		sscanf(argv[4], "%x", &len);
 
 		cma_mmap(fd, base, len, argv[5]);
+		break;
+	}
+	default:
+		break;
 	}
 
 	close(fd);
 
 done:
-	return 0;
+	return ret ? EXIT_FAILURE : 0;
 }

@@ -18,6 +18,8 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define pr_fmt(fmt) "brcm-sata3-phy: " fmt
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/pci.h>
@@ -37,6 +39,100 @@
 #include "sata_brcmstb.h"
 #include "ahci.h"
 
+static void sata_mdio_wr_28nm(void __iomem *addr, u32 port, u32 bank, u32 ofs,
+			      u32 msk, u32 value)
+{
+	u32 tmp;
+	void __iomem *base = addr + (port * SATA_MDIO_REG_SPACE_SIZE);
+
+	writel(bank, base + SATA_MDIO_BANK_OFFSET);
+	tmp = readl(base + SATA_MDIO_REG_OFFSET(ofs));
+	tmp = (tmp & msk) | value;
+	writel(tmp, base + SATA_MDIO_REG_OFFSET(ofs));
+}
+
+static void sata_mdio_wr_legacy(void __iomem *addr, u32 port, u32 bank, u32 ofs,
+				u32 msk, u32 value)
+{
+	u32 tmp;
+	u32 bank_port = bank + (port * SATA_MDIO_REG_LEGACY_BANK_OFS);
+
+	writel(bank_port, addr + SATA_MDIO_BANK_OFFSET);
+	tmp = readl(addr + SATA_MDIO_REG_OFFSET(ofs));
+	tmp = (tmp & msk) | value;
+	writel(tmp, addr + SATA_MDIO_REG_OFFSET(ofs));
+}
+
+/* These defaults were characterized by H/W group */
+#define FMIN_VAL_DEFAULT 0x3df
+#define FMAX_VAL_DEFAULT 0x3df
+#define FMAX_VAL_SSC 0x83
+
+static void cfg_ssc_28nm(void __iomem *base, int port, int ssc_en)
+{
+	u32 tmp;
+
+	/* override the TX spread spectrum setting */
+	tmp = TXPMD_CONTROL1_TX_SSC_EN_FRC_VAL | TXPMD_CONTROL1_TX_SSC_EN_FRC;
+	sata_mdio_wr_28nm(base, port, TXPMD_REG_BANK, TXPMD_CONTROL1, ~tmp,
+		tmp);
+
+	/* set fixed min freq */
+	sata_mdio_wr_28nm(base, port, TXPMD_REG_BANK,
+		TXPMD_TX_FREQ_CTRL_CONTROL2,
+		~TXPMD_TX_FREQ_CTRL_CONTROL2_FMIN_MASK,
+		FMIN_VAL_DEFAULT);
+
+	/* set fixed max freq depending on SSC config */
+	if (ssc_en) {
+		pr_info("Enabling SSC on port %d\n", port);
+		tmp = FMAX_VAL_SSC;
+	} else
+		tmp = FMAX_VAL_DEFAULT;
+
+	sata_mdio_wr_28nm(base, port, TXPMD_REG_BANK,
+		TXPMD_TX_FREQ_CTRL_CONTROL3,
+		~TXPMD_TX_FREQ_CTRL_CONTROL3_FMAX_MASK, tmp);
+}
+
+static void cfg_ssc_legacy(void __iomem *base, int port, int ssc_en)
+{
+	u32 tmp;
+
+	/* override the TX spread spectrum setting */
+	tmp = TXPMD_CONTROL1_TX_SSC_EN_FRC_VAL | TXPMD_CONTROL1_TX_SSC_EN_FRC;
+	sata_mdio_wr_legacy(base, port, TXPMD_REG_BANK_LEGACY, TXPMD_CONTROL1,
+		~tmp, tmp);
+
+	/* set fixed min freq */
+	sata_mdio_wr_legacy(base, port, TXPMD_REG_BANK_LEGACY,
+		TXPMD_TX_FREQ_CTRL_CONTROL2,
+		~TXPMD_TX_FREQ_CTRL_CONTROL2_FMIN_MASK,
+		FMIN_VAL_DEFAULT);
+
+	/* set fixed max freq depending on SSC config */
+	if (ssc_en) {
+		pr_info("Enabling SSC on port %d\n", port);
+		tmp = FMAX_VAL_SSC;
+	} else
+		tmp = FMAX_VAL_DEFAULT;
+
+	sata_mdio_wr_legacy(base, port, TXPMD_REG_BANK_LEGACY,
+		TXPMD_TX_FREQ_CTRL_CONTROL3,
+		~TXPMD_TX_FREQ_CTRL_CONTROL3_FMAX_MASK, tmp);
+}
+
+static struct sata_phy_cfg_ops cfg_op_tbl[SATA_PHY_MDIO_END] = {
+	[SATA_PHY_MDIO_LEGACY] = {
+		.cfg_ssc = cfg_ssc_legacy,
+	},
+	[SATA_PHY_MDIO_28NM] = {
+		.cfg_ssc = cfg_ssc_28nm,
+	},
+};
+
+static struct sata_phy_cfg_ops *cfg_op;
+
 int brcm_sata3_phy_spd_get(const struct sata_brcm_pdata *pdata, int port)
 {
 	int val = (pdata->phy_force_spd[port / SPD_SETTING_PER_U32]
@@ -54,32 +150,6 @@ void brcm_sata3_phy_spd_set(struct sata_brcm_pdata *pdata, int port, int val)
 	tmp &= ~(SPD_SETTING_MASK << SPD_SETTING_SHIFT(port));
 	tmp |= (val & SPD_SETTING_MASK) << SPD_SETTING_SHIFT(port);
 	pdata->phy_force_spd[port / SPD_SETTING_WIDTH] = tmp;
-}
-
-static void __maybe_unused sata_mdio_wr(void __iomem *addr, u32 port,
-					u32 bank, u32 ofs, u32 msk, u32 value)
-{
-	u32 tmp;
-	void __iomem *base = addr + ((port) * SATA_MDIO_REG_SPACE_SIZE);
-
-	writel(bank, base + SATA_MDIO_BANK_OFFSET);
-	tmp = readl(base + SATA_MDIO_REG_OFFSET(ofs));
-	tmp = (tmp & msk) | value;
-	writel(tmp, base + SATA_MDIO_REG_OFFSET(ofs));
-}
-
-static void sata_mdio_wr_legacy(void __iomem *addr, u32 bank, u32 ofs, u32 msk,
-				u32 value)
-{
-	u32 tmp;
-	void __iomem *base = addr + (0x8F * 4);
-
-	writel(bank, base);
-	/* Read, mask, enable */
-	tmp = readl(ofs * 4 + base);
-	tmp = (tmp & msk) | value;
-	/* Write */
-	writel(tmp, ofs * 4 + base);
 }
 
 static void brcm_sata3_phy_enable(const struct sata_brcm_pdata *pdata, int port)
@@ -139,6 +209,8 @@ void brcm_sata3_phy_init(const struct sata_brcm_pdata *pdata, int port)
 	}
 
 	if (pdata->phy_generation == 0x2800) {
+		cfg_op = &cfg_op_tbl[SATA_PHY_MDIO_28NM];
+
 		if (pdata->quirks & SATA_BRCM_QK_INIT_PHY) {
 			/* The 28nm SATA PHY has incorrect PLL settings upon
 			 * chip reset.
@@ -150,42 +222,20 @@ void brcm_sata3_phy_init(const struct sata_brcm_pdata *pdata, int port)
 			 */
 			const u32 PLL_SM_CTRL_0_DFLT = 0x3089;
 
-			sata_mdio_wr(base, port, PLL_REG_BANK_0, 0x81,
-				     0x00000000, PLL_SM_CTRL_0_DFLT);
-			sata_mdio_wr(base, port, PLL_REG_BANK_0, 0x81,
-				     0xFFFFFFFE, 0x0);
+			sata_mdio_wr_28nm(base, port, PLL_REG_BANK_0,
+				PLL_REG_BANK_0_PLLCONTROL_0,
+				0x00000000, PLL_SM_CTRL_0_DFLT);
+			sata_mdio_wr_28nm(base, port, PLL_REG_BANK_0,
+				PLL_REG_BANK_0_PLLCONTROL_0,
+				0xfffffffe, 0x0);
 		}
 
 		brcm_sata3_phy_enable(pdata, port);
+	} else
+		cfg_op = &cfg_op_tbl[SATA_PHY_MDIO_LEGACY];
 
-		/* FIXME: Need SSC setup routine for new PHY */
-		brcm_sata3_phy_spd_get(pdata, port);
-	} else {
-		/* TXPMD_control1 - enable SSC force */
-		sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-				    TXPMD_CONTROL1, 0xFFFFFFFC, 0x00000003);
-
-		/* TXPMD_tx_freq_ctrl_control2 - set fixed min freq */
-		sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-				    TXPMD_TX_FREQ_CTRL_CONTROL2,
-				    0xFFFFFC00, 0x000003DF);
-
-		/*
-		 * TXPMD_tx_freq_ctrl_control3 - set fixed max freq
-		 *  If ssc_enable == 0, center frequencies
-		 *  Otherwise, spread spectrum frequencies
-		 */
-		if (ssc_enable) {
-			pr_info("SATA3: enabling SSC on port %d\n", port);
-			sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-					    TXPMD_TX_FREQ_CTRL_CONTROL3,
-					    0xFFFFFC00, 0x00000083);
-		} else {
-			sata_mdio_wr_legacy(base, TXPMD_0_REG_BANK(port),
-					    TXPMD_TX_FREQ_CTRL_CONTROL3,
-					    0xFFFFFC00, 0x000003DF);
-		}
-	}
+	if (cfg_op->cfg_ssc)
+		cfg_op->cfg_ssc(base, port, ssc_enable);
 
 	iounmap(base);
 

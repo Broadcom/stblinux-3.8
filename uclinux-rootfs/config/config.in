@@ -898,6 +898,7 @@ if [ "$CONFIG_USER_PERF" = "y" ]; then
 	define_bool CONFIG_LIB_GETTEXT y
 	define_bool CONFIG_LIB_LIBELF y
 	define_bool CONFIG_LIB_LIBSSP y
+	define_bool CONFIG_LIB_BINUTILS_OBJDUMP y
 fi
 
 #############################################################################

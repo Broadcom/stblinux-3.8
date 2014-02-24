@@ -9,6 +9,13 @@ Required properties:
 - interrupts: specifies the two interrupts (timeout and TEA) to be used from
   the parent interrupt controller
 
+Optional properties:
+
+- brcm,gisb-arb-master-mask: 32-bits wide bitmask used to specify which GISB
+  masters are valid at the system level
+- brcm,gisb-arb-master-names: string list of the litteral name of the GISB
+  masters. Should match the number of bits set in brcm,gisb-master-mask
+
 Example:
 
 gisb-arb@f0400000 {
@@ -16,4 +23,7 @@ gisb-arb@f0400000 {
 	reg = <0xf0400000 0x800>;
 	interrupts = <0>, <2>;
 	interrupt-parent = <&sun_l2_intc>;
+
+	brcm,gisb-arb-master-mask = <0x7>;
+	brcm,gisb-arb-master-names = "bsp_0", "scpu_0", "cpu_0";
 };

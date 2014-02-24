@@ -67,12 +67,14 @@ void usage(void)
 	printf("  usb 0        power down USB controllers\n");
 	printf("  sata 1       power up SATA controller\n");
 	printf("  tp1 0        power down TP1 (second CPU thread)\n");
+	printf("  tp2 0        power down TP2 (third CPU thread)\n");
+	printf("  tp3 0        power down TP3 (fourth CPU thread)\n");
 	printf("  memc1 0      power down MEMC1 (if available)\n");
 	printf("  cpu 4        set CPU clock to BASE/4\n");
 	printf("  pll 1        set alternate CPU PLL mode #1\n");
 	printf("  ddr 64       enable DDR self-refresh after 64 idle cycles\n");
 	printf("  ddr 0        disable DDR self-refresh\n");
-	printf("  standby 0x1  enter passive standby (flags = 0x1)\n");
+	printf("  standby      enter passive standby\n");
 	printf("  irw_halt     enter irw_halt mode\n");
 	exit(1);
 }
@@ -121,6 +123,8 @@ int main(int argc, char **argv)
 		printf("usb:          %d\n", state.usb_status);
 		printf("sata:         %d\n", state.sata_status);
 		printf("tp1:          %d\n", state.tp1_status);
+		printf("tp2:          %d\n", state.tp2_status);
+		printf("tp3:          %d\n", state.tp3_status);
 		printf("memc1:        %d\n", state.memc1_status);
 		printf("cpu_base:     %d\n", state.cpu_base);
 		printf("cpu_divisor:  %d\n", state.cpu_divisor);
@@ -145,12 +149,8 @@ int main(int argc, char **argv)
 
 	if(! strcmp(cmd, "standby"))
 	{
-		if(has_val)
-		{
-			state.standby_flags = val;
-			if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
-				fatal("can't set PM state");
-		}
+		if (has_val)
+			fatal("too many arguments: PM flags are not supported");
 		if(brcm_pm_suspend(brcm_pm_ctx, BRCM_PM_STANDBY) != 0)
 			fatal("can't suspend");
 		return(0);
@@ -189,6 +189,22 @@ int main(int argc, char **argv)
 		state.tp1_status = val;
 		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
 			fatal("can't set PM state (TP1)");
+		return(0);
+	}
+
+	if(! strcmp(cmd, "tp2"))
+	{
+		state.tp2_status = val;
+		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
+			fatal("can't set PM state (TP2)");
+		return(0);
+	}
+
+	if(! strcmp(cmd, "tp3"))
+	{
+		state.tp3_status = val;
+		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
+			fatal("can't set PM state (TP3)");
 		return(0);
 	}
 

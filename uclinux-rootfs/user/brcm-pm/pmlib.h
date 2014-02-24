@@ -63,6 +63,8 @@ struct brcm_pm_state
 	int usb_status;		/* 1=on, 0=off */
 	int sata_status;	/* 1=on, 0=off */
 	int tp1_status;		/* 1=on, 0=off */
+	int tp2_status;		/* 1=on, 0=off */
+	int tp3_status;		/* 1=on, 0=off */
 	int memc1_status;	/* 1=on, 0=off, 2=testmode */
 
 	int cpu_base;		/* current base frequency, in Hz */
@@ -70,8 +72,6 @@ struct brcm_pm_state
 	int cpu_pll;		/* 0=normal, >0 = power save modes */
 
 	int ddr_timeout;	/* 0=no PM, >0 = timeout for self-refresh */
-
-	int standby_flags;
 };
 
 struct brcm_pm_cfg

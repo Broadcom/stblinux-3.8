@@ -467,8 +467,7 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	$vendor{"CONFIG_USER_MOCA_GEN2"} = "n";
 	$vendor{"CONFIG_USER_MOCA_GEN3"} = "y";
 
-	if(defined($linux{"CONFIG_BRCM_PM"}) ||
-			defined($linux{"CONFIG_BRCM_CPU_DIV"})) {
+	if (defined($linux{"CONFIG_PM"})) {
 		$vendor{"CONFIG_USER_BRCM_PM"} = "y";
 	}
 
@@ -736,8 +735,9 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 			$linux{"CONFIG_RING_BUFFER_BENCHMARK"} = "n";
 			$linux{"CONFIG_FUNCTION_TRACER"} = "y";
 
-
 			$vendor{"CONFIG_USER_PERF"} = "y";
+
+			$busybox{"CONFIG_EXPAND"} = "y";
 		} elsif($mod eq "eglibc") {
 			$arch_config_options{"LIBCDIR"} = "eglibc";
 		} else {

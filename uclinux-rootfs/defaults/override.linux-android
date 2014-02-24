@@ -1,4 +1,18 @@
-# CONFIG_POWER_RESET is not set
+# Bluethooth settings
+CONFIG_MD=y 
+CONFIG_BLK_DEV_DM=y 
+CONFIG_DM_CRYPT=y 
+CONFIG_DM_UEVENT=y 
+CONFIG_CRYPTO_TWOFISH=y 
+
+# Edit these for Bluetooth 
+  # BLUEDROID_SUPPORT needs these 
+  CONFIG_INPUT_MISC=y 
+  CONFIG_INPUT_UINPUT=y 
+  CONFIG_UHID=y 
+# BLUEDROID_SUPPORT doesn't need this as it was for BLUEZ 
+    # CONFIG_BT_HCIBTUSB is not set # CONFIG_POWER_RESET is not set
+
 # CONFIG_IPV6_GRE is not set
 # CONFIG_FIQ_DEBUGGER is not set
 # CONFIG_DCC_TTY is not set
@@ -48,7 +62,6 @@ CONFIG_BT_HIDP=y
 #
 # Bluetooth device drivers
 #
-CONFIG_BT_HCIBTUSB=y
 # CONFIG_BT_HCIBTSDIO is not set
 # CONFIG_BT_HCIUART is not set
 # CONFIG_BT_HCIBCM203X is not set
