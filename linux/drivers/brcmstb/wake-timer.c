@@ -27,6 +27,7 @@
 #include <linux/interrupt.h>
 #include <linux/irqreturn.h>
 #include <linux/pm_wakeup.h>
+#include <linux/reboot.h>
 
 #define DRV_NAME	"brcm-waketimer"
 
@@ -36,6 +37,7 @@ struct brcmstb_waketmr {
 	unsigned int irq;
 
 	unsigned int wake_timeout;
+	struct notifier_block reboot_notifier;
 };
 
 #define BRCMSTB_WKTMR_DEFAULT_TIMEOUT	1
@@ -98,6 +100,37 @@ static const DEVICE_ATTR(timeout, S_IRUGO | S_IWUSR,
 		brcmstb_waketmr_timeout_show,
 		brcmstb_waketmr_timeout_store);
 
+static int brcmstb_waketmr_prepare_suspend(struct brcmstb_waketmr *timer)
+{
+	struct device *dev = timer->dev;
+	int ret;
+
+	if (device_may_wakeup(dev)) {
+		ret = enable_irq_wake(timer->irq);
+		if (ret) {
+			dev_err(dev, "failed to enable wake-up interrupt\n");
+			return ret;
+		}
+
+		brcmstb_waketmr_set_alarm(timer, timer->wake_timeout);
+	}
+	return 0;
+}
+
+/* If enabled as a wakeup-source, arm the timer when powering off */
+static int brcmstb_waketmr_reboot(struct notifier_block *nb,
+		unsigned long action, void *data)
+{
+	struct brcmstb_waketmr *timer;
+	timer = container_of(nb, struct brcmstb_waketmr, reboot_notifier);
+
+	/* Set timer for cold boot */
+	if (action == SYS_POWER_OFF)
+		brcmstb_waketmr_prepare_suspend(timer);
+
+	return NOTIFY_DONE;
+}
+
 static int brcmstb_waketmr_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -132,6 +165,9 @@ static int brcmstb_waketmr_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	timer->reboot_notifier.notifier_call = brcmstb_waketmr_reboot;
+	register_reboot_notifier(&timer->reboot_notifier);
+
 	timer->wake_timeout = BRCMSTB_WKTMR_DEFAULT_TIMEOUT;
 
 	return device_create_file(dev, &dev_attr_timeout);
@@ -139,26 +175,18 @@ static int brcmstb_waketmr_probe(struct platform_device *pdev)
 
 static int brcmstb_waketmr_remove(struct platform_device *pdev)
 {
+	struct brcmstb_waketmr *timer = dev_get_drvdata(&pdev->dev);
+
+	unregister_reboot_notifier(&timer->reboot_notifier);
+
 	return 0;
 }
 
 static int brcmstb_waketmr_suspend(struct device *dev)
 {
 	struct brcmstb_waketmr *timer = dev_get_drvdata(dev);
-	int ret;
 
-	if (!device_may_wakeup(dev))
-		return 0;
-
-	ret = enable_irq_wake(timer->irq);
-	if (ret) {
-		dev_err(dev, "failed to enable wake-up interrupt\n");
-		return ret;
-	}
-
-	brcmstb_waketmr_set_alarm(timer, timer->wake_timeout);
-
-	return 0;
+	return brcmstb_waketmr_prepare_suspend(timer);
 }
 
 static int brcmstb_waketmr_resume(struct device *dev)
@@ -176,7 +204,7 @@ static int brcmstb_waketmr_resume(struct device *dev)
 	return ret;
 }
 
-SIMPLE_DEV_PM_OPS(brcmstb_waketmr_pm_ops, brcmstb_waketmr_suspend,
+static SIMPLE_DEV_PM_OPS(brcmstb_waketmr_pm_ops, brcmstb_waketmr_suspend,
 		brcmstb_waketmr_resume);
 
 static const struct of_device_id brcmstb_waketmr_of_match[] = {

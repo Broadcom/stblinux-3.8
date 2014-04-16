@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:23 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:18 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -579,9 +579,14 @@
 /***************************************************************************
  *DRAM_INIT_STATUS - Dram initialization status
  ***************************************************************************/
-/* MEMC_DDR_1 :: DRAM_INIT_STATUS :: reserved0 [31:02] */
-#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_reserved0_MASK            0xfffffffc
-#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_reserved0_SHIFT           2
+/* MEMC_DDR_1 :: DRAM_INIT_STATUS :: reserved0 [31:03] */
+#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_reserved0_MASK            0xfffffff8
+#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_reserved0_SHIFT           3
+
+/* MEMC_DDR_1 :: DRAM_INIT_STATUS :: INIT_CLIENT_BUSY [02:02] */
+#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_INIT_CLIENT_BUSY_MASK     0x00000004
+#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_INIT_CLIENT_BUSY_SHIFT    2
+#define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_INIT_CLIENT_BUSY_DEFAULT  0x00000000
 
 /* MEMC_DDR_1 :: DRAM_INIT_STATUS :: PHY_DFI_REQUEST_VALUE [01:01] */
 #define BCHP_MEMC_DDR_1_DRAM_INIT_STATUS_PHY_DFI_REQUEST_VALUE_MASK 0x00000002
@@ -2152,68 +2157,57 @@
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_3_TRCDWR_NOP_SHIFT             24
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_3_TRCDWR_NOP_DEFAULT           0x00000008
 
-/* MEMC_DDR_1 :: DRAM_TIMING_3 :: CKENB_CKE_DELAY [23:19] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_CKENB_CKE_DELAY_MASK         0x00f80000
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_CKENB_CKE_DELAY_SHIFT        19
+/* MEMC_DDR_1 :: DRAM_TIMING_3 :: CKENB_CKE_DELAY [23:16] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_CKENB_CKE_DELAY_MASK         0x00ff0000
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_CKENB_CKE_DELAY_SHIFT        16
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_3_CKENB_CKE_DELAY_DEFAULT      0x0000000c
 
-/* MEMC_DDR_1 :: DRAM_TIMING_3 :: POWERUP_CKE_DELAY [18:10] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_POWERUP_CKE_DELAY_MASK       0x0007fc00
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_POWERUP_CKE_DELAY_SHIFT      10
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_POWERUP_CKE_DELAY_DEFAULT    0x0000005e
+/* MEMC_DDR_1 :: DRAM_TIMING_3 :: PRECHARGE_ALL_DELAY [15:08] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_PRECHARGE_ALL_DELAY_MASK     0x0000ff00
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_PRECHARGE_ALL_DELAY_SHIFT    8
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_PRECHARGE_ALL_DELAY_DEFAULT  0x00000008
 
-/* MEMC_DDR_1 :: DRAM_TIMING_3 :: DLL_LOCK_DELAY [09:00] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_DLL_LOCK_DELAY_MASK          0x000003ff
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_DLL_LOCK_DELAY_SHIFT         0
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_DLL_LOCK_DELAY_DEFAULT       0x00000200
+/* MEMC_DDR_1 :: DRAM_TIMING_3 :: LOAD_MODE_DELAY [07:00] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_LOAD_MODE_DELAY_MASK         0x000000ff
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_LOAD_MODE_DELAY_SHIFT        0
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_3_LOAD_MODE_DELAY_DEFAULT      0x0000000c
 
 /***************************************************************************
  *DRAM_TIMING_4 - DDR-SDRAM Timing Register 4
  ***************************************************************************/
-/* MEMC_DDR_1 :: DRAM_TIMING_4 :: reserved0 [31:29] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_reserved0_MASK               0xe0000000
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_reserved0_SHIFT              29
+/* MEMC_DDR_1 :: DRAM_TIMING_4 :: reserved0 [31:24] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_reserved0_MASK               0xff000000
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_reserved0_SHIFT              24
 
-/* MEMC_DDR_1 :: DRAM_TIMING_4 :: PRECHARGE_ALL_DELAY [28:24] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_PRECHARGE_ALL_DELAY_MASK     0x1f000000
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_PRECHARGE_ALL_DELAY_SHIFT    24
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_PRECHARGE_ALL_DELAY_DEFAULT  0x00000008
-
-/* MEMC_DDR_1 :: DRAM_TIMING_4 :: LOAD_MODE_DELAY [23:19] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_LOAD_MODE_DELAY_MASK         0x00f80000
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_LOAD_MODE_DELAY_SHIFT        19
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_LOAD_MODE_DELAY_DEFAULT      0x0000000c
-
-/* MEMC_DDR_1 :: DRAM_TIMING_4 :: REFRESH_DELAY [18:10] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_REFRESH_DELAY_MASK           0x0007fc00
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_REFRESH_DELAY_SHIFT          10
+/* MEMC_DDR_1 :: DRAM_TIMING_4 :: REFRESH_DELAY [23:12] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_REFRESH_DELAY_MASK           0x00fff000
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_REFRESH_DELAY_SHIFT          12
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_4_REFRESH_DELAY_DEFAULT        0x00000058
 
-/* MEMC_DDR_1 :: DRAM_TIMING_4 :: ZQCALIB_DELAY [09:00] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_ZQCALIB_DELAY_MASK           0x000003ff
+/* MEMC_DDR_1 :: DRAM_TIMING_4 :: ZQCALIB_DELAY [11:00] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_4_ZQCALIB_DELAY_MASK           0x00000fff
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_4_ZQCALIB_DELAY_SHIFT          0
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_4_ZQCALIB_DELAY_DEFAULT        0x00000200
 
 /***************************************************************************
  *DRAM_TIMING_5 - DDR-SDRAM Timing Register 5
  ***************************************************************************/
-/* MEMC_DDR_1 :: DRAM_TIMING_5 :: CKE_ASSETION_DELAY [31:22] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_ASSETION_DELAY_MASK      0xffc00000
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_ASSETION_DELAY_SHIFT     22
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_ASSETION_DELAY_DEFAULT   0x00000105
+/* MEMC_DDR_1 :: DRAM_TIMING_5 :: reserved0 [31:30] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_reserved0_MASK               0xc0000000
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_reserved0_SHIFT              30
 
-/* MEMC_DDR_1 :: DRAM_TIMING_5 :: CKE_MIN_WIDTH [21:18] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_MIN_WIDTH_MASK           0x003c0000
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_MIN_WIDTH_SHIFT          18
+/* MEMC_DDR_1 :: DRAM_TIMING_5 :: CKE_MIN_WIDTH [29:22] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_MIN_WIDTH_MASK           0x3fc00000
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_MIN_WIDTH_SHIFT          22
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_5_CKE_MIN_WIDTH_DEFAULT        0x00000003
 
-/* MEMC_DDR_1 :: DRAM_TIMING_5 :: PWDN_EXIT_DELAY [17:10] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_PWDN_EXIT_DELAY_MASK         0x0003fc00
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_PWDN_EXIT_DELAY_SHIFT        10
+/* MEMC_DDR_1 :: DRAM_TIMING_5 :: PWDN_EXIT_DELAY [21:12] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_PWDN_EXIT_DELAY_MASK         0x003ff000
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_PWDN_EXIT_DELAY_SHIFT        12
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_5_PWDN_EXIT_DELAY_DEFAULT      0x0000000d
 
-/* MEMC_DDR_1 :: DRAM_TIMING_5 :: SELFREF_EXIT_DELAY [09:00] */
-#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_SELFREF_EXIT_DELAY_MASK      0x000003ff
+/* MEMC_DDR_1 :: DRAM_TIMING_5 :: SELFREF_EXIT_DELAY [11:00] */
+#define BCHP_MEMC_DDR_1_DRAM_TIMING_5_SELFREF_EXIT_DELAY_MASK      0x00000fff
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_5_SELFREF_EXIT_DELAY_SHIFT     0
 #define BCHP_MEMC_DDR_1_DRAM_TIMING_5_SELFREF_EXIT_DELAY_DEFAULT   0x00000200
 
@@ -2399,9 +2393,14 @@
 #define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_KEEP_OPEN_DISABLE_SHIFT      31
 #define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_KEEP_OPEN_DISABLE_DEFAULT    0x00000000
 
-/* MEMC_DDR_1 :: CMD_LOOKAHEAD :: reserved0 [30:08] */
-#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_reserved0_MASK               0x7fffff00
-#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_reserved0_SHIFT              8
+/* MEMC_DDR_1 :: CMD_LOOKAHEAD :: KEEP_OPEN_RW_DISABLE [30:30] */
+#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_KEEP_OPEN_RW_DISABLE_MASK    0x40000000
+#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_KEEP_OPEN_RW_DISABLE_SHIFT   30
+#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_KEEP_OPEN_RW_DISABLE_DEFAULT 0x00000000
+
+/* MEMC_DDR_1 :: CMD_LOOKAHEAD :: reserved_for_padding0 [29:08] */
+#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_reserved_for_padding0_MASK   0x3fffff00
+#define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_reserved_for_padding0_SHIFT  8
 
 /* MEMC_DDR_1 :: CMD_LOOKAHEAD :: CAS_LOOKAHEAD [07:00] */
 #define BCHP_MEMC_DDR_1_CMD_LOOKAHEAD_CAS_LOOKAHEAD_MASK           0x000000ff

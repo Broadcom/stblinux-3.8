@@ -83,21 +83,6 @@ static void phy_write_misc(struct phy_device *phydev,
 
 static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 {
-	/* write AFE_RXCONFIG_0 */
-	phy_write_misc(phydev, 0x38, 0x0000, 0xeb19);
-
-	/* write AFE_RXCONFIG_1 */
-	phy_write_misc(phydev, 0x38, 0x0001, 0x9a3f);
-
-	/* write AFE_RX_LP_COUNTER */
-	phy_write_misc(phydev, 0x38, 0x0003, 0x7fc7);
-
-	/* write AFE_HPF_TRIM_OTHERS */
-	phy_write_misc(phydev, 0x3A, 0x0000, 0x000b);
-
-	/* write AFTE_TX_CONFIG */
-	phy_write_misc(phydev, 0x39, 0x0000, 0x0800);
-
 	/* Increase VCO range to prevent unlocking problem of PLL at low
 	 * temp
 	 */
@@ -122,6 +107,20 @@ static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 
 	/* Disable Reset R_CAL/RC_CAL Engine */
 	phy_write_exp(phydev, 0x00b0, 0x0000);
+	/* write AFE_RXCONFIG_0 */
+	phy_write_misc(phydev, 0x38, 0x0000, 0xeb19);
+
+	/* write AFE_RXCONFIG_1 */
+	phy_write_misc(phydev, 0x38, 0x0001, 0x9a3f);
+
+	/* write AFE_RX_LP_COUNTER */
+	phy_write_misc(phydev, 0x38, 0x0003, 0x7fc0);
+
+	/* write AFE_HPF_TRIM_OTHERS */
+	phy_write_misc(phydev, 0x3A, 0x0000, 0x000b);
+
+	/* write AFTE_TX_CONFIG */
+	phy_write_misc(phydev, 0x39, 0x0000, 0x0800);
 
 	return 0;
 }

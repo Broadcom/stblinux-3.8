@@ -32,6 +32,7 @@
 #include <linux/io.h>
 #include <linux/irqdomain.h>
 #include <linux/irqchip/brcmstb-l2.h>
+#include <linux/reboot.h>
 
 #include <asm/mach/irq.h>
 
@@ -53,6 +54,7 @@ struct brcmstb_l2_intc_data {
 	bool can_wake;
 	u32 wakeup_enabled; /* vector of enabled wakeup interrupts */
 	u32 saved_mask; /* for suspend/resume */
+	struct notifier_block reboot_notifier;
 };
 
 static void brcmstb_l2_intc_mask(struct irq_data *d)
@@ -167,6 +169,27 @@ static int brcmstb_l2_intc_set_wake(struct irq_data *d, unsigned int state)
 	return 0;
 }
 
+static int brcmstb_l2_intc_reboot(struct notifier_block *nb,
+		unsigned long action, void *data)
+{
+	struct brcmstb_l2_intc_data *b;
+	b = container_of(nb, struct brcmstb_l2_intc_data, reboot_notifier);
+
+	spin_lock(&b->lock);
+
+	if (action == SYS_POWER_OFF) {
+		if (!b->wakeup_enabled)
+			pr_err("WARNING: NO WAKEUP SOURCE CONFIGURED\n");
+		/* Program the wakeup mask */
+		__raw_writel(~b->wakeup_enabled, b->base + CPU_MASK_SET);
+		__raw_writel(b->wakeup_enabled, b->base + CPU_MASK_CLEAR);
+	}
+
+	spin_unlock(&b->lock);
+
+	return NOTIFY_DONE;
+}
+
 int __init brcmstb_l2_intc_of_init(struct device_node *np,
 					struct device_node *parent)
 {
@@ -199,6 +222,11 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
 	if (of_property_read_bool(np, "brcm,irq-can-wake")) {
 		data->can_wake = true;
 		data->chip.irq_set_wake = brcmstb_l2_intc_set_wake;
+
+		/* Run reboot notifier last */
+		data->reboot_notifier.priority = -1;
+		data->reboot_notifier.notifier_call = brcmstb_l2_intc_reboot;
+		register_reboot_notifier(&data->reboot_notifier);
 	}
 
 	irq_set_handler_data(data->parent_irq, data);

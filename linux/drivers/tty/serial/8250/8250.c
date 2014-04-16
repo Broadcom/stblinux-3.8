@@ -489,32 +489,20 @@ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
 }
 
 /*
- * SWLINUX-2411: Chips with UARTs marked BuggyDW have an unresettable "busy
+ * SWLINUX-2948: Chips with UARTs marked BuggyDW have an unresettable "busy
  * detect" interrupt that can be triggered by writing LCR when UART is busy
  * (one case is when receive data is present in RBR).  Work around this by:
- * 1. preventing UART from receiving more characters by putting into loopback
- *    mode,
- * 2. clearing and initializing FIFOs
- * 3. waiting for data to be flushed out of TX and RX shift registers
- * 4. clearing and initializing FIFOs
- * 5. reading RBR to remove remaining characters
+ * 1. clearing and initializing FIFOs
+ * 2. writing LCR (racing against external input)
  */
 static void safer_mem32_serial_out(struct uart_port *p, int offset, int value)
 {
 	struct uart_8250_port *up =
 		container_of(p, struct uart_8250_port, port);
 	if (offset == UART_LCR) {
-		unsigned int old_mcr;
-		old_mcr = mem32_serial_in(p, UART_MCR);
 		wait_for_xmitr(up, BOTH_EMPTY);
-		mem32_serial_out(p, UART_MCR, UART_MCR_LOOP);
-		serial8250_clear_and_reinit_fifos(up);
-		/* empirically determined delay */
-		udelay(80);
 		serial8250_clear_and_reinit_fifos(up);
 		mem32_serial_out(p, offset, value);
-		mem32_serial_out(p, UART_MCR, old_mcr);
-		(void) mem32_serial_in(p, UART_RX);
 	} else {
 		mem32_serial_out(p, offset, value);
 	}

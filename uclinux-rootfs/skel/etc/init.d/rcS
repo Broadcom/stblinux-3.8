@@ -11,6 +11,8 @@ grep -q devtmpfs /proc/mounts || mount -t devtmpfs none /dev
 mkdir -p /dev/pts
 mount -t devpts devpts /dev/pts
 mount -t tmpfs -o mode=01777 tmpfs /tmp
+mkdir -p /dev/shm
+mount -t tmpfs -o noexec,nosuid,nodev,mode=1777 shm /dev/shm
 
 echo "/sbin/stbhotplug" > /proc/sys/kernel/hotplug
 

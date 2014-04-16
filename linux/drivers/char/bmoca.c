@@ -2214,7 +2214,9 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 	of_property_read_u32(of_node, "i2c-addr", &pd.bcm3450_i2c_addr);
 	of_property_read_u32(of_node, "use-dma", &pd.use_dma);
 	of_property_read_u32(of_node, "use-spi", &pd.use_spi);
-	pd.chip_id = (BRCM_CHIP_ID() << 16) | (BRCM_CHIP_REV() + 0xa0);
+	status = of_property_read_u32(of_node, "chip-id", &pd.chip_id);
+	if (status)
+		pd.chip_id = (BRCM_CHIP_ID() << 16) | (BRCM_CHIP_REV() + 0xa0);
 
 	status = platform_device_add_data(pdev, &pd, sizeof(pd));
 err:

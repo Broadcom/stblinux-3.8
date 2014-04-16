@@ -72,3 +72,9 @@ ENTRY(brcmstb_pm_do_s2)
 	ldmfd	sp!, {r4-r11, pc}
 
 	ENDPROC(brcmstb_pm_do_s2)
+
+	/* Place literal pool here */
+	.ltorg
+
+ENTRY(brcmstb_pm_do_s2_sz)
+	.word   . - brcmstb_pm_do_s2

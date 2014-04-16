@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:27 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:19 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -44,22 +44,22 @@
 /***************************************************************************
  *GIO_AON - GPIO
  ***************************************************************************/
-#define BCHP_GIO_AON_ODEN_LO                     0x20416200 /* GENERAL PURPOSE I/O OPEN DRAIN ENABLE FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_DATA_LO                     0x20416204 /* GENERAL PURPOSE I/O DATA FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_IODIR_LO                    0x20416208 /* GENERAL PURPOSE I/O DIRECTION FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_EC_LO                       0x2041620c /* GENERAL PURPOSE I/O EDGE CONFIGURATION FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_EI_LO                       0x20416210 /* GENERAL PURPOSE I/O EDGE INSENSITIVE FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_MASK_LO                     0x20416214 /* GENERAL PURPOSE I/O INTERRUPT MASK FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_LEVEL_LO                    0x20416218 /* GENERAL PURPOSE I/O INTERRUPT TYPE FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_STAT_LO                     0x2041621c /* GENERAL PURPOSE I/O INTERRUPT STATUS FOR AON_GPIO[19:0] */
-#define BCHP_GIO_AON_ODEN_EXT                    0x20416220 /* GENERAL PURPOSE I/O OPEN DRAIN ENABLE FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_DATA_EXT                    0x20416224 /* GENERAL PURPOSE I/O DATA FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_IODIR_EXT                   0x20416228 /* GENERAL PURPOSE I/O DIRECTION FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_EC_EXT                      0x2041622c /* GENERAL PURPOSE I/O EDGE CONFIGURATION FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_EI_EXT                      0x20416230 /* GENERAL PURPOSE I/O EDGE INSENSITIVE FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_MASK_EXT                    0x20416234 /* GENERAL PURPOSE I/O INTERRUPT MASK FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_LEVEL_EXT                   0x20416238 /* GENERAL PURPOSE I/O INTERRUPT TYPE FOR AON_SGPIO[3:2] */
-#define BCHP_GIO_AON_STAT_EXT                    0x2041623c /* GENERAL PURPOSE I/O INTERRUPT STATUS FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_ODEN_LO                     0x20417000 /* GENERAL PURPOSE I/O OPEN DRAIN ENABLE FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_DATA_LO                     0x20417004 /* GENERAL PURPOSE I/O DATA FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_IODIR_LO                    0x20417008 /* GENERAL PURPOSE I/O DIRECTION FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_EC_LO                       0x2041700c /* GENERAL PURPOSE I/O EDGE CONFIGURATION FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_EI_LO                       0x20417010 /* GENERAL PURPOSE I/O EDGE INSENSITIVE FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_MASK_LO                     0x20417014 /* GENERAL PURPOSE I/O INTERRUPT MASK FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_LEVEL_LO                    0x20417018 /* GENERAL PURPOSE I/O INTERRUPT TYPE FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_STAT_LO                     0x2041701c /* GENERAL PURPOSE I/O INTERRUPT STATUS FOR AON_GPIO[19:0] */
+#define BCHP_GIO_AON_ODEN_EXT                    0x20417020 /* GENERAL PURPOSE I/O OPEN DRAIN ENABLE FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_DATA_EXT                    0x20417024 /* GENERAL PURPOSE I/O DATA FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_IODIR_EXT                   0x20417028 /* GENERAL PURPOSE I/O DIRECTION FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_EC_EXT                      0x2041702c /* GENERAL PURPOSE I/O EDGE CONFIGURATION FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_EI_EXT                      0x20417030 /* GENERAL PURPOSE I/O EDGE INSENSITIVE FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_MASK_EXT                    0x20417034 /* GENERAL PURPOSE I/O INTERRUPT MASK FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_LEVEL_EXT                   0x20417038 /* GENERAL PURPOSE I/O INTERRUPT TYPE FOR AON_SGPIO[3:2] */
+#define BCHP_GIO_AON_STAT_EXT                    0x2041703c /* GENERAL PURPOSE I/O INTERRUPT STATUS FOR AON_SGPIO[3:2] */
 
 /***************************************************************************
  *ODEN_LO - GENERAL PURPOSE I/O OPEN DRAIN ENABLE FOR AON_GPIO[19:0]
@@ -95,7 +95,7 @@
 /* GIO_AON :: IODIR_LO :: iodir [19:00] */
 #define BCHP_GIO_AON_IODIR_LO_iodir_MASK                           0x000fffff
 #define BCHP_GIO_AON_IODIR_LO_iodir_SHIFT                          0
-#define BCHP_GIO_AON_IODIR_LO_iodir_DEFAULT                        0x00000001
+#define BCHP_GIO_AON_IODIR_LO_iodir_DEFAULT                        0x000fffff
 
 /***************************************************************************
  *EC_LO - GENERAL PURPOSE I/O EDGE CONFIGURATION FOR AON_GPIO[19:0]
@@ -191,7 +191,7 @@
 /* GIO_AON :: IODIR_EXT :: iodir [01:00] */
 #define BCHP_GIO_AON_IODIR_EXT_iodir_MASK                          0x00000003
 #define BCHP_GIO_AON_IODIR_EXT_iodir_SHIFT                         0
-#define BCHP_GIO_AON_IODIR_EXT_iodir_DEFAULT                       0x00000001
+#define BCHP_GIO_AON_IODIR_EXT_iodir_DEFAULT                       0x00000003
 
 /***************************************************************************
  *EC_EXT - GENERAL PURPOSE I/O EDGE CONFIGURATION FOR AON_SGPIO[3:2]

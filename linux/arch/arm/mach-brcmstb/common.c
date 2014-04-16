@@ -139,6 +139,7 @@ static inline void of_add_fixed_phys(void)
 #endif /* CONFIG_FIXED_PHY */
 
 #ifdef CONFIG_BRCMSTB_USE_MEGA_BARRIER
+#ifdef CONFIG_CMA
 static phys_addr_t so_mem_paddr[NR_BANKS];
 static void __iomem *so_mem_vaddr[NR_BANKS];
 
@@ -216,6 +217,13 @@ void brcmstb_mega_barrier(void)
 	__asm__("dsb");
 }
 EXPORT_SYMBOL(brcmstb_mega_barrier);
+#else
+#warning "The mega-barrier workaround requires CMA!"
+void brcmstb_mega_barrier(void)
+{
+	panic("mega-barrier workaround requires CMA, but CMA was not enabled");
+}
+#endif /* CONFIG_CMA */
 #endif /* CONFIG_BRCMSTB_USE_MEGA_BARRIER */
 
 static void __init brcmstb_machine_init(void)
@@ -224,7 +232,7 @@ static void __init brcmstb_machine_init(void)
 	of_add_fixed_phys();
 	brcmstb_hook_fault_code();
 	brcmstb_clocks_init();
-	brcmstb_suspend_init();
+	brcmstb_pm_init();
 	cma_register();
 }
 

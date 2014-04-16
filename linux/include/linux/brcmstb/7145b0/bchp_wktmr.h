@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:24 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:18 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -44,11 +44,11 @@
 /***************************************************************************
  *WKTMR - Wakeup timer
  ***************************************************************************/
-#define BCHP_WKTMR_EVENT                         0x20416880 /* Wakeup Timer Register */
-#define BCHP_WKTMR_COUNTER                       0x20416884 /* Wakeup Counter */
-#define BCHP_WKTMR_ALARM                         0x20416888 /* Wakeup Timer Alarm */
-#define BCHP_WKTMR_PRESCALER                     0x2041688c /* Wakeup Timer Prescaler */
-#define BCHP_WKTMR_PRESCALER_VAL                 0x20416890 /* Wakeup Timer Prescaler Value */
+#define BCHP_WKTMR_EVENT                         0x20417480 /* Wakeup Timer Register */
+#define BCHP_WKTMR_COUNTER                       0x20417484 /* Wakeup Counter */
+#define BCHP_WKTMR_ALARM                         0x20417488 /* Wakeup Timer Alarm */
+#define BCHP_WKTMR_PRESCALER                     0x2041748c /* Wakeup Timer Prescaler */
+#define BCHP_WKTMR_PRESCALER_VAL                 0x20417490 /* Wakeup Timer Prescaler Value */
 
 /***************************************************************************
  *EVENT - Wakeup Timer Register

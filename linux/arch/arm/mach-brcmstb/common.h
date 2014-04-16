@@ -43,5 +43,13 @@ static inline void cma_reserve(void) { }
 static inline void cma_register(void) { }
 #endif
 
+#ifdef CONFIG_PM
+int brcmstb_pm_init(void);
+#else
+static inline int brcmstb_pm_init(void)
+{
+	return 0;
+}
+#endif /* CONFIG_PM */
 
 #endif /* __BRCMSTB_COMMON_H__ */

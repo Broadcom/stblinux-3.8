@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:14 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:14 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -114,9 +114,14 @@
 /***************************************************************************
  *PM_CTRL - Control register for Power Controller
  ***************************************************************************/
-/* AON_CTRL :: PM_CTRL :: reserved0 [31:20] */
-#define BCHP_AON_CTRL_PM_CTRL_reserved0_MASK                       0xfff00000
-#define BCHP_AON_CTRL_PM_CTRL_reserved0_SHIFT                      20
+/* AON_CTRL :: PM_CTRL :: reserved0 [31:21] */
+#define BCHP_AON_CTRL_PM_CTRL_reserved0_MASK                       0xffe00000
+#define BCHP_AON_CTRL_PM_CTRL_reserved0_SHIFT                      21
+
+/* AON_CTRL :: PM_CTRL :: pm_dphy_standby_clear [20:20] */
+#define BCHP_AON_CTRL_PM_CTRL_pm_dphy_standby_clear_MASK           0x00100000
+#define BCHP_AON_CTRL_PM_CTRL_pm_dphy_standby_clear_SHIFT          20
+#define BCHP_AON_CTRL_PM_CTRL_pm_dphy_standby_clear_DEFAULT        0x00000000
 
 /* AON_CTRL :: PM_CTRL :: pm_clear_battery_mode_debug_status [19:19] */
 #define BCHP_AON_CTRL_PM_CTRL_pm_clear_battery_mode_debug_status_MASK 0x00080000
@@ -1353,9 +1358,19 @@
 /***************************************************************************
  *ANA_XTAL_CONTROL - Ana xtal gisb control
  ***************************************************************************/
-/* AON_CTRL :: ANA_XTAL_CONTROL :: reserved0 [31:12] */
-#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_reserved0_MASK              0xfffff000
-#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_reserved0_SHIFT             12
+/* AON_CTRL :: ANA_XTAL_CONTROL :: reserved0 [31:22] */
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_reserved0_MASK              0xffc00000
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_reserved0_SHIFT             22
+
+/* AON_CTRL :: ANA_XTAL_CONTROL :: en_osc_cmos_in_s3 [21:16] */
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_en_osc_cmos_in_s3_MASK      0x003f0000
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_en_osc_cmos_in_s3_SHIFT     16
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_en_osc_cmos_in_s3_DEFAULT   0x00000000
+
+/* AON_CTRL :: ANA_XTAL_CONTROL :: en_osc_cml_in_s3 [15:12] */
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_en_osc_cml_in_s3_MASK       0x0000f000
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_en_osc_cml_in_s3_SHIFT      12
+#define BCHP_AON_CTRL_ANA_XTAL_CONTROL_en_osc_cml_in_s3_DEFAULT    0x00000000
 
 /* AON_CTRL :: ANA_XTAL_CONTROL :: osc_ldo_ctrl [11:08] */
 #define BCHP_AON_CTRL_ANA_XTAL_CONTROL_osc_ldo_ctrl_MASK           0x00000f00

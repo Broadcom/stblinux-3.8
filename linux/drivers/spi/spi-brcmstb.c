@@ -126,21 +126,12 @@ struct bcmspi_parms {
 	u8			bits_per_word;
 };
 
-const struct bcmspi_parms bcmspi_default_parms_cs0 = {
+static const struct bcmspi_parms bcmspi_default_parms_cs0 = {
 	.speed_hz		= MAX_SPEED_HZ,
 	.chip_select		= 0,
 	.mode			= SPI_MODE_3,
 	.bits_per_word		= 8,
 };
-EXPORT_SYMBOL(bcmspi_default_parms_cs0);
-
-const struct bcmspi_parms bcmspi_default_parms_cs1 = {
-	.speed_hz		= MAX_SPEED_HZ,
-	.chip_select		= 1,
-	.mode			= SPI_MODE_3,
-	.bits_per_word		= 8,
-};
-EXPORT_SYMBOL(bcmspi_default_parms_cs1);
 
 struct position {
 	struct spi_message	*msg;
@@ -1157,11 +1148,10 @@ static void bcmspi_complete(void *arg)
 	complete(arg);
 }
 
-static struct spi_master *default_master;
-
-int bcmspi_simple_transaction(struct bcmspi_parms *xp,
+static int bcmspi_simple_transaction(struct bcmspi_priv *priv,
 	const void *tx_buf, int tx_len, void *rx_buf, int rx_len)
 {
+	struct bcmspi_parms *xp = &priv->last_parms;
 	DECLARE_COMPLETION_ONSTACK(fini);
 	struct spi_message m;
 	struct spi_transfer t_tx, t_rx;
@@ -1173,7 +1163,7 @@ int bcmspi_simple_transaction(struct bcmspi_parms *xp,
 	spi.chip_select = xp->chip_select;
 	spi.mode = xp->mode;
 	spi.bits_per_word = xp->bits_per_word;
-	spi.master = default_master;
+	spi.master = priv->master;
 
 	spi_message_init(&m);
 	m.complete = bcmspi_complete;
@@ -1197,7 +1187,6 @@ int bcmspi_simple_transaction(struct bcmspi_parms *xp,
 		wait_for_completion(&fini);
 	return ret;
 }
-EXPORT_SYMBOL(bcmspi_simple_transaction);
 
 static void bcmspi_hw_init(struct bcmspi_priv *priv)
 {
@@ -1244,7 +1233,7 @@ static int bcmbspi_flash_type(struct bcmspi_priv *priv)
 
 	/* Read ID */
 	tx_buf[0] = OPCODE_RDID;
-	bcmspi_simple_transaction(&priv->last_parms, tx_buf, 1, &jedec_id, 5);
+	bcmspi_simple_transaction(priv, tx_buf, 1, &jedec_id, 5);
 
 	switch (jedec_id[0]) {
 	case 0x01: /* Spansion */
@@ -1276,59 +1265,52 @@ static int bcmspi_set_quad_mode(struct bcmspi_priv *priv, int _enable)
 	case BSPI_FLASH_TYPE_SPANSION:
 		/* RCR */
 		tx_buf[0] = OPCODE_RCR;
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 1, &cfg_reg, 1);
+		bcmspi_simple_transaction(priv, tx_buf, 1, &cfg_reg, 1);
 		if (_enable)
 			cfg_reg |= 0x2;
 		else
 			cfg_reg &= ~0x2;
 		/* WREN */
 		tx_buf[0] = OPCODE_WREN;
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 1, NULL, 0);
+		bcmspi_simple_transaction(priv, tx_buf, 1, NULL, 0);
 		/* WRR */
 		tx_buf[0] = OPCODE_WRR;
 		tx_buf[1] = 0; /* status register */
 		tx_buf[2] = cfg_reg; /* configuration register */
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 3, NULL, 0);
+		bcmspi_simple_transaction(priv, tx_buf, 3, NULL, 0);
 		/* wait till ready */
 		do {
 			tx_buf[0] = OPCODE_RDSR;
-			bcmspi_simple_transaction(&priv->last_parms,
-				tx_buf, 1, &sts_reg, 1);
+			bcmspi_simple_transaction(priv, tx_buf, 1, &sts_reg,
+						  1);
 			udelay(1);
 		} while (sts_reg & 1);
 		break;
 	case BSPI_FLASH_TYPE_MACRONIX:
 		/* RDSR */
 		tx_buf[0] = OPCODE_RDSR;
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 1, &cfg_reg, 1);
+		bcmspi_simple_transaction(priv, tx_buf, 1, &cfg_reg, 1);
 		if (_enable)
 			cfg_reg |= 0x40;
 		else
 			cfg_reg &= ~0x40;
 		/* WREN */
 		tx_buf[0] = OPCODE_WREN;
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 1, NULL, 0);
+		bcmspi_simple_transaction(priv, tx_buf, 1, NULL, 0);
 		/* WRSR */
 		tx_buf[0] = OPCODE_WRSR;
 		tx_buf[1] = cfg_reg; /* status register */
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 2, NULL, 0);
+		bcmspi_simple_transaction(priv, tx_buf, 2, NULL, 0);
 		/* wait till ready */
 		do {
 			tx_buf[0] = OPCODE_RDSR;
-			bcmspi_simple_transaction(&priv->last_parms,
-				tx_buf, 1, &sts_reg, 1);
+			bcmspi_simple_transaction(priv, tx_buf, 1, &sts_reg,
+						  1);
 			udelay(1);
 		} while (sts_reg & 1);
 		/* RDSR */
 		tx_buf[0] = OPCODE_RDSR;
-		bcmspi_simple_transaction(&priv->last_parms,
-			tx_buf, 1, &cfg_reg, 1);
+		bcmspi_simple_transaction(priv, tx_buf, 1, &cfg_reg, 1);
 		break;
 	case BSPI_FLASH_TYPE_SST:
 	case BSPI_FLASH_TYPE_NUMONYX:
@@ -1424,15 +1406,15 @@ static int bcmspi_probe(struct platform_device *pdev)
 	if (!res) {
 		dev_err(&pdev->dev, "can't get resource 0\n");
 		ret = -EIO;
-		goto err3;
+		goto err2;
 	}
 	/* MSPI register range */
-	priv->mspi_hw = (volatile void *)ioremap(res->start,
-		res->end - res->start);
+	priv->mspi_hw = (volatile void *)devm_ioremap(&pdev->dev,
+		res->start, res->end - res->start);
 	if (!priv->mspi_hw) {
 		dev_err(&pdev->dev, "can't ioremap\n");
 		ret = -EIO;
-		goto err3;
+		goto err2;
 	}
 
 	/* IRQ */
@@ -1443,7 +1425,8 @@ static int bcmspi_probe(struct platform_device *pdev)
 		goto err2;
 	}
 
-	ret = request_irq(priv->irq, bcmspi_interrupt, 0, "spi_brcmstb", priv);
+	ret = devm_request_irq(&pdev->dev, priv->irq, bcmspi_interrupt, 0,
+			"spi_brcmstb", priv);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "unable to allocate IRQ\n");
 		goto err2;
@@ -1452,8 +1435,8 @@ static int bcmspi_probe(struct platform_device *pdev)
 	/* BSPI register range (not supported on all platforms) */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (res && !nobspi) {
-		priv->bspi_hw = (volatile void *)ioremap(res->start,
-			res->end - res->start);
+		priv->bspi_hw = (volatile void *)devm_ioremap(&pdev->dev,
+			res->start, res->end - res->start);
 		if (!priv->bspi_hw) {
 			dev_err(&pdev->dev, "can't ioremap BSPI range\n");
 			ret = -EIO;
@@ -1465,12 +1448,12 @@ static int bcmspi_probe(struct platform_device *pdev)
 	/* BSPI_RAF register range */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
 	if (res && !nobspi) {
-		priv->bspi_hw_raf = (volatile void *)ioremap(res->start,
-			res->end - res->start);
+		priv->bspi_hw_raf = (volatile void *)devm_ioremap(&pdev->dev,
+			res->start, res->end - res->start);
 		if (!priv->bspi_hw_raf) {
 			dev_err(&pdev->dev, "can't ioremap BSPI_RAF range\n");
 			ret = -EIO;
-			goto err2_1;
+			goto err2;
 		}
 	} else
 		priv->bspi_hw_raf = NULL;
@@ -1481,7 +1464,7 @@ static int bcmspi_probe(struct platform_device *pdev)
 	ret = bcmspi_bspi_config_cs(priv);
 	if (ret) {
 		dev_err(&pdev->dev, "error detecting chip-select\n");
-		goto err2_2;
+		goto err1;
 	}
 
 #ifdef BCHP_SUN_TOP_CTRL_STRAP_VALUE_0_strap_nand_flash_boot_MASK
@@ -1500,14 +1483,6 @@ static int bcmspi_probe(struct platform_device *pdev)
 
 	tasklet_init(&priv->tasklet, bcmspi_tasklet, (unsigned long)priv);
 
-	ret = spi_register_master(master);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "can't register master\n");
-		goto err1;
-	}
-	if (!default_master)
-		default_master = master;
-
 	/* default values - undefined */
 	priv->flex_mode.width =
 	priv->flex_mode.addrlen =
@@ -1520,18 +1495,17 @@ static int bcmspi_probe(struct platform_device *pdev)
 		bcmspi_set_mode(priv, bspi_width, bspi_addrlen, bspi_hp);
 	}
 
+	ret = spi_register_master(master);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "can't register master\n");
+		goto err1;
+	}
+
 	return 0;
 
 err1:
 	bcmspi_hw_uninit(priv);
-	free_irq(priv->irq, priv);
-err2_2:
-	iounmap(priv->bspi_hw_raf);
-err2_1:
-	iounmap(priv->bspi_hw);
 err2:
-	iounmap(priv->mspi_hw);
-err3:
 	spi_master_put(master);
 	return ret;
 }
@@ -1555,12 +1529,6 @@ static int bcmspi_remove(struct platform_device *pdev)
 	tasklet_kill(&priv->tasklet);
 	platform_set_drvdata(pdev, NULL);
 	bcmspi_hw_uninit(priv);
-	if (priv->bspi_hw_raf)
-		iounmap(priv->bspi_hw_raf);
-	if (priv->bspi_hw)
-		iounmap(priv->bspi_hw);
-	free_irq(priv->irq, priv);
-	iounmap(priv->mspi_hw);
 	spi_unregister_master(priv->master);
 
 	return 0;
@@ -1601,7 +1569,7 @@ static const struct of_device_id spi_brcmstb_of_match[] = {
 	{},
 };
 
-static struct platform_driver driver = {
+static struct platform_driver spi_brcmstb_driver = {
 	.driver = {
 		.name = "spi_brcmstb",
 		.bus = &platform_bus_type,
@@ -1613,19 +1581,7 @@ static struct platform_driver driver = {
 	.remove = bcmspi_remove,
 };
 
-static int __init bcmspi_spi_init(void)
-{
-	platform_driver_register(&driver);
-
-	return 0;
-}
-module_init(bcmspi_spi_init);
-
-static void __exit bcmspi_spi_exit(void)
-{
-	platform_driver_unregister(&driver);
-}
-module_exit(bcmspi_spi_exit);
+module_platform_driver(spi_brcmstb_driver);
 
 MODULE_AUTHOR("Broadcom Corporation");
 MODULE_DESCRIPTION("MSPI/HIF SPI driver");

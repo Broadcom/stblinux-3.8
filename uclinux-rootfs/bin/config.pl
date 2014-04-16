@@ -215,6 +215,8 @@ sub def($$$)
 	}
 }
 
+# This "get" function sets global variables $tgt, $chip, $be, $suffix
+# and doesn't return anything.
 sub get_tgt($)
 {
 	($tgt) = (@_);
@@ -394,16 +396,23 @@ sub gen_arch_config($)
 	close(OUT);
 }
 
+
 #
-# MAIN
+# COMMAND HANDLERS
+#
+# If you add one of these, make sure to add appropriate entries to
+# %cmd_table.
 #
 
-my $cmd = shift @ARGV;
-if(! defined($cmd)) {
-	die "usage: config.pl <cmd>\n";
+sub cmd_badcmd($)
+{
+	my ($cmd) = @_;
+	die "unrecognized command: $cmd";
 }
-if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 
+sub cmd_defaults($)
+{
+	my ($cmd) = @_;
 	get_tgt(shift @ARGV);
 
 	# clean up the build system if switching targets
@@ -514,6 +523,7 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 			# reduced footprint (-small builds)
 
 			$uclibc{"PTHREADS_DEBUG_SUPPORT"} = "n";
+			$uclibc{"SUPPORT_LD_DEBUG"} = "n";
 			$uclibc{"DODEBUG"} = "n";
 			$uclibc{"DOSTRIP"} = "y";
 
@@ -673,7 +683,7 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 			override_cfg(\%linux, \%linux_o);
 
 			$vendor{"CONFIG_USER_LTT_CONTROL"} = "y";
-			
+
 			$busybox{"CONFIG_FEATURE_FIND_PRUNE"} = "y";
 			$busybox{"CONFIG_FEATURE_FIND_PATH"} = "y";
 		} elsif($mod eq "android") {
@@ -848,8 +858,10 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	unlink($linux_new_defaults);
 
 	gen_arch_config($ARCH);
+}
 
-} elsif($cmd eq "save_defaults") {
+sub cmd_save_defaults()
+{
 	get_tgt(shift @ARGV);
 
 	read_cfg($linux_config, \%linux);
@@ -866,7 +878,10 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	write_cfg($uclibc_config, $uclibc_defaults, \%uclibc);
 	write_cfg($busybox_config, $busybox_defaults, \%busybox);
 	write_cfg($vendor_config, $vendor_defaults, \%vendor);
-} elsif($cmd eq "initramfs") {
+}
+
+sub cmd_initramfs()
+{
 	read_cfg($linux_config, \%linux);
 
 	$linux{"CONFIG_BLK_DEV_INITRD"} = "y";
@@ -890,17 +905,24 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 	$linux{"CONFIG_INITRAMFS_COMPRESSION_LZO"} = "n";
 
 	write_cfg($linux_config, $linux_config, \%linux);
-} elsif($cmd eq "noinitramfs") {
+}
+
+sub cmd_noinitramfs()
+{
 	read_cfg($linux_config, \%linux);
-
 	$linux{"CONFIG_INITRAMFS_SOURCE"} = '""';
-
 	write_cfg($linux_config, $linux_config, \%linux);
-} elsif($cmd eq "chiplist") {
+}
+
+sub cmd_chiplist()
+{
 	foreach (get_chiplist()) {
 		print "$_\n";
 	}
-} elsif($cmd eq "buildlist") {
+}
+
+sub cmd_buildlist()
+{
 	foreach (get_chiplist()) {
 		print "$_\n";
 		# 73xx, 74xx generally need BE builds
@@ -909,24 +931,78 @@ if($cmd eq "defaults" || $cmd eq "quickdefaults") {
 			print "${_}_be\n";
 		}
 	}
-} elsif($cmd eq "linux") {
-	set_opt($linux_config, \@ARGV);
-} elsif($cmd eq "busybox") {
-	set_opt($busybox_config, \@ARGV);
-} elsif($cmd eq "eglibc") {
-	set_opt_n($eglibc_config, \@ARGV);
-} elsif($cmd eq "uclibc") {
-	set_opt($uclibc_config, \@ARGV);
-} elsif($cmd eq "vendor") {
-	set_opt($vendor_config, \@ARGV);
-} elsif($cmd eq "test_linux") {
-	test_opt($linux_config, \@ARGV);
-} elsif($cmd eq "test_busybox") {
-	test_opt($busybox_config, \@ARGV);
-} elsif($cmd eq "test_uclibc") {
-	test_opt($uclibc_config, \@ARGV);
-} elsif($cmd eq "test_vendor") {
-	test_opt($vendor_config, \@ARGV);
-} else {
-	die "unrecognized command: $cmd";
 }
+
+sub cmd_linux()
+{
+	set_opt($linux_config, \@ARGV);
+}
+
+sub cmd_busybox()
+{
+	set_opt($busybox_config, \@ARGV);
+}
+
+sub cmd_eglibc()
+{
+	set_opt_n($eglibc_config, \@ARGV);
+}
+
+sub cmd_uclibc()
+{
+	set_opt($uclibc_config, \@ARGV);
+}
+
+sub cmd_vendor()
+{
+	set_opt($vendor_config, \@ARGV);
+}
+
+sub cmd_test_linux()
+{
+	test_opt($linux_config, \@ARGV);
+}
+
+sub cmd_test_busybox()
+{
+	test_opt($busybox_config, \@ARGV);
+}
+
+sub cmd_test_uclibc()
+{
+	test_opt($uclibc_config, \@ARGV);
+}
+
+sub cmd_test_vendor()
+{
+	test_opt($vendor_config, \@ARGV);
+}
+
+my %cmd_table = (
+	"defaults"         => \&cmd_defaults,
+	"quickdefaults"    => \&cmd_defaults,
+	"save_defaults"    => \&cmd_save_defaults,
+	"initramfs"        => \&cmd_initramfs,
+	"noinitramfs"      => \&cmd_noinitramfs,
+	"chiplist"         => \&cmd_chiplist,
+	"buildlist"        => \&cmd_buildlist,
+	"linux"            => \&cmd_linux,
+	"busybox"          => \&cmd_busybox,
+	"eglibc"           => \&cmd_eglibc,
+	"uclibc"           => \&cmd_uclibc,
+	"vendor"           => \&cmd_vendor,
+	"test_linux"       => \&cmd_linux,
+	"test_uclibc"      => \&cmd_uclibc,
+	"test_busybox"     => \&cmd_busybox,
+	"test_vendor"      => \&cmd_vendor,
+);
+
+#
+# MAIN
+#
+
+my $cmd = shift @ARGV;
+if(! defined($cmd)) {
+	die "usage: config.pl <cmd>\n";
+}
+($cmd_table{$cmd} || \&cmd_badcmd)->($cmd);

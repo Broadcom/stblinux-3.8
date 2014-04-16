@@ -1,7 +1,6 @@
 *.o
 *.lo
 .deps/
-.gitignore
 .libs/
 Doxyfile
 Makefile
@@ -24,3 +23,8 @@ test1
 test2
 test3
 test-poptrc
+
+#
+# Never ignore these
+#
+!.gitignore

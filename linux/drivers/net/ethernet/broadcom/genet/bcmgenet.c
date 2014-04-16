@@ -999,6 +999,15 @@ static int bcmgenet_set_rx_csum(struct net_device *dev,
 	else
 		rbuf_chk_ctrl |= RBUF_RXCHK_EN;
 	priv->desc_rxchk_en = rx_csum_en;
+
+	/* If UniMAC forwards CRC, we need to skip over it to get
+	 * a valid CHK bit to be set in the per-packet status word
+	 */
+	if (rx_csum_en && priv->crc_fwd_en)
+		rbuf_chk_ctrl |= RBUF_SKIP_FCS;
+	else
+		rbuf_chk_ctrl &= ~RBUF_SKIP_FCS;
+
 	bcmgenet_rbuf_writel(priv, rbuf_chk_ctrl, RBUF_CHK_CTRL);
 
 	spin_unlock_bh(&priv->bh_lock);
@@ -1659,10 +1668,12 @@ static void bcmgenet_tx_reclaim(struct net_device *dev,
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int last_tx_cn, last_c_index, num_tx_bds;
 	struct enet_cb *tx_cb_ptr;
+	struct netdev_queue *txq;
 	unsigned int c_index;
 
 	/* Compute how many buffers are transmited since last xmit call */
 	c_index = bcmgenet_tdma_ring_readl(priv, ring->index, TDMA_CONS_INDEX);
+	txq = netdev_get_tx_queue(dev, ring->queue);
 
 	last_c_index = ring->c_index;
 	num_tx_bds = ring->size;
@@ -1707,7 +1718,7 @@ static void bcmgenet_tx_reclaim(struct net_device *dev,
 	}
 
 	if (ring->free_bds > (MAX_SKB_FRAGS + 1)
-			&& __netif_subqueue_stopped(dev, ring->queue)) {
+			&& netif_tx_queue_stopped(txq)) {
 		if (ring->index == DESC_INDEX) {
 			/* Disable txdma bdone/pdone interrupt if we have
 			 * free tx bds
@@ -1720,7 +1731,7 @@ static void bcmgenet_tx_reclaim(struct net_device *dev,
 					INTRL2_CPU_MASK_SET);
 			priv->int1_mask |= (1 << ring->index);
 		}
-		netif_wake_subqueue(dev, ring->queue);
+		netif_tx_wake_queue(txq);
 	}
 	ring->c_index = c_index;
 }
@@ -1913,6 +1924,7 @@ static netdev_tx_t bcmgenet_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	struct bcmgenet_tx_ring *ring;
+	struct netdev_queue *txq;
 	int i;
 	unsigned long flags;
 	int nr_frags, index;
@@ -1941,19 +1953,12 @@ static netdev_tx_t bcmgenet_xmit(struct sk_buff *skb, struct net_device *dev)
 	else
 		index -= 1;
 
-	if (index != DESC_INDEX && index > 3) {
-		netdev_err(dev, "%s: queue_mapping %d is invalid\n",
-				__func__, skb_get_queue_mapping(skb));
-		dev->stats.tx_errors++;
-		dev->stats.tx_dropped++;
-		ret = NETDEV_TX_BUSY;
-		goto out;
-	}
 	nr_frags = skb_shinfo(skb)->nr_frags;
 	ring = &priv->tx_rings[index];
+	txq = netdev_get_tx_queue(dev, ring->queue);
 
 	if (ring->free_bds <= nr_frags + 1) {
-		netif_stop_subqueue(dev, ring->queue);
+		netif_tx_stop_queue(txq);
 		netdev_err(dev, "%s: tx ring %d full when queue %d awake\n",
 				__func__, index, ring->queue);
 		ret = NETDEV_TX_BUSY;
@@ -2003,7 +2008,7 @@ static netdev_tx_t bcmgenet_xmit(struct sk_buff *skb, struct net_device *dev)
 			ring->prod_index, TDMA_PROD_INDEX);
 
 	if (ring->free_bds <= (MAX_SKB_FRAGS + 1)) {
-		netif_stop_subqueue(dev, ring->queue);
+		netif_tx_stop_queue(txq);
 		if (index == DESC_INDEX)
 			bcmgenet_intrl2_0_writel(priv,
 				UMAC_IRQ_TXDMA_BDONE |
@@ -3313,23 +3318,10 @@ static int bcmgenet_set_mac_addr(struct net_device *dev, void *p)
 	return 0;
 }
 
-static u16 bcmgenet_select_queue(struct net_device *dev,
-		struct sk_buff *skb)
-{
-	/* If multi-queue support is enabled, and NET_ACT_SKBEDIT is not
-	 * defined, this function simply returns current queue_mapping set
-	 * inside skb, this means other modules, (netaccel, for example),
-	 * must provide a mechanism to set the queue_mapping before trying
-	 * to send a packet.
-	 */
-	return netif_is_multiqueue(dev) ? skb->queue_mapping : 0;
-}
-
 static const struct net_device_ops bcmgenet_netdev_ops = {
 	.ndo_open = bcmgenet_open,
 	.ndo_stop = bcmgenet_close,
 	.ndo_start_xmit = bcmgenet_xmit,
-	.ndo_select_queue = bcmgenet_select_queue,
 	.ndo_tx_timeout = bcmgenet_timeout,
 	.ndo_set_rx_mode = bcmgenet_set_rx_mode,
 	.ndo_set_mac_address = bcmgenet_set_mac_addr,

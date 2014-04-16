@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:12 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:13 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -7925,9 +7925,23 @@
 /***************************************************************************
  *CLIENT_INIT_ENABLE - "Override registers to force behaviour of client_init module."
  ***************************************************************************/
-/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: reserved0 [31:06] */
-#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved0_MASK          0xffffffc0
-#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved0_SHIFT         6
+/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: reserved0 [31:16] */
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved0_MASK          0xffff0000
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved0_SHIFT         16
+
+/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: FORCE_CLIENT_INIT_ACK_CLIENT_ID [15:08] */
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_CLIENT_ID_MASK 0x0000ff00
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_CLIENT_ID_SHIFT 8
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_CLIENT_ID_DEFAULT 0x00000000
+
+/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: FORCE_CLIENT_INIT_ACK_BROADCAST [07:07] */
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_BROADCAST_MASK 0x00000080
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_BROADCAST_SHIFT 7
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_BROADCAST_DEFAULT 0x00000000
+
+/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: reserved1 [06:06] */
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved1_MASK          0x00000040
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved1_SHIFT         6
 
 /* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: FORCE_CLIENT_INIT_ACK [05:05] */
 #define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_MASK 0x00000020
@@ -7939,9 +7953,9 @@
 #define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_VALUE_SHIFT 4
 #define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_FORCE_CLIENT_INIT_ACK_VALUE_DEFAULT 0x00000000
 
-/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: reserved1 [03:01] */
-#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved1_MASK          0x0000000e
-#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved1_SHIFT         1
+/* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: reserved2 [03:01] */
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved2_MASK          0x0000000e
+#define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_reserved2_SHIFT         1
 
 /* MEMC_ARB_1 :: CLIENT_INIT_ENABLE :: ENABLE [00:00] */
 #define BCHP_MEMC_ARB_1_CLIENT_INIT_ENABLE_ENABLE_MASK             0x00000001

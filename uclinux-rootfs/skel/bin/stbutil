@@ -104,6 +104,17 @@ function get_mtd_attr()
 	return 0
 }
 
+function flash_is_nand()
+{
+	mtdX=$1
+	! get_mtd_attr $mtdX type flash_type && echo "Cannot get flash type" && exit 1
+	if [ "$flash_type" = "nand" ] || [ "$flash_type" = "mlc-nand" ]; then
+		return 0 # note the backwards shell return-code semantics
+	else
+		return 1
+	fi
+}
+
 function check_root()
 {
 	# make sure that we are not reformatting the active rootfs
@@ -174,9 +185,12 @@ function handle_opt_1()
 {
 	mtd=/dev/mtd${kernel_part}
 
+	echo "Writing kernel to $mtd"
+	echo
+
 	tftp_fetch $tftphost $tftppath/vmlinuz-$plat /tmp/vmlinuz
 	flash_erase $mtd 0 0
-	if [ "$flash_type" = "nand" ]; then
+	if flash_is_nand $kernel_part; then
 		nandwrite -p $mtd /tmp/vmlinuz
 	else
 		dd if=/tmp/vmlinuz of=$mtd
@@ -286,7 +300,7 @@ function handle_opt_4()
 
 	tftp_fetch $tftphost $tftppath/$rem_img /tmp/rootfs.img
 	flash_erase $mtd 0 0
-	if [ "$flash_type" = "nand" ]; then
+	if flash_is_nand $rootfs_part; then
 		imgsize=$(du -k /tmp/rootfs.img | sed 's/[ \t].*//')
 		ubiformat $mtd --yes
 		ubiattach -m $rootfs_part -d 0
@@ -319,7 +333,7 @@ function handle_opt_4()
 	echo ""
 	echo "To mount the filesystem now:"
 	echo ""
-	if [ "$flash_type" = "nand" ]; then
+	if flash_is_nand $rootfs_part; then
 		echo "  ubiattach -m $rootfs_part"
 		echo "  mount /dev/mtdblock${newpart} /mnt/flash"
 		echo ""
@@ -568,7 +582,7 @@ if [ -z $rootfs_part ]; then
 	suf4="$suf2"
 fi
 
-if [ "$flash_type" = "nand" ]; then
+if flash_is_nand $rootfs_part; then
 	suf3="(not available)"
 	suf4="(uses UBI)"
 fi

@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:21 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:17 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -3136,9 +3136,9 @@
  *PAUSE_ST_ADDR - PAUSE Frame DA Address
  ***************************************************************************/
 /* SWITCH_CORE :: PAUSE_ST_ADDR :: PAUSE_ST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_PAUSE_ST_ADDR_PAUSE_ST_ADDR_MASK          0x00000000ffff
+#define BCHP_SWITCH_CORE_PAUSE_ST_ADDR_PAUSE_ST_ADDR_MASK          0x000000000000
 #define BCHP_SWITCH_CORE_PAUSE_ST_ADDR_PAUSE_ST_ADDR_SHIFT         0
-#define BCHP_SWITCH_CORE_PAUSE_ST_ADDR_PAUSE_ST_ADDR_DEFAULT       0x0000ffffffff
+#define BCHP_SWITCH_CORE_PAUSE_ST_ADDR_PAUSE_ST_ADDR_DEFAULT       0x0180c2000001
 
 /***************************************************************************
  *FAST_AGE_CTRL - Fast Ageing Control Register
@@ -3410,7 +3410,7 @@
  *LSA_PORT_Port_0 - Port N Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT_Port_0 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT_Port_0_LST_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT_Port_0_LST_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_0_LST_ADDR_SHIFT            0
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_0_LST_ADDR_DEFAULT          0x000000000000
 
@@ -3418,7 +3418,7 @@
  *LSA_PORT_Port_1 - Port N Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT_Port_1 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT_Port_1_LST_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT_Port_1_LST_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_1_LST_ADDR_SHIFT            0
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_1_LST_ADDR_DEFAULT          0x000000000000
 
@@ -3426,7 +3426,7 @@
  *LSA_PORT_Port_2 - Port N Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT_Port_2 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT_Port_2_LST_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT_Port_2_LST_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_2_LST_ADDR_SHIFT            0
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_2_LST_ADDR_DEFAULT          0x000000000000
 
@@ -3434,7 +3434,7 @@
  *LSA_PORT_Port_3 - Port N Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT_Port_3 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT_Port_3_LST_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT_Port_3_LST_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_3_LST_ADDR_SHIFT            0
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_3_LST_ADDR_DEFAULT          0x000000000000
 
@@ -3442,7 +3442,7 @@
  *LSA_PORT_Port_4 - Port N Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT_Port_4 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT_Port_4_LST_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT_Port_4_LST_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_4_LST_ADDR_SHIFT            0
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_4_LST_ADDR_DEFAULT          0x000000000000
 
@@ -3450,7 +3450,7 @@
  *LSA_PORT_Port_5 - Port N Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT_Port_5 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT_Port_5_LST_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT_Port_5_LST_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_5_LST_ADDR_SHIFT            0
 #define BCHP_SWITCH_CORE_LSA_PORT_Port_5_LST_ADDR_DEFAULT          0x000000000000
 
@@ -3458,7 +3458,7 @@
  *LSA_PORT7 - Port 7 Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_PORT7 :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_PORT7_LST_ADDR_MASK                   0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_PORT7_LST_ADDR_MASK                   0x000000000000
 #define BCHP_SWITCH_CORE_LSA_PORT7_LST_ADDR_SHIFT                  0
 #define BCHP_SWITCH_CORE_LSA_PORT7_LST_ADDR_DEFAULT                0x000000000000
 
@@ -3466,7 +3466,7 @@
  *LSA_MII_PORT - Port 8 Last Source Address
  ***************************************************************************/
 /* SWITCH_CORE :: LSA_MII_PORT :: LST_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_LSA_MII_PORT_LST_ADDR_MASK                0x00000000ffff
+#define BCHP_SWITCH_CORE_LSA_MII_PORT_LST_ADDR_MASK                0x000000000000
 #define BCHP_SWITCH_CORE_LSA_MII_PORT_LST_ADDR_SHIFT               0
 #define BCHP_SWITCH_CORE_LSA_MII_PORT_LST_ADDR_DEFAULT             0x000000000000
 
@@ -3474,7 +3474,7 @@
  *BIST_STS0 - BIST Status Register 0
  ***************************************************************************/
 /* SWITCH_CORE :: BIST_STS0 :: BIST_STS0 [47:00] */
-#define BCHP_SWITCH_CORE_BIST_STS0_BIST_STS0_MASK                  0x00000000ffff
+#define BCHP_SWITCH_CORE_BIST_STS0_BIST_STS0_MASK                  0x000000000000
 #define BCHP_SWITCH_CORE_BIST_STS0_BIST_STS0_SHIFT                 0
 #define BCHP_SWITCH_CORE_BIST_STS0_BIST_STS0_DEFAULT               0x000000000000
 
@@ -3494,12 +3494,12 @@
  *PBPTRFIFO_0 - PBPTRFIFO Status Register 0(Not2Release)
  ***************************************************************************/
 /* SWITCH_CORE :: PBPTRFIFO_0 :: VALID_CNT_P5 [47:40] */
-#define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P5_MASK             0x00000000ff00
+#define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P5_MASK             0xff0000000000
 #define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P5_SHIFT            40
 #define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P5_DEFAULT          0x000000000002
 
 /* SWITCH_CORE :: PBPTRFIFO_0 :: VALID_CNT_P4 [39:32] */
-#define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P4_MASK             0x0000000000ff
+#define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P4_MASK             0x00ff00000000
 #define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P4_SHIFT            32
 #define BCHP_SWITCH_CORE_PBPTRFIFO_0_VALID_CNT_P4_DEFAULT          0x000000000002
 
@@ -3865,7 +3865,7 @@
  *IGMIRMAC - Ingress Mirror Mac Address Register
  ***************************************************************************/
 /* SWITCH_CORE :: IGMIRMAC :: IN_MIR_MAC [47:00] */
-#define BCHP_SWITCH_CORE_IGMIRMAC_IN_MIR_MAC_MASK                  0x00000000ffff
+#define BCHP_SWITCH_CORE_IGMIRMAC_IN_MIR_MAC_MASK                  0x000000000000
 #define BCHP_SWITCH_CORE_IGMIRMAC_IN_MIR_MAC_SHIFT                 0
 #define BCHP_SWITCH_CORE_IGMIRMAC_IN_MIR_MAC_DEFAULT               0x000000000000
 
@@ -3917,7 +3917,7 @@
  *EGMIRMAC - Egress Mirror MAC Address Register
  ***************************************************************************/
 /* SWITCH_CORE :: EGMIRMAC :: OUT_MIR_MAC [47:00] */
-#define BCHP_SWITCH_CORE_EGMIRMAC_OUT_MIR_MAC_MASK                 0x00000000ffff
+#define BCHP_SWITCH_CORE_EGMIRMAC_OUT_MIR_MAC_MASK                 0x000000000000
 #define BCHP_SWITCH_CORE_EGMIRMAC_OUT_MIR_MAC_SHIFT                0
 #define BCHP_SWITCH_CORE_EGMIRMAC_OUT_MIR_MAC_DEFAULT              0x000000000000
 
@@ -4322,7 +4322,7 @@
  *CPU_DATA_SHARE - CPU Data Share Register
  ***************************************************************************/
 /* SWITCH_CORE :: CPU_DATA_SHARE :: CPU_DATA_SHARE [63:00] */
-#define BCHP_SWITCH_CORE_CPU_DATA_SHARE_CPU_DATA_SHARE_MASK        0x00000000ffffffff
+#define BCHP_SWITCH_CORE_CPU_DATA_SHARE_CPU_DATA_SHARE_MASK        0x0000000000000000
 #define BCHP_SWITCH_CORE_CPU_DATA_SHARE_CPU_DATA_SHARE_SHIFT       0
 #define BCHP_SWITCH_CORE_CPU_DATA_SHARE_CPU_DATA_SHARE_DEFAULT     0x0000000000000000
 
@@ -4330,7 +4330,7 @@
  *CPU_DATA_SHARE_1 - CPU Data Share 1 Register
  ***************************************************************************/
 /* SWITCH_CORE :: CPU_DATA_SHARE_1 :: CPU_DATA_SHARE [63:00] */
-#define BCHP_SWITCH_CORE_CPU_DATA_SHARE_1_CPU_DATA_SHARE_MASK      0x00000000ffffffff
+#define BCHP_SWITCH_CORE_CPU_DATA_SHARE_1_CPU_DATA_SHARE_MASK      0x0000000000000000
 #define BCHP_SWITCH_CORE_CPU_DATA_SHARE_1_CPU_DATA_SHARE_SHIFT     0
 #define BCHP_SWITCH_CORE_CPU_DATA_SHARE_1_CPU_DATA_SHARE_DEFAULT   0x0000000000000000
 
@@ -4624,9 +4624,9 @@
  *BPDU_MCADDR - BPDU Multicast Address Register
  ***************************************************************************/
 /* SWITCH_CORE :: BPDU_MCADDR :: BPDU_MC_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_BPDU_MCADDR_BPDU_MC_ADDR_MASK             0x00000000ffff
+#define BCHP_SWITCH_CORE_BPDU_MCADDR_BPDU_MC_ADDR_MASK             0x000000000000
 #define BCHP_SWITCH_CORE_BPDU_MCADDR_BPDU_MC_ADDR_SHIFT            0
-#define BCHP_SWITCH_CORE_BPDU_MCADDR_BPDU_MC_ADDR_DEFAULT          0x0000ffffffff
+#define BCHP_SWITCH_CORE_BPDU_MCADDR_BPDU_MC_ADDR_DEFAULT          0x0180c2000000
 
 /***************************************************************************
  *MULTI_PORT_CTL - Multiport Control Register
@@ -4684,12 +4684,12 @@
  *MULTIPORT_ADDR0 - Multiport Address 0 Register (Default for TS)
  ***************************************************************************/
 /* SWITCH_CORE :: MULTIPORT_ADDR0 :: MPORT_E_TYPE [63:48] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_E_TYPE_MASK         0x00000000ffff0000
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_E_TYPE_MASK         0xffff000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_E_TYPE_SHIFT        48
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_E_TYPE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: MULTIPORT_ADDR0 :: MPORT_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_ADDR_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_ADDR_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_ADDR_SHIFT          0
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR0_MPORT_ADDR_DEFAULT        0x0000000000000000
 
@@ -4710,12 +4710,12 @@
  *MULTIPORT_ADDR1 - Multiport Address 1 Register
  ***************************************************************************/
 /* SWITCH_CORE :: MULTIPORT_ADDR1 :: MPORT_E_TYPE [63:48] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_E_TYPE_MASK         0x00000000ffff0000
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_E_TYPE_MASK         0xffff000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_E_TYPE_SHIFT        48
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_E_TYPE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: MULTIPORT_ADDR1 :: MPORT_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_ADDR_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_ADDR_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_ADDR_SHIFT          0
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR1_MPORT_ADDR_DEFAULT        0x0000000000000000
 
@@ -4736,12 +4736,12 @@
  *MULTIPORT_ADDR2 - Multiport Address 2 Register
  ***************************************************************************/
 /* SWITCH_CORE :: MULTIPORT_ADDR2 :: MPORT_E_TYPE [63:48] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_E_TYPE_MASK         0x00000000ffff0000
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_E_TYPE_MASK         0xffff000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_E_TYPE_SHIFT        48
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_E_TYPE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: MULTIPORT_ADDR2 :: MPORT_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_ADDR_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_ADDR_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_ADDR_SHIFT          0
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR2_MPORT_ADDR_DEFAULT        0x0000000000000000
 
@@ -4762,12 +4762,12 @@
  *MULTIPORT_ADDR3 - Multiport Address 3 Register
  ***************************************************************************/
 /* SWITCH_CORE :: MULTIPORT_ADDR3 :: MPORT_E_TYPE [63:48] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_E_TYPE_MASK         0x00000000ffff0000
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_E_TYPE_MASK         0xffff000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_E_TYPE_SHIFT        48
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_E_TYPE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: MULTIPORT_ADDR3 :: MPORT_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_ADDR_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_ADDR_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_ADDR_SHIFT          0
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR3_MPORT_ADDR_DEFAULT        0x0000000000000000
 
@@ -4788,12 +4788,12 @@
  *MULTIPORT_ADDR4 - Multiport Address 4 Register
  ***************************************************************************/
 /* SWITCH_CORE :: MULTIPORT_ADDR4 :: MPORT_E_TYPE [63:48] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_E_TYPE_MASK         0x00000000ffff0000
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_E_TYPE_MASK         0xffff000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_E_TYPE_SHIFT        48
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_E_TYPE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: MULTIPORT_ADDR4 :: MPORT_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_ADDR_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_ADDR_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_ADDR_SHIFT          0
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR4_MPORT_ADDR_DEFAULT        0x0000000000000000
 
@@ -4814,12 +4814,12 @@
  *MULTIPORT_ADDR5 - Multiport Address 5 Register
  ***************************************************************************/
 /* SWITCH_CORE :: MULTIPORT_ADDR5 :: MPORT_E_TYPE [63:48] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_E_TYPE_MASK         0x00000000ffff0000
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_E_TYPE_MASK         0xffff000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_E_TYPE_SHIFT        48
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_E_TYPE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: MULTIPORT_ADDR5 :: MPORT_ADDR [47:00] */
-#define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_ADDR_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_ADDR_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_ADDR_SHIFT          0
 #define BCHP_SWITCH_CORE_MULTIPORT_ADDR5_MPORT_ADDR_DEFAULT        0x0000000000000000
 
@@ -4908,7 +4908,7 @@
  *ARLA_MAC - MAC Address Index Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_MAC :: MAC_ADDR_INDX [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_MAC_MAC_ADDR_INDX_MASK               0x00000000ffff
+#define BCHP_SWITCH_CORE_ARLA_MAC_MAC_ADDR_INDX_MASK               0x000000000000
 #define BCHP_SWITCH_CORE_ARLA_MAC_MAC_ADDR_INDX_SHIFT              0
 #define BCHP_SWITCH_CORE_ARLA_MAC_MAC_ADDR_INDX_DEFAULT            0x000000000000
 
@@ -4933,17 +4933,17 @@
  *ARLA_MACVID_ENTRY0 - ARL MAC/VID Entry 0 Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY0 :: SWITCH_RESV [63:60] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_SWITCH_RESV_MASK       0x00000000f0000000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_SWITCH_RESV_MASK       0xf000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_SWITCH_RESV_SHIFT      60
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_SWITCH_RESV_DEFAULT    0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY0 :: VID [59:48] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_VID_MASK               0x000000000fff0000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_VID_MASK               0x0fff000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_VID_SHIFT              48
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_VID_DEFAULT            0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY0 :: ARL_MACADDR [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_ARL_MACADDR_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_ARL_MACADDR_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_ARL_MACADDR_SHIFT      0
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY0_ARL_MACADDR_DEFAULT    0x0000000000000000
 
@@ -4989,17 +4989,17 @@
  *ARLA_MACVID_ENTRY1 - ARL MAC/VID Entry 1 Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY1 :: SWITCH_RESV [63:60] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_SWITCH_RESV_MASK       0x00000000f0000000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_SWITCH_RESV_MASK       0xf000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_SWITCH_RESV_SHIFT      60
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_SWITCH_RESV_DEFAULT    0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY1 :: VID [59:48] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_VID_MASK               0x000000000fff0000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_VID_MASK               0x0fff000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_VID_SHIFT              48
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_VID_DEFAULT            0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY1 :: ARL_MACADDR [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_ARL_MACADDR_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_ARL_MACADDR_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_ARL_MACADDR_SHIFT      0
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY1_ARL_MACADDR_DEFAULT    0x0000000000000000
 
@@ -5045,17 +5045,17 @@
  *ARLA_MACVID_ENTRY2 - ARL MAC/VID Entry 2 Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY2 :: SWITCH_RESV [63:60] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_SWITCH_RESV_MASK       0x00000000f0000000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_SWITCH_RESV_MASK       0xf000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_SWITCH_RESV_SHIFT      60
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_SWITCH_RESV_DEFAULT    0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY2 :: VID [59:48] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_VID_MASK               0x000000000fff0000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_VID_MASK               0x0fff000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_VID_SHIFT              48
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_VID_DEFAULT            0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY2 :: ARL_MACADDR [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_ARL_MACADDR_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_ARL_MACADDR_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_ARL_MACADDR_SHIFT      0
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY2_ARL_MACADDR_DEFAULT    0x0000000000000000
 
@@ -5101,17 +5101,17 @@
  *ARLA_MACVID_ENTRY3 - ARL MAC/VID Entry 3 Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY3 :: SWITCH_RESV [63:60] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_SWITCH_RESV_MASK       0x00000000f0000000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_SWITCH_RESV_MASK       0xf000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_SWITCH_RESV_SHIFT      60
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_SWITCH_RESV_DEFAULT    0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY3 :: VID [59:48] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_VID_MASK               0x000000000fff0000
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_VID_MASK               0x0fff000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_VID_SHIFT              48
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_VID_DEFAULT            0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_MACVID_ENTRY3 :: ARL_MACADDR [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_ARL_MACADDR_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_ARL_MACADDR_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_ARL_MACADDR_SHIFT      0
 #define BCHP_SWITCH_CORE_ARLA_MACVID_ENTRY3_ARL_MACADDR_DEFAULT    0x0000000000000000
 
@@ -5196,17 +5196,17 @@
  *ARLA_SRCH_RSLT_0_MACVID - ARL Search MAC/VID Result 0 Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_SRCH_RSLT_0_MACVID :: SWITCH_RESV [63:60] */
-#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_SWITCH_RESV_MASK  0x00000000f0000000
+#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_SWITCH_RESV_MASK  0xf000000000000000
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_SWITCH_RESV_SHIFT 60
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_SWITCH_RESV_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_SRCH_RSLT_0_MACVID :: ARLA_SRCH_RSLT_VID_0 [59:48] */
-#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_RSLT_VID_0_MASK 0x000000000fff0000
+#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_RSLT_VID_0_MASK 0x0fff000000000000
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_RSLT_VID_0_SHIFT 48
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_RSLT_VID_0_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_SRCH_RSLT_0_MACVID :: ARLA_SRCH_MACADDR_0 [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_MACADDR_0_MASK 0x000000000000ffff
+#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_MACADDR_0_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_MACADDR_0_SHIFT 0
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_0_MACVID_ARLA_SRCH_MACADDR_0_DEFAULT 0x0000000000000000
 
@@ -5252,17 +5252,17 @@
  *ARLA_SRCH_RSLT_1_MACVID - ARL Search MAC/VID Result 1 Register
  ***************************************************************************/
 /* SWITCH_CORE :: ARLA_SRCH_RSLT_1_MACVID :: SWITCH_RESV [63:60] */
-#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_SWITCH_RESV_MASK  0x00000000f0000000
+#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_SWITCH_RESV_MASK  0xf000000000000000
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_SWITCH_RESV_SHIFT 60
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_SWITCH_RESV_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_SRCH_RSLT_1_MACVID :: ARLA_SRCH_RSLT_VID_1 [59:48] */
-#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_RSLT_VID_1_MASK 0x000000000fff0000
+#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_RSLT_VID_1_MASK 0x0fff000000000000
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_RSLT_VID_1_SHIFT 48
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_RSLT_VID_1_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: ARLA_SRCH_RSLT_1_MACVID :: ARLA_SRCH_MACADDR_1 [47:00] */
-#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_MACADDR_1_MASK 0x000000000000ffff
+#define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_MACADDR_1_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_MACADDR_1_SHIFT 0
 #define BCHP_SWITCH_CORE_ARLA_SRCH_RSLT_1_MACVID_ARLA_SRCH_MACADDR_1_DEFAULT 0x0000000000000000
 
@@ -5435,7 +5435,7 @@
  *MEM_DEBUG_DATA_0_0 - Memory Debug Data 0_0 RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_DEBUG_DATA_0_0 :: MEM_DAT [63:00] */
-#define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_0_0_MEM_DAT_MASK           0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_0_0_MEM_DAT_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_0_0_MEM_DAT_SHIFT          0
 #define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_0_0_MEM_DAT_DEFAULT        0x0000000000000000
 
@@ -5455,7 +5455,7 @@
  *MEM_DEBUG_DATA_1_0 - Memory Debug Data 1_0 RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_DEBUG_DATA_1_0 :: MEM_DAT [63:00] */
-#define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_1_0_MEM_DAT_MASK           0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_1_0_MEM_DAT_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_1_0_MEM_DAT_SHIFT          0
 #define BCHP_SWITCH_CORE_MEM_DEBUG_DATA_1_0_MEM_DAT_DEFAULT        0x0000000000000000
 
@@ -5497,7 +5497,7 @@
  *MEM_FRM_DATA0 - Frame Memory Data 1st RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_FRM_DATA0 :: MEM_DATA [63:00] */
-#define BCHP_SWITCH_CORE_MEM_FRM_DATA0_MEM_DATA_MASK               0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_FRM_DATA0_MEM_DATA_MASK               0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA0_MEM_DATA_SHIFT              0
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA0_MEM_DATA_DEFAULT            0x0000000000000000
 
@@ -5505,7 +5505,7 @@
  *MEM_FRM_DATA1 - Frame Memory Data 2st RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_FRM_DATA1 :: MEM_DATA [63:00] */
-#define BCHP_SWITCH_CORE_MEM_FRM_DATA1_MEM_DATA_MASK               0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_FRM_DATA1_MEM_DATA_MASK               0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA1_MEM_DATA_SHIFT              0
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA1_MEM_DATA_DEFAULT            0x0000000000000000
 
@@ -5513,7 +5513,7 @@
  *MEM_FRM_DATA2 - Frame Memory Data 3st RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_FRM_DATA2 :: MEM_DATA [63:00] */
-#define BCHP_SWITCH_CORE_MEM_FRM_DATA2_MEM_DATA_MASK               0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_FRM_DATA2_MEM_DATA_MASK               0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA2_MEM_DATA_SHIFT              0
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA2_MEM_DATA_DEFAULT            0x0000000000000000
 
@@ -5521,7 +5521,7 @@
  *MEM_FRM_DATA3 - Frame Memory Data 4th RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_FRM_DATA3 :: MEM_DATA [63:00] */
-#define BCHP_SWITCH_CORE_MEM_FRM_DATA3_MEM_DATA_MASK               0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_FRM_DATA3_MEM_DATA_MASK               0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA3_MEM_DATA_SHIFT              0
 #define BCHP_SWITCH_CORE_MEM_FRM_DATA3_MEM_DATA_DEFAULT            0x0000000000000000
 
@@ -5529,7 +5529,7 @@
  *MEM_BTM_DATA0 - Buffer Tag Memory Register 0Not2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_BTM_DATA0 :: MEM_DATA [63:00] */
-#define BCHP_SWITCH_CORE_MEM_BTM_DATA0_MEM_DATA_MASK               0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_BTM_DATA0_MEM_DATA_MASK               0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_BTM_DATA0_MEM_DATA_SHIFT              0
 #define BCHP_SWITCH_CORE_MEM_BTM_DATA0_MEM_DATA_DEFAULT            0x0000000000000000
 
@@ -5571,7 +5571,7 @@
  *MEM_BFC_DATA - Buffer Control Memory Data RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MEM_BFC_DATA :: BFC_DATA [63:00] */
-#define BCHP_SWITCH_CORE_MEM_BFC_DATA_BFC_DATA_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_MEM_BFC_DATA_BFC_DATA_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_MEM_BFC_DATA_BFC_DATA_SHIFT               0
 #define BCHP_SWITCH_CORE_MEM_BFC_DATA_BFC_DATA_DEFAULT             0x0000000000000000
 
@@ -5596,7 +5596,7 @@
  *PRS_FIFO_DEBUG_DATA - PRS_FIFO Debug Data Register(Not2Release)Not2Release
  ***************************************************************************/
 /* SWITCH_CORE :: PRS_FIFO_DEBUG_DATA :: PRS_FIFO_DBG_DATA [63:00] */
-#define BCHP_SWITCH_CORE_PRS_FIFO_DEBUG_DATA_PRS_FIFO_DBG_DATA_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PRS_FIFO_DEBUG_DATA_PRS_FIFO_DBG_DATA_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PRS_FIFO_DEBUG_DATA_PRS_FIFO_DBG_DATA_SHIFT 0
 #define BCHP_SWITCH_CORE_PRS_FIFO_DEBUG_DATA_PRS_FIFO_DBG_DATA_DEFAULT 0x0000000000000000
 
@@ -10103,7 +10103,7 @@
  *TxOctets_P0 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P0 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P0_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P0_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P0_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P0_COUNT_DEFAULT                 0x0000000000000000
 
@@ -10255,7 +10255,7 @@
  *RxOctets_P0 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P0 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P0_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P0_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P0_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P0_COUNT_DEFAULT                 0x0000000000000000
 
@@ -10359,7 +10359,7 @@
  *RxGoodOctets_P0 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P0 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P0_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P0_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P0_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P0_COUNT_DEFAULT             0x0000000000000000
 
@@ -10535,7 +10535,7 @@
  *TxOctets_P1 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P1 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P1_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P1_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P1_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P1_COUNT_DEFAULT                 0x0000000000000000
 
@@ -10687,7 +10687,7 @@
  *RxOctets_P1 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P1 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P1_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P1_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P1_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P1_COUNT_DEFAULT                 0x0000000000000000
 
@@ -10791,7 +10791,7 @@
  *RxGoodOctets_P1 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P1 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P1_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P1_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P1_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P1_COUNT_DEFAULT             0x0000000000000000
 
@@ -10967,7 +10967,7 @@
  *TxOctets_P2 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P2 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P2_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P2_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P2_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P2_COUNT_DEFAULT                 0x0000000000000000
 
@@ -11119,7 +11119,7 @@
  *RxOctets_P2 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P2 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P2_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P2_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P2_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P2_COUNT_DEFAULT                 0x0000000000000000
 
@@ -11223,7 +11223,7 @@
  *RxGoodOctets_P2 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P2 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P2_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P2_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P2_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P2_COUNT_DEFAULT             0x0000000000000000
 
@@ -11399,7 +11399,7 @@
  *TxOctets_P3 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P3 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P3_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P3_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P3_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P3_COUNT_DEFAULT                 0x0000000000000000
 
@@ -11551,7 +11551,7 @@
  *RxOctets_P3 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P3 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P3_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P3_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P3_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P3_COUNT_DEFAULT                 0x0000000000000000
 
@@ -11655,7 +11655,7 @@
  *RxGoodOctets_P3 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P3 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P3_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P3_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P3_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P3_COUNT_DEFAULT             0x0000000000000000
 
@@ -11831,7 +11831,7 @@
  *TxOctets_P4 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P4 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P4_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P4_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P4_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P4_COUNT_DEFAULT                 0x0000000000000000
 
@@ -11983,7 +11983,7 @@
  *RxOctets_P4 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P4 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P4_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P4_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P4_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P4_COUNT_DEFAULT                 0x0000000000000000
 
@@ -12087,7 +12087,7 @@
  *RxGoodOctets_P4 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P4 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P4_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P4_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P4_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P4_COUNT_DEFAULT             0x0000000000000000
 
@@ -12263,7 +12263,7 @@
  *TxOctets_P5 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P5 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P5_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P5_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P5_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P5_COUNT_DEFAULT                 0x0000000000000000
 
@@ -12415,7 +12415,7 @@
  *RxOctets_P5 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P5 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P5_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P5_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P5_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P5_COUNT_DEFAULT                 0x0000000000000000
 
@@ -12519,7 +12519,7 @@
  *RxGoodOctets_P5 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P5 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P5_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P5_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P5_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P5_COUNT_DEFAULT             0x0000000000000000
 
@@ -12695,7 +12695,7 @@
  *TxOctets_P7 - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_P7 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_P7_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_P7_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_P7_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_TxOctets_P7_COUNT_DEFAULT                 0x0000000000000000
 
@@ -12847,7 +12847,7 @@
  *RxOctets_P7 - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_P7 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_P7_COUNT_MASK                    0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_P7_COUNT_MASK                    0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_P7_COUNT_SHIFT                   0
 #define BCHP_SWITCH_CORE_RxOctets_P7_COUNT_DEFAULT                 0x0000000000000000
 
@@ -12951,7 +12951,7 @@
  *RxGoodOctets_P7 - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_P7 :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_P7_COUNT_MASK                0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_P7_COUNT_MASK                0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_P7_COUNT_SHIFT               0
 #define BCHP_SWITCH_CORE_RxGoodOctets_P7_COUNT_DEFAULT             0x0000000000000000
 
@@ -13127,7 +13127,7 @@
  *TxOctets_IMP - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: TxOctets_IMP :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_TxOctets_IMP_COUNT_MASK                   0x00000000ffffffff
+#define BCHP_SWITCH_CORE_TxOctets_IMP_COUNT_MASK                   0x0000000000000000
 #define BCHP_SWITCH_CORE_TxOctets_IMP_COUNT_SHIFT                  0
 #define BCHP_SWITCH_CORE_TxOctets_IMP_COUNT_DEFAULT                0x0000000000000000
 
@@ -13279,7 +13279,7 @@
  *RxOctets_IMP - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxOctets_IMP :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxOctets_IMP_COUNT_MASK                   0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxOctets_IMP_COUNT_MASK                   0x0000000000000000
 #define BCHP_SWITCH_CORE_RxOctets_IMP_COUNT_SHIFT                  0
 #define BCHP_SWITCH_CORE_RxOctets_IMP_COUNT_DEFAULT                0x0000000000000000
 
@@ -13383,7 +13383,7 @@
  *RxGoodOctets_IMP - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: RxGoodOctets_IMP :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_RxGoodOctets_IMP_COUNT_MASK               0x00000000ffffffff
+#define BCHP_SWITCH_CORE_RxGoodOctets_IMP_COUNT_MASK               0x0000000000000000
 #define BCHP_SWITCH_CORE_RxGoodOctets_IMP_COUNT_SHIFT              0
 #define BCHP_SWITCH_CORE_RxGoodOctets_IMP_COUNT_DEFAULT            0x0000000000000000
 
@@ -14004,32 +14004,32 @@
  *QOS_DIFF_DSCP0 - DiffServ Priority Map 0 Register
  ***************************************************************************/
 /* SWITCH_CORE :: QOS_DIFF_DSCP0 :: PRI_DSCP_001111 [47:45] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001111_MASK       0x00000000e000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001111_MASK       0xe00000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001111_SHIFT      45
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001111_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP0 :: PRI_DSCP_001110 [44:42] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001110_MASK       0x000000001c00
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001110_MASK       0x1c0000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001110_SHIFT      42
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001110_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP0 :: PRI_DSCP_001101 [41:39] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001101_MASK       0x000000000380
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001101_MASK       0x038000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001101_SHIFT      39
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001101_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP0 :: PRI_DSCP_001100 [38:36] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001100_MASK       0x000000000070
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001100_MASK       0x007000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001100_SHIFT      36
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001100_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP0 :: PRI_DSCP_001011 [35:33] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001011_MASK       0x00000000000e
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001011_MASK       0x000e00000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001011_SHIFT      33
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001011_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP0 :: PRI_DSCP_001010 [32:30] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001010_MASK       0x0000c0000000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001010_MASK       0x0001c0000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001010_SHIFT      30
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP0_PRI_DSCP_001010_DEFAULT    0x000000000000
 
@@ -14087,32 +14087,32 @@
  *QOS_DIFF_DSCP1 - DiffServ Priority Map 1 Register
  ***************************************************************************/
 /* SWITCH_CORE :: QOS_DIFF_DSCP1 :: PRI_DSCP_011111 [47:45] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011111_MASK       0x00000000e000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011111_MASK       0xe00000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011111_SHIFT      45
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011111_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP1 :: PRI_DSCP_011110 [44:42] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011110_MASK       0x000000001c00
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011110_MASK       0x1c0000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011110_SHIFT      42
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011110_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP1 :: PRI_DSCP_011101 [41:39] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011101_MASK       0x000000000380
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011101_MASK       0x038000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011101_SHIFT      39
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011101_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP1 :: PRI_DSCP_011100 [38:36] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011100_MASK       0x000000000070
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011100_MASK       0x007000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011100_SHIFT      36
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011100_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP1 :: PRI_DSCP_011011 [35:33] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011011_MASK       0x00000000000e
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011011_MASK       0x000e00000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011011_SHIFT      33
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011011_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP1 :: PRI_DSCP_011010 [32:30] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011010_MASK       0x0000c0000000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011010_MASK       0x0001c0000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011010_SHIFT      30
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP1_PRI_DSCP_011010_DEFAULT    0x000000000000
 
@@ -14170,32 +14170,32 @@
  *QOS_DIFF_DSCP2 - DiffServ Priority Map 2 Register
  ***************************************************************************/
 /* SWITCH_CORE :: QOS_DIFF_DSCP2 :: PRI_DSCP_101111 [47:45] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101111_MASK       0x00000000e000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101111_MASK       0xe00000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101111_SHIFT      45
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101111_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP2 :: PRI_DSCP_101110 [44:42] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101110_MASK       0x000000001c00
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101110_MASK       0x1c0000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101110_SHIFT      42
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101110_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP2 :: PRI_DSCP_101101 [41:39] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101101_MASK       0x000000000380
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101101_MASK       0x038000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101101_SHIFT      39
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101101_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP2 :: PRI_DSCP_101100 [38:36] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101100_MASK       0x000000000070
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101100_MASK       0x007000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101100_SHIFT      36
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101100_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP2 :: PRI_DSCP_101011 [35:33] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101011_MASK       0x00000000000e
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101011_MASK       0x000e00000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101011_SHIFT      33
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101011_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP2 :: PRI_DSCP_101010 [32:30] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101010_MASK       0x0000c0000000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101010_MASK       0x0001c0000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101010_SHIFT      30
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP2_PRI_DSCP_101010_DEFAULT    0x000000000000
 
@@ -14253,32 +14253,32 @@
  *QOS_DIFF_DSCP3 - DiffServ Priority Map 3 Register
  ***************************************************************************/
 /* SWITCH_CORE :: QOS_DIFF_DSCP3 :: PRI_DSCP_111111 [47:45] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111111_MASK       0x00000000e000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111111_MASK       0xe00000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111111_SHIFT      45
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111111_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP3 :: PRI_DSCP_111110 [44:42] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111110_MASK       0x000000001c00
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111110_MASK       0x1c0000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111110_SHIFT      42
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111110_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP3 :: PRI_DSCP_111101 [41:39] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111101_MASK       0x000000000380
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111101_MASK       0x038000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111101_SHIFT      39
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111101_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP3 :: PRI_DSCP_111100 [38:36] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111100_MASK       0x000000000070
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111100_MASK       0x007000000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111100_SHIFT      36
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111100_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP3 :: PRI_DSCP_111011 [35:33] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111011_MASK       0x00000000000e
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111011_MASK       0x000e00000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111011_SHIFT      33
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111011_DEFAULT    0x000000000000
 
 /* SWITCH_CORE :: QOS_DIFF_DSCP3 :: PRI_DSCP_111010 [32:30] */
-#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111010_MASK       0x0000c0000000
+#define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111010_MASK       0x0001c0000000
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111010_SHIFT      30
 #define BCHP_SWITCH_CORE_QOS_DIFF_DSCP3_PRI_DSCP_111010_DEFAULT    0x000000000000
 
@@ -17494,7 +17494,7 @@
  *EAP_DIP_Port_0 - EAP Destination IP Registers
  ***************************************************************************/
 /* SWITCH_CORE :: EAP_DIP_Port_0 :: DIP_SUB_REG [63:32] */
-#define BCHP_SWITCH_CORE_EAP_DIP_Port_0_DIP_SUB_REG_MASK           0x00000000ffffffff
+#define BCHP_SWITCH_CORE_EAP_DIP_Port_0_DIP_SUB_REG_MASK           0xffffffff00000000
 #define BCHP_SWITCH_CORE_EAP_DIP_Port_0_DIP_SUB_REG_SHIFT          32
 #define BCHP_SWITCH_CORE_EAP_DIP_Port_0_DIP_SUB_REG_DEFAULT        0x0000000000000000
 
@@ -17507,7 +17507,7 @@
  *EAP_DIP_Port_1 - EAP Destination IP Registers
  ***************************************************************************/
 /* SWITCH_CORE :: EAP_DIP_Port_1 :: DIP_SUB_REG [63:32] */
-#define BCHP_SWITCH_CORE_EAP_DIP_Port_1_DIP_SUB_REG_MASK           0x00000000ffffffff
+#define BCHP_SWITCH_CORE_EAP_DIP_Port_1_DIP_SUB_REG_MASK           0xffffffff00000000
 #define BCHP_SWITCH_CORE_EAP_DIP_Port_1_DIP_SUB_REG_SHIFT          32
 #define BCHP_SWITCH_CORE_EAP_DIP_Port_1_DIP_SUB_REG_DEFAULT        0x0000000000000000
 
@@ -17520,27 +17520,27 @@
  *PORT_EAP_CON_Port_0 - Port N EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_Port_0 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_SWITCH_RESV_MASK      0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_SWITCH_RESV_MASK      0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_SWITCH_RESV_SHIFT     53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_SWITCH_RESV_DEFAULT   0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_0 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_MODE_MASK         0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_MODE_MASK         0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_MODE_SHIFT        51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_0 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_BLK_MODE_MASK     0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_BLK_MODE_MASK     0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_BLK_MODE_SHIFT    49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_BLK_MODE_DEFAULT  0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_0 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_EN_UNI_DA_MASK    0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_EN_UNI_DA_MASK    0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_EN_UNI_DA_SHIFT   48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_EN_UNI_DA_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_0 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_UNI_DA_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_UNI_DA_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_UNI_DA_SHIFT      0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_0_EAP_UNI_DA_DEFAULT    0x0000000000000000
 
@@ -17548,27 +17548,27 @@
  *PORT_EAP_CON_Port_1 - Port N EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_Port_1 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_SWITCH_RESV_MASK      0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_SWITCH_RESV_MASK      0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_SWITCH_RESV_SHIFT     53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_SWITCH_RESV_DEFAULT   0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_1 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_MODE_MASK         0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_MODE_MASK         0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_MODE_SHIFT        51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_1 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_BLK_MODE_MASK     0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_BLK_MODE_MASK     0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_BLK_MODE_SHIFT    49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_BLK_MODE_DEFAULT  0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_1 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_EN_UNI_DA_MASK    0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_EN_UNI_DA_MASK    0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_EN_UNI_DA_SHIFT   48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_EN_UNI_DA_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_1 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_UNI_DA_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_UNI_DA_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_UNI_DA_SHIFT      0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_1_EAP_UNI_DA_DEFAULT    0x0000000000000000
 
@@ -17576,27 +17576,27 @@
  *PORT_EAP_CON_Port_2 - Port N EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_Port_2 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_SWITCH_RESV_MASK      0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_SWITCH_RESV_MASK      0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_SWITCH_RESV_SHIFT     53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_SWITCH_RESV_DEFAULT   0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_2 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_MODE_MASK         0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_MODE_MASK         0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_MODE_SHIFT        51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_2 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_BLK_MODE_MASK     0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_BLK_MODE_MASK     0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_BLK_MODE_SHIFT    49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_BLK_MODE_DEFAULT  0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_2 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_EN_UNI_DA_MASK    0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_EN_UNI_DA_MASK    0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_EN_UNI_DA_SHIFT   48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_EN_UNI_DA_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_2 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_UNI_DA_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_UNI_DA_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_UNI_DA_SHIFT      0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_2_EAP_UNI_DA_DEFAULT    0x0000000000000000
 
@@ -17604,27 +17604,27 @@
  *PORT_EAP_CON_Port_3 - Port N EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_Port_3 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_SWITCH_RESV_MASK      0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_SWITCH_RESV_MASK      0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_SWITCH_RESV_SHIFT     53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_SWITCH_RESV_DEFAULT   0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_3 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_MODE_MASK         0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_MODE_MASK         0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_MODE_SHIFT        51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_3 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_BLK_MODE_MASK     0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_BLK_MODE_MASK     0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_BLK_MODE_SHIFT    49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_BLK_MODE_DEFAULT  0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_3 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_EN_UNI_DA_MASK    0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_EN_UNI_DA_MASK    0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_EN_UNI_DA_SHIFT   48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_EN_UNI_DA_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_3 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_UNI_DA_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_UNI_DA_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_UNI_DA_SHIFT      0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_3_EAP_UNI_DA_DEFAULT    0x0000000000000000
 
@@ -17632,27 +17632,27 @@
  *PORT_EAP_CON_Port_4 - Port N EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_Port_4 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_SWITCH_RESV_MASK      0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_SWITCH_RESV_MASK      0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_SWITCH_RESV_SHIFT     53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_SWITCH_RESV_DEFAULT   0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_4 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_MODE_MASK         0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_MODE_MASK         0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_MODE_SHIFT        51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_4 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_BLK_MODE_MASK     0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_BLK_MODE_MASK     0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_BLK_MODE_SHIFT    49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_BLK_MODE_DEFAULT  0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_4 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_EN_UNI_DA_MASK    0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_EN_UNI_DA_MASK    0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_EN_UNI_DA_SHIFT   48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_EN_UNI_DA_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_4 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_UNI_DA_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_UNI_DA_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_UNI_DA_SHIFT      0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_4_EAP_UNI_DA_DEFAULT    0x0000000000000000
 
@@ -17660,27 +17660,27 @@
  *PORT_EAP_CON_Port_5 - Port N EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_Port_5 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_SWITCH_RESV_MASK      0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_SWITCH_RESV_MASK      0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_SWITCH_RESV_SHIFT     53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_SWITCH_RESV_DEFAULT   0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_5 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_MODE_MASK         0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_MODE_MASK         0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_MODE_SHIFT        51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_5 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_BLK_MODE_MASK     0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_BLK_MODE_MASK     0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_BLK_MODE_SHIFT    49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_BLK_MODE_DEFAULT  0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_5 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_EN_UNI_DA_MASK    0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_EN_UNI_DA_MASK    0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_EN_UNI_DA_SHIFT   48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_EN_UNI_DA_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_Port_5 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_UNI_DA_MASK       0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_UNI_DA_MASK       0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_UNI_DA_SHIFT      0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_Port_5_EAP_UNI_DA_DEFAULT    0x0000000000000000
 
@@ -17688,27 +17688,27 @@
  *PORT_EAP_CON_P7 - Port 7 EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_P7 :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_SWITCH_RESV_MASK          0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_SWITCH_RESV_MASK          0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_SWITCH_RESV_SHIFT         53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_SWITCH_RESV_DEFAULT       0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_P7 :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_MODE_MASK             0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_MODE_MASK             0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_MODE_SHIFT            51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_MODE_DEFAULT          0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_P7 :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_BLK_MODE_MASK         0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_BLK_MODE_MASK         0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_BLK_MODE_SHIFT        49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_BLK_MODE_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_P7 :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_EN_UNI_DA_MASK        0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_EN_UNI_DA_MASK        0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_EN_UNI_DA_SHIFT       48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_EN_UNI_DA_DEFAULT     0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_P7 :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_UNI_DA_MASK           0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_UNI_DA_MASK           0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_UNI_DA_SHIFT          0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_P7_EAP_UNI_DA_DEFAULT        0x0000000000000000
 
@@ -17716,27 +17716,27 @@
  *PORT_EAP_CON_IMP - IMP EAP Configuration Registers
  ***************************************************************************/
 /* SWITCH_CORE :: PORT_EAP_CON_IMP :: SWITCH_RESV [63:53] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_SWITCH_RESV_MASK         0x00000000ffe00000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_SWITCH_RESV_MASK         0xffe0000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_SWITCH_RESV_SHIFT        53
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_SWITCH_RESV_DEFAULT      0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_IMP :: EAP_MODE [52:51] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_MODE_MASK            0x0000000000180000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_MODE_MASK            0x0018000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_MODE_SHIFT           51
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_MODE_DEFAULT         0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_IMP :: EAP_BLK_MODE [50:49] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_BLK_MODE_MASK        0x0000000000060000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_BLK_MODE_MASK        0x0006000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_BLK_MODE_SHIFT       49
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_BLK_MODE_DEFAULT     0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_IMP :: EAP_EN_UNI_DA [48:48] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_EN_UNI_DA_MASK       0x0000000000010000
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_EN_UNI_DA_MASK       0x0001000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_EN_UNI_DA_SHIFT      48
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_EN_UNI_DA_DEFAULT    0x0000000000000000
 
 /* SWITCH_CORE :: PORT_EAP_CON_IMP :: EAP_UNI_DA [47:00] */
-#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_UNI_DA_MASK          0x000000000000ffff
+#define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_UNI_DA_MASK          0x0000000000000000
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_UNI_DA_SHIFT         0
 #define BCHP_SWITCH_CORE_PORT_EAP_CON_IMP_EAP_UNI_DA_DEFAULT       0x0000000000000000
 
@@ -19067,22 +19067,22 @@
  *PN_QOS_WEIGHT_Port_0 - Port N, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_0 :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q7_WEIGHT_MASK       0x00000000ff000000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q7_WEIGHT_MASK       0xff00000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q7_WEIGHT_SHIFT      56
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q7_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_0 :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q6_WEIGHT_MASK       0x0000000000ff0000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q6_WEIGHT_MASK       0x00ff000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q6_WEIGHT_SHIFT      48
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q6_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_0 :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q5_WEIGHT_MASK       0x000000000000ff00
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q5_WEIGHT_MASK       0x0000ff0000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q5_WEIGHT_SHIFT      40
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q5_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_0 :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q4_WEIGHT_MASK       0x00000000000000ff
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q4_WEIGHT_MASK       0x000000ff00000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q4_WEIGHT_SHIFT      32
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_0_Q4_WEIGHT_DEFAULT    0x0000000000000001
 
@@ -19110,22 +19110,22 @@
  *PN_QOS_WEIGHT_Port_1 - Port N, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_1 :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q7_WEIGHT_MASK       0x00000000ff000000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q7_WEIGHT_MASK       0xff00000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q7_WEIGHT_SHIFT      56
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q7_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_1 :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q6_WEIGHT_MASK       0x0000000000ff0000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q6_WEIGHT_MASK       0x00ff000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q6_WEIGHT_SHIFT      48
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q6_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_1 :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q5_WEIGHT_MASK       0x000000000000ff00
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q5_WEIGHT_MASK       0x0000ff0000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q5_WEIGHT_SHIFT      40
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q5_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_1 :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q4_WEIGHT_MASK       0x00000000000000ff
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q4_WEIGHT_MASK       0x000000ff00000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q4_WEIGHT_SHIFT      32
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_1_Q4_WEIGHT_DEFAULT    0x0000000000000001
 
@@ -19153,22 +19153,22 @@
  *PN_QOS_WEIGHT_Port_2 - Port N, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_2 :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q7_WEIGHT_MASK       0x00000000ff000000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q7_WEIGHT_MASK       0xff00000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q7_WEIGHT_SHIFT      56
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q7_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_2 :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q6_WEIGHT_MASK       0x0000000000ff0000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q6_WEIGHT_MASK       0x00ff000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q6_WEIGHT_SHIFT      48
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q6_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_2 :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q5_WEIGHT_MASK       0x000000000000ff00
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q5_WEIGHT_MASK       0x0000ff0000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q5_WEIGHT_SHIFT      40
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q5_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_2 :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q4_WEIGHT_MASK       0x00000000000000ff
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q4_WEIGHT_MASK       0x000000ff00000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q4_WEIGHT_SHIFT      32
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_2_Q4_WEIGHT_DEFAULT    0x0000000000000001
 
@@ -19196,22 +19196,22 @@
  *PN_QOS_WEIGHT_Port_3 - Port N, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_3 :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q7_WEIGHT_MASK       0x00000000ff000000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q7_WEIGHT_MASK       0xff00000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q7_WEIGHT_SHIFT      56
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q7_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_3 :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q6_WEIGHT_MASK       0x0000000000ff0000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q6_WEIGHT_MASK       0x00ff000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q6_WEIGHT_SHIFT      48
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q6_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_3 :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q5_WEIGHT_MASK       0x000000000000ff00
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q5_WEIGHT_MASK       0x0000ff0000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q5_WEIGHT_SHIFT      40
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q5_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_3 :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q4_WEIGHT_MASK       0x00000000000000ff
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q4_WEIGHT_MASK       0x000000ff00000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q4_WEIGHT_SHIFT      32
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_3_Q4_WEIGHT_DEFAULT    0x0000000000000001
 
@@ -19239,22 +19239,22 @@
  *PN_QOS_WEIGHT_Port_4 - Port N, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_4 :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q7_WEIGHT_MASK       0x00000000ff000000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q7_WEIGHT_MASK       0xff00000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q7_WEIGHT_SHIFT      56
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q7_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_4 :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q6_WEIGHT_MASK       0x0000000000ff0000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q6_WEIGHT_MASK       0x00ff000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q6_WEIGHT_SHIFT      48
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q6_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_4 :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q5_WEIGHT_MASK       0x000000000000ff00
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q5_WEIGHT_MASK       0x0000ff0000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q5_WEIGHT_SHIFT      40
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q5_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_4 :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q4_WEIGHT_MASK       0x00000000000000ff
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q4_WEIGHT_MASK       0x000000ff00000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q4_WEIGHT_SHIFT      32
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_4_Q4_WEIGHT_DEFAULT    0x0000000000000001
 
@@ -19282,22 +19282,22 @@
  *PN_QOS_WEIGHT_Port_5 - Port N, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_5 :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q7_WEIGHT_MASK       0x00000000ff000000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q7_WEIGHT_MASK       0xff00000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q7_WEIGHT_SHIFT      56
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q7_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_5 :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q6_WEIGHT_MASK       0x0000000000ff0000
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q6_WEIGHT_MASK       0x00ff000000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q6_WEIGHT_SHIFT      48
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q6_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_5 :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q5_WEIGHT_MASK       0x000000000000ff00
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q5_WEIGHT_MASK       0x0000ff0000000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q5_WEIGHT_SHIFT      40
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q5_WEIGHT_DEFAULT    0x0000000000000001
 
 /* SWITCH_CORE :: PN_QOS_WEIGHT_Port_5 :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q4_WEIGHT_MASK       0x00000000000000ff
+#define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q4_WEIGHT_MASK       0x000000ff00000000
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q4_WEIGHT_SHIFT      32
 #define BCHP_SWITCH_CORE_PN_QOS_WEIGHT_Port_5_Q4_WEIGHT_DEFAULT    0x0000000000000001
 
@@ -19325,22 +19325,22 @@
  *P7_QOS_WEIGHT - Port 7, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: P7_QOS_WEIGHT :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q7_WEIGHT_MASK              0x00000000ff000000
+#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q7_WEIGHT_MASK              0xff00000000000000
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q7_WEIGHT_SHIFT             56
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q7_WEIGHT_DEFAULT           0x0000000000000001
 
 /* SWITCH_CORE :: P7_QOS_WEIGHT :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q6_WEIGHT_MASK              0x0000000000ff0000
+#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q6_WEIGHT_MASK              0x00ff000000000000
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q6_WEIGHT_SHIFT             48
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q6_WEIGHT_DEFAULT           0x0000000000000001
 
 /* SWITCH_CORE :: P7_QOS_WEIGHT :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q5_WEIGHT_MASK              0x000000000000ff00
+#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q5_WEIGHT_MASK              0x0000ff0000000000
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q5_WEIGHT_SHIFT             40
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q5_WEIGHT_DEFAULT           0x0000000000000001
 
 /* SWITCH_CORE :: P7_QOS_WEIGHT :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q4_WEIGHT_MASK              0x00000000000000ff
+#define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q4_WEIGHT_MASK              0x000000ff00000000
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q4_WEIGHT_SHIFT             32
 #define BCHP_SWITCH_CORE_P7_QOS_WEIGHT_Q4_WEIGHT_DEFAULT           0x0000000000000001
 
@@ -19368,22 +19368,22 @@
  *IMP_QOS_WEIGHT - Port 8, QOS Weight Register
  ***************************************************************************/
 /* SWITCH_CORE :: IMP_QOS_WEIGHT :: Q7_WEIGHT [63:56] */
-#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q7_WEIGHT_MASK             0x00000000ff000000
+#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q7_WEIGHT_MASK             0xff00000000000000
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q7_WEIGHT_SHIFT            56
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q7_WEIGHT_DEFAULT          0x0000000000000001
 
 /* SWITCH_CORE :: IMP_QOS_WEIGHT :: Q6_WEIGHT [55:48] */
-#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q6_WEIGHT_MASK             0x0000000000ff0000
+#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q6_WEIGHT_MASK             0x00ff000000000000
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q6_WEIGHT_SHIFT            48
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q6_WEIGHT_DEFAULT          0x0000000000000001
 
 /* SWITCH_CORE :: IMP_QOS_WEIGHT :: Q5_WEIGHT [47:40] */
-#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q5_WEIGHT_MASK             0x000000000000ff00
+#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q5_WEIGHT_MASK             0x0000ff0000000000
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q5_WEIGHT_SHIFT            40
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q5_WEIGHT_DEFAULT          0x0000000000000001
 
 /* SWITCH_CORE :: IMP_QOS_WEIGHT :: Q4_WEIGHT [39:32] */
-#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q4_WEIGHT_MASK             0x00000000000000ff
+#define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q4_WEIGHT_MASK             0x000000ff00000000
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q4_WEIGHT_SHIFT            32
 #define BCHP_SWITCH_CORE_IMP_QOS_WEIGHT_Q4_WEIGHT_DEFAULT          0x0000000000000001
 
@@ -25408,7 +25408,7 @@
  *S_TxOctets - Tx Octets
  ***************************************************************************/
 /* SWITCH_CORE :: S_TxOctets :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_S_TxOctets_COUNT_MASK                     0x00000000ffffffff
+#define BCHP_SWITCH_CORE_S_TxOctets_COUNT_MASK                     0x0000000000000000
 #define BCHP_SWITCH_CORE_S_TxOctets_COUNT_SHIFT                    0
 #define BCHP_SWITCH_CORE_S_TxOctets_COUNT_DEFAULT                  0x0000000000000000
 
@@ -25560,7 +25560,7 @@
  *S_RxOctets - Rx Packet Octets Counter
  ***************************************************************************/
 /* SWITCH_CORE :: S_RxOctets :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_S_RxOctets_COUNT_MASK                     0x00000000ffffffff
+#define BCHP_SWITCH_CORE_S_RxOctets_COUNT_MASK                     0x0000000000000000
 #define BCHP_SWITCH_CORE_S_RxOctets_COUNT_SHIFT                    0
 #define BCHP_SWITCH_CORE_S_RxOctets_COUNT_DEFAULT                  0x0000000000000000
 
@@ -25664,7 +25664,7 @@
  *S_RxGoodOctets - Rx Good Packet Octet Counter
  ***************************************************************************/
 /* SWITCH_CORE :: S_RxGoodOctets :: COUNT [63:00] */
-#define BCHP_SWITCH_CORE_S_RxGoodOctets_COUNT_MASK                 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_S_RxGoodOctets_COUNT_MASK                 0x0000000000000000
 #define BCHP_SWITCH_CORE_S_RxGoodOctets_COUNT_SHIFT                0
 #define BCHP_SWITCH_CORE_S_RxGoodOctets_COUNT_DEFAULT              0x0000000000000000
 
@@ -25921,7 +25921,7 @@
  *MODULE_ID0 - Module ID 0 RegistersNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MODULE_ID0 :: MID_SA [47:00] */
-#define BCHP_SWITCH_CORE_MODULE_ID0_MID_SA_MASK                    0x00000000ffff
+#define BCHP_SWITCH_CORE_MODULE_ID0_MID_SA_MASK                    0x000000000000
 #define BCHP_SWITCH_CORE_MODULE_ID0_MID_SA_SHIFT                   0
 #define BCHP_SWITCH_CORE_MODULE_ID0_MID_SA_DEFAULT                 0x000000000000
 
@@ -25929,17 +25929,17 @@
  *MODULE_ID1 - Module ID 1 RegistersNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: MODULE_ID1 :: MID_AVAIL [47:47] */
-#define BCHP_SWITCH_CORE_MODULE_ID1_MID_AVAIL_MASK                 0x000000008000
+#define BCHP_SWITCH_CORE_MODULE_ID1_MID_AVAIL_MASK                 0x800000000000
 #define BCHP_SWITCH_CORE_MODULE_ID1_MID_AVAIL_SHIFT                47
 #define BCHP_SWITCH_CORE_MODULE_ID1_MID_AVAIL_DEFAULT              0x000000000000
 
 /* SWITCH_CORE :: MODULE_ID1 :: SWITCH_RESV [46:40] */
-#define BCHP_SWITCH_CORE_MODULE_ID1_SWITCH_RESV_MASK               0x000000007f00
+#define BCHP_SWITCH_CORE_MODULE_ID1_SWITCH_RESV_MASK               0x7f0000000000
 #define BCHP_SWITCH_CORE_MODULE_ID1_SWITCH_RESV_SHIFT              40
 #define BCHP_SWITCH_CORE_MODULE_ID1_SWITCH_RESV_DEFAULT            0x000000000000
 
 /* SWITCH_CORE :: MODULE_ID1 :: MID_PORTNUM [39:32] */
-#define BCHP_SWITCH_CORE_MODULE_ID1_MID_PORTNUM_MASK               0x0000000000ff
+#define BCHP_SWITCH_CORE_MODULE_ID1_MID_PORTNUM_MASK               0x00ff00000000
 #define BCHP_SWITCH_CORE_MODULE_ID1_MID_PORTNUM_SHIFT              32
 #define BCHP_SWITCH_CORE_MODULE_ID1_MID_PORTNUM_DEFAULT            0x000000000000
 
@@ -25952,9 +25952,9 @@
  *LPDET_SA - Loop Detect Frame SA RegistersNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: LPDET_SA :: LPDET_SA [47:00] */
-#define BCHP_SWITCH_CORE_LPDET_SA_LPDET_SA_MASK                    0x00000000ffff
+#define BCHP_SWITCH_CORE_LPDET_SA_LPDET_SA_MASK                    0x000000000000
 #define BCHP_SWITCH_CORE_LPDET_SA_LPDET_SA_SHIFT                   0
-#define BCHP_SWITCH_CORE_LPDET_SA_LPDET_SA_DEFAULT                 0x0000ffffffff
+#define BCHP_SWITCH_CORE_LPDET_SA_LPDET_SA_DEFAULT                 0x0180c2000001
 
 /***************************************************************************
  *LPDET_REG_SPARE0 - Spare 0 Register (Not2Release)Not2Release
@@ -26298,7 +26298,7 @@
  *PBB_PWRDWN_MON_N_Port_0 - PBB Powerdown Time Monitor N RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: PBB_PWRDWN_MON_N_Port_0 :: PWRDWN_CNT [63:00] */
-#define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_0_PWRDWN_CNT_MASK   0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_0_PWRDWN_CNT_MASK   0x0000000000000000
 #define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_0_PWRDWN_CNT_SHIFT  0
 #define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_0_PWRDWN_CNT_DEFAULT 0x0000000000000000
 
@@ -26306,7 +26306,7 @@
  *PBB_PWRDWN_MON_N_Port_1 - PBB Powerdown Time Monitor N RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: PBB_PWRDWN_MON_N_Port_1 :: PWRDWN_CNT [63:00] */
-#define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_1_PWRDWN_CNT_MASK   0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_1_PWRDWN_CNT_MASK   0x0000000000000000
 #define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_1_PWRDWN_CNT_SHIFT  0
 #define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_1_PWRDWN_CNT_DEFAULT 0x0000000000000000
 
@@ -26314,7 +26314,7 @@
  *PBB_PWRDWN_MON_N_Port_2 - PBB Powerdown Time Monitor N RegisterNot2Release
  ***************************************************************************/
 /* SWITCH_CORE :: PBB_PWRDWN_MON_N_Port_2 :: PWRDWN_CNT [63:00] */
-#define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_2_PWRDWN_CNT_MASK   0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_2_PWRDWN_CNT_MASK   0x0000000000000000
 #define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_2_PWRDWN_CNT_SHIFT  0
 #define BCHP_SWITCH_CORE_PBB_PWRDWN_MON_N_Port_2_PWRDWN_CNT_DEFAULT 0x0000000000000000
 
@@ -26412,42 +26412,42 @@
  *PN_EGRESS_PKT_TC2PCP_MAP_Port_0 - Port N, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_0 :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_0_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26495,42 +26495,42 @@
  *PN_EGRESS_PKT_TC2PCP_MAP_Port_1 - Port N, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_1 :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_1_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26578,42 +26578,42 @@
  *PN_EGRESS_PKT_TC2PCP_MAP_Port_2 - Port N, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_2 :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_2_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26661,42 +26661,42 @@
  *PN_EGRESS_PKT_TC2PCP_MAP_Port_3 - Port N, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_3 :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_3_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26744,42 +26744,42 @@
  *PN_EGRESS_PKT_TC2PCP_MAP_Port_4 - Port N, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_4 :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_4_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26827,42 +26827,42 @@
  *PN_EGRESS_PKT_TC2PCP_MAP_Port_5 - Port N, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2PCP_MAP_Port_5 :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2PCP_MAP_Port_5_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26910,42 +26910,42 @@
  *P7_EGRESS_PKT_TC2PCP_MAP - Port 7, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -26993,42 +26993,42 @@
  *IMP_EGRESS_PKT_TC2PCP_MAP - Port 8, Egress TC to PCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC7 [63:60] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_MASK 0x00000000f0000000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_MASK 0xf000000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC7_DEFAULT 0x000000000000000f
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC6 [59:56] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_MASK 0x000000000f000000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_MASK 0x0f00000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC6_DEFAULT 0x000000000000000e
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC5 [55:52] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_MASK 0x0000000000f00000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_MASK 0x00f0000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC5_DEFAULT 0x000000000000000d
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC4 [51:48] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_MASK 0x00000000000f0000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_MASK 0x000f000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC4_DEFAULT 0x000000000000000c
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC3 [47:44] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_MASK 0x000000000000f000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_MASK 0x0000f00000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC3_DEFAULT 0x000000000000000b
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC2 [43:40] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_MASK 0x0000000000000f00
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_MASK 0x00000f0000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC2_DEFAULT 0x000000000000000a
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC1 [39:36] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_MASK 0x00000000000000f0
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_MASK 0x000000f000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC1_DEFAULT 0x0000000000000009
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2PCP_MAP :: PCP_FOR_RV1_TC0 [35:32] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_MASK 0x000000000000000f
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_MASK 0x0000000f00000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2PCP_MAP_PCP_FOR_RV1_TC0_DEFAULT 0x0000000000000008
 
@@ -27076,82 +27076,82 @@
  *PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 - Port N, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_0 :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_0_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -27239,82 +27239,82 @@
  *PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 - Port N, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_1 :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_1_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -27402,82 +27402,82 @@
  *PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 - Port N, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_2 :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_2_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -27565,82 +27565,82 @@
  *PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 - Port N, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_3 :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_3_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -27728,82 +27728,82 @@
  *PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 - Port N, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_4 :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_4_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -27891,82 +27891,82 @@
  *PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 - Port N, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: PN_EGRESS_PKT_TC2CPCP_MAP_Port_5 :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_PN_EGRESS_PKT_TC2CPCP_MAP_Port_5_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -28054,82 +28054,82 @@
  *P7_EGRESS_PKT_TC2CPCP_MAP - Port 7, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: P7_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_P7_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -28217,82 +28217,82 @@
  *IMP_EGRESS_PKT_TC2CPCP_MAP - Port 8, Egress TC to CPCP mapping Register
  ***************************************************************************/
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_15 [63:63] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_MASK 0x0000000080000000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_MASK 0x8000000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_SHIFT 63
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_15_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC7 [62:60] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_MASK 0x0000000070000000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_MASK 0x7000000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_SHIFT 60
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC7_DEFAULT 0x0000000000000007
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_14 [59:59] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_MASK 0x0000000008000000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_MASK 0x0800000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_SHIFT 59
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_14_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC6 [58:56] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_MASK 0x0000000007000000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_MASK 0x0700000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_SHIFT 56
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC6_DEFAULT 0x0000000000000006
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_13 [55:55] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_MASK 0x0000000000800000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_MASK 0x0080000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_SHIFT 55
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_13_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC5 [54:52] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_MASK 0x0000000000700000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_MASK 0x0070000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_SHIFT 52
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC5_DEFAULT 0x0000000000000005
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_12 [51:51] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_MASK 0x0000000000080000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_MASK 0x0008000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_SHIFT 51
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_12_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC4 [50:48] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_MASK 0x0000000000070000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_MASK 0x0007000000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_SHIFT 48
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC4_DEFAULT 0x0000000000000004
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_11 [47:47] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_MASK 0x0000000000008000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_MASK 0x0000800000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_SHIFT 47
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_11_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC3 [46:44] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_MASK 0x0000000000007000
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_MASK 0x0000700000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_SHIFT 44
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC3_DEFAULT 0x0000000000000003
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_10 [43:43] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_MASK 0x0000000000000800
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_MASK 0x0000080000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_SHIFT 43
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_10_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC2 [42:40] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_MASK 0x0000000000000700
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_MASK 0x0000070000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_SHIFT 40
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC2_DEFAULT 0x0000000000000002
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_9 [39:39] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_MASK 0x0000000000000080
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_MASK 0x0000008000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_SHIFT 39
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_9_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC1 [38:36] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_MASK 0x0000000000000070
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_MASK 0x0000007000000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_SHIFT 36
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC1_DEFAULT 0x0000000000000001
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: SWITCH_RESV_8 [35:35] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_MASK 0x0000000000000008
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_MASK 0x0000000800000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_SHIFT 35
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_SWITCH_RESV_8_DEFAULT 0x0000000000000000
 
 /* SWITCH_CORE :: IMP_EGRESS_PKT_TC2CPCP_MAP :: CPCP_FOR_RV1_TC0 [34:32] */
-#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_MASK 0x0000000000000007
+#define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_MASK 0x0000000700000000
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_SHIFT 32
 #define BCHP_SWITCH_CORE_IMP_EGRESS_PKT_TC2CPCP_MAP_CPCP_FOR_RV1_TC0_DEFAULT 0x0000000000000000
 
@@ -29791,7 +29791,7 @@
  *PN_PORT_RED_BYTE_DROP_CNTR_Port_0 - PORT N RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_PORT_RED_BYTE_DROP_CNTR_Port_0 :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_0_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_0_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_0_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_0_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29799,7 +29799,7 @@
  *PN_PORT_RED_BYTE_DROP_CNTR_Port_1 - PORT N RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_PORT_RED_BYTE_DROP_CNTR_Port_1 :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_1_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_1_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_1_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_1_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29807,7 +29807,7 @@
  *PN_PORT_RED_BYTE_DROP_CNTR_Port_2 - PORT N RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_PORT_RED_BYTE_DROP_CNTR_Port_2 :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_2_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_2_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_2_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_2_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29815,7 +29815,7 @@
  *PN_PORT_RED_BYTE_DROP_CNTR_Port_3 - PORT N RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_PORT_RED_BYTE_DROP_CNTR_Port_3 :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_3_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_3_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_3_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_3_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29823,7 +29823,7 @@
  *PN_PORT_RED_BYTE_DROP_CNTR_Port_4 - PORT N RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_PORT_RED_BYTE_DROP_CNTR_Port_4 :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_4_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_4_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_4_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_4_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29831,7 +29831,7 @@
  *PN_PORT_RED_BYTE_DROP_CNTR_Port_5 - PORT N RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: PN_PORT_RED_BYTE_DROP_CNTR_Port_5 :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_5_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_5_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_5_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_PN_PORT_RED_BYTE_DROP_CNTR_Port_5_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29839,7 +29839,7 @@
  *P7_PORT_RED_BYTE_DROP_CNTR - PORT 7 RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: P7_PORT_RED_BYTE_DROP_CNTR :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_P7_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_P7_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_P7_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_P7_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 
@@ -29847,7 +29847,7 @@
  *IMP_PORT_RED_BYTE_DROP_CNTR - PORT 8 RED Byte Drop Counter Register
  ***************************************************************************/
 /* SWITCH_CORE :: IMP_PORT_RED_BYTE_DROP_CNTR :: RED_BYTE_DROP_CNTR [63:00] */
-#define BCHP_SWITCH_CORE_IMP_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_MASK 0x00000000ffffffff
+#define BCHP_SWITCH_CORE_IMP_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_MASK 0x0000000000000000
 #define BCHP_SWITCH_CORE_IMP_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_SHIFT 0
 #define BCHP_SWITCH_CORE_IMP_PORT_RED_BYTE_DROP_CNTR_RED_BYTE_DROP_CNTR_DEFAULT 0x0000000000000000
 

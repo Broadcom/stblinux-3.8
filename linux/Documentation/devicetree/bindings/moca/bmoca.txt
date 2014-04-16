@@ -16,6 +16,8 @@ Required properties:
  enet-id	: phandle to the internal ethernet phy (bcmgenet)
 
 Optional properties:
+ chip-id	: chip family id + rev of host CPU,  bmoca driver uses this 
+		  when populated else reads this value from hardware
  use-dma	: boolean, indicating controller support for DMA
  i2c-base	: MoCA i2c base register address
  i2c-addr	: i2c slave address
@@ -33,4 +35,5 @@ Example:
 		interrupts = <0x0 0x1d 0x0>;
 		hw-rev = <0x2003>;
 		enet-id = <0x7>;
+		chip-id = <0x744500d0>;
 	};

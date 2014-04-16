@@ -15,9 +15,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/* FIXME: Please just gut this entire file and rewrite it to use phylib */
-
-#include "bcmgenet.h"
 #include <linux/types.h>
 #include <linux/delay.h>
 #include <linux/wait.h>
@@ -31,7 +28,12 @@
 #include <linux/phy.h>
 #include <linux/module.h>
 
+#define BCM53125_PHY_ID		0x03625f20
+#define BCM53101_PHY_ID		0x03625ed0
+
 static unsigned char swdata[16];
+
+#define PSEUDO_PHY_ADDR	0x1e
 
 #define REG_PSEUDO_PHY_MII_REG16                          0x10
     #define REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT        8
@@ -68,6 +70,9 @@ static unsigned char swdata[16];
         #define REG_CONTROL_MPSO_SPEED100                 0x04
         #define REG_CONTROL_MPSO_FDX                      0x02
         #define REG_CONTROL_MPSO_LINKPASS                 0x01
+
+    #define REG_SWITCH_CTRL				  0x20
+	#define REG_MII_DUMB_FWD_EN			  0x01 /* 53101 only */
 
     #define REG_PORT_FORWARD                              0x21 /* 5397 only */
 
@@ -133,24 +138,23 @@ static unsigned char swdata[16];
 		(((uint16_t)(__x) & (uint16_t)0xff00UL) >>  8) )); \
 })
 
-static void ethsw_mdio_rreg(struct net_device *dev, int page, int reg,
+static void ethsw_mdio_rreg(struct phy_device *phydev, int page, int reg,
 				unsigned char *data, int len)
 {
-	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int phy_id;
 	int v, vm[4];
 	int i;
 
-	phy_id = priv->sw_addr;
+	phy_id = PSEUDO_PHY_ADDR;
 	v = (page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT) | REG_PPM_REG16_MDIO_ENABLE;
-	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 
 	v = (reg << REG_PPM_REG17_REG_NUMBER_SHIFT) | REG_PPM_REG17_OP_READ;
-	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
+	mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
 
 	for (i = 0; i < 5; i++)
 	{
-		v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17);
+		v = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG17);
 
 		if ((v & (REG_PPM_REG17_OP_WRITE | REG_PPM_REG17_OP_READ)) == REG_PPM_REG17_OP_DONE)
 			break;
@@ -167,32 +171,32 @@ static void ethsw_mdio_rreg(struct net_device *dev, int page, int reg,
 	switch (len) 
 	{
 		case 1:
-			v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			v = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			data[0] = (unsigned char)v;
 			break;
 		case 2:
-			v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			v = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)v;
 			break;
 		case 4:
-			vm[0] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
-			vm[1] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[0] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[1] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
 			((unsigned short *)data)[0] = (unsigned short)vm[0];
 			((unsigned short *)data)[1] = (unsigned short)vm[1];
 			break;
 		case 6:
-			vm[0] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26);
-			vm[1] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
-			vm[2] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[0] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG26);
+			vm[1] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[2] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)vm[2];
 			((unsigned short *)data)[1] = (unsigned short)vm[1];
 			((unsigned short *)data)[2] = (unsigned short)vm[0];
 			break;
 		case 8:
-			vm[0] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG27);
-			vm[1] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26);
-			vm[2] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
-			vm[3] = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
+			vm[0] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG27);
+			vm[1] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG26);
+			vm[2] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG25);
+			vm[3] = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24);
 			((unsigned short *)data)[0] = (unsigned short)vm[3];
 			((unsigned short *)data)[1] = (unsigned short)vm[2];
 			((unsigned short *)data)[2] = (unsigned short)vm[1];
@@ -200,63 +204,62 @@ static void ethsw_mdio_rreg(struct net_device *dev, int page, int reg,
 			break;
 	}
 	v = page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT;
-	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 }
 
-static void ethsw_mdio_wreg(struct net_device *dev, int page, int reg,
+static void ethsw_mdio_wreg(struct phy_device *phydev, int page, int reg,
 				unsigned char *data, int len)
 {
-	struct bcmgenet_priv *priv = netdev_priv(dev);
 	int phy_id;
 	int v;
 	int i;
 
-	phy_id = priv->sw_addr;
+	phy_id = PSEUDO_PHY_ADDR;
 	v = (page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT) | REG_PPM_REG16_MDIO_ENABLE;
-	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 
 	switch (len) 
 	{
 		case 1:
 			v = data[0];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			break;
 		case 2:
 			v = ((unsigned short *)data)[0];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			break;
 		case 4:
 			v = ((unsigned short *)data)[0];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			break;
 		case 6:
 			v = ((unsigned short *)data)[0];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			v = ((unsigned short *)data)[2];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
 			break;
 		case 8:
 			v = ((unsigned short *)data)[0];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG24, v);
 			v = ((unsigned short *)data)[1];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG25, v);
 			v = ((unsigned short *)data)[2];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG26, v);
 			v = ((unsigned short *)data)[3];
-			mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG27, v);
+			mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG27, v);
 			break;
 	}
 
 	v = (reg << REG_PPM_REG17_REG_NUMBER_SHIFT) | REG_PPM_REG17_OP_WRITE;
-	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
+	mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG17, v);
 
 	for (i = 0; i < 5; i++)
 	{
-		v = mdiobus_read(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG17);
+		v = mdiobus_read(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG17);
 
 		if ((v & (REG_PPM_REG17_OP_WRITE | REG_PPM_REG17_OP_READ)) == REG_PPM_REG17_OP_DONE)
 			break;
@@ -268,68 +271,75 @@ static void ethsw_mdio_wreg(struct net_device *dev, int page, int reg,
 		printk("ethsw_mdio_wreg: timeout!\n");
 
 	v = page << REG_PPM_REG16_SWITCH_PAGE_NUMBER_SHIFT;
-	mdiobus_write(priv->mii_bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
+	mdiobus_write(phydev->bus, phy_id, REG_PSEUDO_PHY_MII_REG16, v);
 }
 
-static void ethsw_rreg(struct net_device *dev, int page, int reg,
+static void ethsw_rreg(struct phy_device *phydev, int page, int reg,
 			unsigned char *data, int len)
 {
 	if (((len != 1) && (len % 2) != 0) || len > 8)
 		panic("ethsw_rreg: wrong length!\n");
 
-	ethsw_mdio_rreg(dev, page, reg, data, len);
+	ethsw_mdio_rreg(phydev, page, reg, data, len);
 }
 
-static void ethsw_wreg(struct net_device *dev, int page, int reg,
+static void ethsw_wreg(struct phy_device *phydev, int page, int reg,
 			unsigned char *data, int len)
 {
 	if (((len != 1) && (len % 2) != 0) || len > 8)
 		panic("ethsw_wreg: wrong length!\n");
 
-	ethsw_mdio_wreg(dev, page, reg, data, len);
+	ethsw_mdio_wreg(phydev, page, reg, data, len);
 }
 
-static int ethsw_config_learning(struct net_device *dev)
+static int ethsw_config_learning(struct phy_device *phydev)
 {
 	unsigned char v8;
 	unsigned short v16;
 
 	// Forward lookup failure to CPU
 	v8 = (REG_PORT_FORWARD_MCST | REG_PORT_FORWARD_UCST | REG_PORT_FORWARD_IPMC);
-	ethsw_wreg(dev, PAGE_CONTROL, REG_PORT_FORWARD, (unsigned char *)&v8, sizeof(v8));
+	ethsw_wreg(phydev, PAGE_CONTROL, REG_PORT_FORWARD, (unsigned char *)&v8, sizeof(v8));
 	// Forward unlearned unicast frames to the MIPS
 	v16 = SWITCH_PORT_MAP_IMP;
-	ethsw_wreg(dev, PAGE_CONTROL, REG_UCST_LOOKUP_FAIL, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_CONTROL, REG_UCST_LOOKUP_FAIL, (unsigned char *)&v16, sizeof(v16));
 
 	return 0;
 }
 
-static void ethsw_switch_unmanage_mode(struct net_device *dev)
+static void ethsw_switch_unmanage_mode(struct phy_device *phydev)
 {
 	unsigned char v8;
 	unsigned short v16;
 
-	ethsw_rreg(dev, PAGE_CONTROL, REG_SWITCH_MODE, &v8, sizeof(v8));
+	ethsw_rreg(phydev, PAGE_CONTROL, REG_SWITCH_MODE, &v8, sizeof(v8));
 	v8 &= ~REG_SWITCH_MODE_FRAME_MANAGE_MODE;
 	v8 |= REG_SWITCH_MODE_SW_FWDG_EN;
-	ethsw_wreg(dev, PAGE_CONTROL, REG_SWITCH_MODE, &v8, sizeof(v8));
+	ethsw_wreg(phydev, PAGE_CONTROL, REG_SWITCH_MODE, &v8, sizeof(v8));
+
+	/* BCM53101 requires this MII_DUMB_FWD_EN to be set to forward frames
+	 * towards the host CPU
+	 */
+	if ((phydev->drv->phy_id & phydev->drv->phy_id_mask) == BCM53101_PHY_ID) {
+		v8 = REG_MII_DUMB_FWD_EN;
+		ethsw_wreg(phydev, PAGE_CONTROL, REG_SWITCH_CTRL, &v8, sizeof(v8));
+	}
 
 	v8 = 0;
-	ethsw_wreg(dev, PAGE_MANAGEMENT, REG_GLOBAL_CONFIG, &v8, sizeof(v8));
+	ethsw_wreg(phydev, PAGE_MANAGEMENT, REG_GLOBAL_CONFIG, &v8, sizeof(v8));
 
 	/* Delete port-based VLAN */
 	v16 = 0x01ff;
-	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P0, (unsigned char *)&v16, sizeof(v16));
-	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P1, (unsigned char *)&v16, sizeof(v16));
-	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P2, (unsigned char *)&v16, sizeof(v16));
-	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P3, (unsigned char *)&v16, sizeof(v16)); 
-	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P4, (unsigned char *)&v16, sizeof(v16)); 
-	ethsw_wreg(dev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P8, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P0, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P1, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P2, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P3, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P4, (unsigned char *)&v16, sizeof(v16));
+	ethsw_wreg(phydev, PAGE_PORT_BASED_VLAN, REG_VLAN_CTRL_P8, (unsigned char *)&v16, sizeof(v16));
 }
 
 static int ethsw_force_speed(struct phy_device *phydev)
 {
-	struct net_device *dev = phydev->attached_dev;
 	unsigned char v8;
 
 	v8 = 0;
@@ -341,11 +351,11 @@ static int ethsw_force_speed(struct phy_device *phydev)
 	else
 		v8 &= ~(REG_CONTROL_MPSO_SPEED1000 | REG_CONTROL_MPSO_SPEED100);
 	v8 |= (REG_CONTROL_MPSO_RX_FLOW_CONTROL|REG_CONTROL_MPSO_FDX);
-	ethsw_wreg(dev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
+	ethsw_wreg(phydev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
 
 	/* checking Switch functional */
 	v8 = 0;
-	ethsw_rreg(dev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
+	ethsw_rreg(phydev, PAGE_CONTROL, REG_CONTROL_IMP_PORT_STATE_OVERRIDE, &v8, sizeof(v8));
 	if ((v8 & (REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS)) !=
 		(REG_CONTROL_MPSO_MII_SW_OVERRIDE|REG_CONTROL_MPSO_LINKPASS) ||
 		(v8 == 0xff)) {
@@ -358,7 +368,6 @@ static int ethsw_force_speed(struct phy_device *phydev)
 
 static int ethsw_reset_ports(struct phy_device *phydev)
 {
-	struct net_device *dev = phydev->attached_dev;
 	unsigned long flags;
 	int i;
 	unsigned char v8;
@@ -369,23 +378,23 @@ static int ethsw_reset_ports(struct phy_device *phydev)
 	v8 = 0; /* No spanning tree and tx/rx enable */
 	for (i = 0; i < 5; i++)
 	{
-		ethsw_wreg(dev, PAGE_CONTROL, REG_PORT_CTRL + i, &v8, 1);
+		ethsw_wreg(phydev, PAGE_CONTROL, REG_PORT_CTRL + i, &v8, 1);
 	}
 
 	/* Config IMP port RGMII clock delay by DLL disabled and tx_clk aligned timing */
-	ethsw_rreg(dev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
+	ethsw_rreg(phydev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
 	v8 &= ~(REG_RGMII_CTRL_DLL_RXC_BYPASS | REG_RGMII_CTRL_TIMING_SEL);
 	if (phydev->interface == PHY_INTERFACE_MODE_RGMII)
 		v8 |= REG_RGMII_CTRL_DLL_RXC_BYPASS;
 	v8 |= REG_RGMII_CTRL_TIMING_SEL;
-	ethsw_wreg(dev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
+	ethsw_wreg(phydev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
 
 	/* Set IMP port RMII mode */
 	v8 = 0;
 	v8 |= REG_IMP_PORT_CONTROL_RX_UCST_EN;
 	v8 |= REG_IMP_PORT_CONTROL_RX_MCST_EN;
 	v8 |= REG_IMP_PORT_CONTROL_RX_BCST_EN;
-	ethsw_wreg(dev, PAGE_CONTROL, REG_IMP_PORT_CONTROL, &v8, 1);
+	ethsw_wreg(phydev, PAGE_CONTROL, REG_IMP_PORT_CONTROL, &v8, 1);
 
 	local_irq_restore(flags);
 
@@ -393,13 +402,13 @@ static int ethsw_reset_ports(struct phy_device *phydev)
 }
 
 
-static void ethsw_print_reg(struct net_device *dev, int reg_page, int reg_addr, int reg_len, char *reg_name) 
+static void ethsw_print_reg(struct phy_device *phydev, int reg_page, int reg_addr, int reg_len, char *reg_name) 
 {
 	unsigned char swdata[8];
 	unsigned int val;
 	int i;
 
-	ethsw_rreg(dev, reg_page, reg_addr, swdata, reg_len);
+	ethsw_rreg(phydev, reg_page, reg_addr, swdata, reg_len);
 	printk("%s [%02x:%02x] = ", reg_name, reg_page, reg_addr);
 	switch(reg_len) {
 		case 2:
@@ -419,7 +428,7 @@ static void ethsw_print_reg(struct net_device *dev, int reg_page, int reg_addr, 
 	printk("\n");
 }
 
-static int ethsw_dump_mib(struct net_device *dev, int port) 
+static int ethsw_dump_mib(struct phy_device *phydev, int port)
 {
 	int reg_page;
 
@@ -432,30 +441,30 @@ static int ethsw_dump_mib(struct net_device *dev, int port)
 	printk("dump port %d MIB counter\n", port);
 	reg_page = 0x20 + port;
 	/* Display Tx statistics */
-	ethsw_print_reg(dev, reg_page, 0, 8, "TxOctets");
-	ethsw_print_reg(dev, reg_page, 8, 4, "TxDropPkts");
-	ethsw_print_reg(dev, reg_page, 0x10, 4, "TxBroadcastPkts");
-	ethsw_print_reg(dev, reg_page, 0x14, 4, "TxMulticastPkts");
-	ethsw_print_reg(dev, reg_page, 0x18, 4, "TxUnicastPkts");
-	ethsw_print_reg(dev, reg_page, 0x1c, 4, "TxCollisions");
-	ethsw_print_reg(dev, reg_page, 0x58, 4, "RxUndersizePkts");
-	ethsw_print_reg(dev, reg_page, 0x60, 4, "Pkt64Octets");
-	ethsw_print_reg(dev, reg_page, 0x64, 4, "Pkt65to127Octets");
-	ethsw_print_reg(dev, reg_page, 0x68, 4, "Pkt128to255Octets");
-	ethsw_print_reg(dev, reg_page, 0x6C, 4, "Pkt256to511Octets");
-	ethsw_print_reg(dev, reg_page, 0x70, 4, "Pkt512to1023Octets");
-	ethsw_print_reg(dev, reg_page, 0x74, 4, "Pkts1024toMaxPktOctets");
-	ethsw_print_reg(dev, reg_page, 0x78, 4, "RxOversizePkts");
-	ethsw_print_reg(dev, reg_page, 0x80, 4, "RxAlignmentErros");
-	ethsw_print_reg(dev, reg_page, 0x84, 4, "RXFCSErrors");
-	ethsw_print_reg(dev, reg_page, 0x88, 4, "RxGoodOctets");
-	ethsw_print_reg(dev, reg_page, 0x90, 4, "RxDropPkts");
-	ethsw_print_reg(dev, reg_page, 0x94, 4, "RxUnicastPkts");
-	ethsw_print_reg(dev, reg_page, 0x98, 4, "RxMulticastPkts");
-	ethsw_print_reg(dev, reg_page, 0x9C, 4, "RxBroadcastPkts");
-	ethsw_print_reg(dev, reg_page, 0xA8, 4, "JumboPkt");
-	ethsw_print_reg(dev, reg_page, 0xAC, 4, "RXSymbolError");
-	ethsw_print_reg(dev, reg_page, 0xB4, 4, "OutofRangeError");
+	ethsw_print_reg(phydev, reg_page, 0, 8, "TxOctets");
+	ethsw_print_reg(phydev, reg_page, 8, 4, "TxDropPkts");
+	ethsw_print_reg(phydev, reg_page, 0x10, 4, "TxBroadcastPkts");
+	ethsw_print_reg(phydev, reg_page, 0x14, 4, "TxMulticastPkts");
+	ethsw_print_reg(phydev, reg_page, 0x18, 4, "TxUnicastPkts");
+	ethsw_print_reg(phydev, reg_page, 0x1c, 4, "TxCollisions");
+	ethsw_print_reg(phydev, reg_page, 0x58, 4, "RxUndersizePkts");
+	ethsw_print_reg(phydev, reg_page, 0x60, 4, "Pkt64Octets");
+	ethsw_print_reg(phydev, reg_page, 0x64, 4, "Pkt65to127Octets");
+	ethsw_print_reg(phydev, reg_page, 0x68, 4, "Pkt128to255Octets");
+	ethsw_print_reg(phydev, reg_page, 0x6C, 4, "Pkt256to511Octets");
+	ethsw_print_reg(phydev, reg_page, 0x70, 4, "Pkt512to1023Octets");
+	ethsw_print_reg(phydev, reg_page, 0x74, 4, "Pkts1024toMaxPktOctets");
+	ethsw_print_reg(phydev, reg_page, 0x78, 4, "RxOversizePkts");
+	ethsw_print_reg(phydev, reg_page, 0x80, 4, "RxAlignmentErros");
+	ethsw_print_reg(phydev, reg_page, 0x84, 4, "RXFCSErrors");
+	ethsw_print_reg(phydev, reg_page, 0x88, 4, "RxGoodOctets");
+	ethsw_print_reg(phydev, reg_page, 0x90, 4, "RxDropPkts");
+	ethsw_print_reg(phydev, reg_page, 0x94, 4, "RxUnicastPkts");
+	ethsw_print_reg(phydev, reg_page, 0x98, 4, "RxMulticastPkts");
+	ethsw_print_reg(phydev, reg_page, 0x9C, 4, "RxBroadcastPkts");
+	ethsw_print_reg(phydev, reg_page, 0xA8, 4, "JumboPkt");
+	ethsw_print_reg(phydev, reg_page, 0xAC, 4, "RXSymbolError");
+	ethsw_print_reg(phydev, reg_page, 0xB4, 4, "OutofRangeError");
 
 	return 0;
 }
@@ -507,21 +516,21 @@ static int proc_get_sw_param(char *page, char **start, off_t off, int cnt, int *
 #if 0
 	if (reg_page == 0xfe) {
 		if (reg_len == 6)
-			show_arl((struct net_device *)data, swdata[1], swdata + 3);
+			show_arl((struct phy_device *)data, swdata[1], swdata + 3);
 		else
-			show_arl((struct net_device *)data, swdata[1], NULL);
+			show_arl((struct phy_device *)data, swdata[1], NULL);
 		return 0;
 	}
 #endif
 	if (reg_page == 0xff) {
 		for (i = 0; i < 8; i++) {
 			if ((0x01 << i) & reg_addr)
-				ethsw_dump_mib(phydev->attached_dev, i);
+				ethsw_dump_mib(phydev, i);
 		}
-		ethsw_dump_mib(phydev->attached_dev, 8);
+		ethsw_dump_mib(phydev, 8);
 		return 0;
 	}
-	ethsw_rreg(phydev->attached_dev, reg_page, reg_addr, swdata + 3, reg_len);
+	ethsw_rreg(phydev, reg_page, reg_addr, swdata + 3, reg_len);
 
 	r += sprintf(page + r, "[%02x:%02x] = ", swdata[0], swdata[1]);
 	switch(reg_len) {
@@ -623,7 +632,7 @@ static int proc_set_sw_param(struct file *f, const char *buf, unsigned long cnt,
 				*(uint32_t *)&swdata[7] = val;
 				break;
 		}
-		ethsw_wreg(phydev->attached_dev, reg_page, reg_addr, swdata + 3, reg_len);
+		ethsw_wreg(phydev, reg_page, reg_addr, swdata + 3, reg_len);
 	}
 	return cnt;
 }
@@ -649,11 +658,9 @@ static int ethsw_add_proc_files(struct phy_device *phydev)
 
 static int bcm53x25_ethsw_init(struct phy_device *phydev)
 {
-	struct net_device *dev = phydev->attached_dev;
-
 	ethsw_reset_ports(phydev);
-	ethsw_switch_unmanage_mode(dev);
-	ethsw_config_learning(dev);
+	ethsw_switch_unmanage_mode(phydev);
+	ethsw_config_learning(phydev);
 
 	return 0;
 }
@@ -691,7 +698,7 @@ static int bcm53x25_probe(struct phy_device *phydev)
 	 * address 0 as this is the default PHY addressing supported
 	 * for BCM53xxx switches
 	 */
-	if (phydev->addr != 0x1e && phydev->addr != 0) {
+	if (phydev->addr != PSEUDO_PHY_ADDR && phydev->addr != 0) {
 		dev_err(&phydev->dev, "invalid PHY address %d\n",
 			phydev->addr);
 		return -ENODEV;
@@ -711,10 +718,22 @@ static void bcm53x25_remove(struct phy_device *phydev)
 static struct phy_driver bcm53x25_driver[] = {
 	{
 		/* Match all BCM53125 revisions */
-		.phy_id		= 0x03625f20,
+		.phy_id		= BCM53125_PHY_ID,
 		.phy_id_mask 	= 0x1ffffff0,
 		.name		= "Broadcom BCM53125",
 		.features	= PHY_GBIT_FEATURES,
+		.probe		= bcm53x25_probe,
+		.remove		= bcm53x25_remove,
+		.config_init	= bcm53x25_ethsw_init,
+		.config_aneg	= bcm53x25_config_aneg,
+		.read_status	= bcm53x25_read_status,
+		.driver		= { .owner = THIS_MODULE },
+	},
+	{
+		.phy_id		= BCM53101_PHY_ID,
+		.phy_id_mask	= 0x1ffffff0,
+		.name		= "Broadcom BCM53101",
+		.features	= PHY_BASIC_FEATURES,
 		.probe		= bcm53x25_probe,
 		.remove		= bcm53x25_remove,
 		.config_init	= bcm53x25_ethsw_init,

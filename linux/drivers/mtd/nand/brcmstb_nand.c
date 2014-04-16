@@ -114,6 +114,10 @@ struct brcm_nand_dma_desc {
 	u32 status_valid;
 } __packed;
 
+/* Bitfields for brcm_nand_dma_desc::status_valid */
+#define FLASH_DMA_ECC_ERROR	(1 << 8)
+#define FLASH_DMA_CORR_ERROR	(1 << 9)
+
 /* 512B flash cache in the NAND controller HW */
 #define FC_SHIFT		9U
 #define FC_BYTES		512U
@@ -1023,18 +1027,31 @@ static int brcmstb_nand_dma_trans(struct brcmstb_nand_host *host, u64 addr,
 
 	dma_unmap_single(&host->pdev->dev, buf_pa, len, dir);
 
+	for (offs = 0, i = 0; offs < len; offs += step, i++)
+		if (ctrl->dma_descs[i].status_valid & FLASH_DMA_ECC_ERROR)
+			return -EBADMSG;
+		else if (ctrl->dma_descs[i].status_valid & FLASH_DMA_CORR_ERROR)
+			return -EUCLEAN;
+
 	return 0;
 }
 
 /*
  * Assumes proper CS is already set
  */
-static void brcmstb_nand_read_by_pio(struct mtd_info *mtd,
+static int brcmstb_nand_read_by_pio(struct mtd_info *mtd,
 	struct nand_chip *chip, u64 addr, unsigned int trans,
-	u32 *buf, u8 *oob)
+	u32 *buf, u8 *oob, u64 *err_addr)
 {
 	struct brcmstb_nand_host *host = chip->priv;
-	int i, j;
+	int i, j, ret = 0;
+
+	/* Clear error addresses */
+	BDEV_WR_RB(BCHP_NAND_ECC_UNC_ADDR, 0);
+	BDEV_WR_RB(BCHP_NAND_ECC_CORR_ADDR, 0);
+
+	BDEV_WR_RB(BCHP_NAND_CMD_EXT_ADDRESS,
+			(host->cs << 16) | ((addr >> 32) & 0xffff));
 
 	for (i = 0; i < trans; i++, addr += FC_BYTES) {
 		BDEV_WR_RB(BCHP_NAND_CMD_ADDRESS, addr & 0xffffffff);
@@ -1048,7 +1065,80 @@ static void brcmstb_nand_read_by_pio(struct mtd_info *mtd,
 
 		if (oob)
 			oob += read_oob_from_regs(i, oob, mtd->oobsize / trans, host->hwcfg.sector_size_1k);
+
+		if (!ret) {
+			*err_addr = BDEV_RD(BCHP_NAND_ECC_UNC_ADDR) |
+				((u64)(BDEV_RD(BCHP_NAND_ECC_UNC_EXT_ADDR) &
+					0xffff) << 32);
+			if (*err_addr)
+				ret = -EBADMSG;
+		}
+
+		if (!ret) {
+			*err_addr = BDEV_RD(BCHP_NAND_ECC_CORR_ADDR) |
+				((u64)(BDEV_RD(BCHP_NAND_ECC_CORR_EXT_ADDR) &
+					0xffff) << 32);
+			if (*err_addr)
+				ret = -EUCLEAN;
+		}
 	}
+
+	return ret;
+}
+
+/*
+ * Check a page to see if it is erased (w/ bitflips) after an uncorrectable ECC
+ * error
+ *
+ * Because the HW ECC signals an ECC error if an erase paged has even a single
+ * bitflip, we must check each ECC error to see if it is actually an erased
+ * page with bitflips, not a truly corrupted page.
+ *
+ * On a real error, return a negative error code (-EBADMSG for ECC error), and
+ * buf will contain raw data.
+ * Otherwise, fill buf with 0xff and return the maximum number of
+ * bitflips-per-ECC-sector to the caller.
+ *
+ */
+static int brcmstb_nand_verify_erased_page(struct mtd_info *mtd,
+		  struct nand_chip *chip, void *buf, u64 addr)
+{
+	int i, sas, oob_nbits, data_nbits;
+	void *oob = chip->oob_poi;
+	unsigned int max_bitflips = 0;
+	int page = addr >> chip->page_shift;
+	int ret;
+
+	if (!buf)
+		buf = chip->buffers->databuf;
+
+	sas = mtd->oobsize / chip->ecc.steps;
+	oob_nbits = sas << 3;
+	data_nbits = chip->ecc.size << 3;
+
+	/* read without ecc for verification */
+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
+	ret = chip->ecc.read_page_raw(mtd, chip, buf, true, page);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < chip->ecc.steps; i++, oob += sas) {
+		unsigned int bitflips = 0;
+
+		bitflips += oob_nbits - bitmap_weight(oob, oob_nbits);
+		bitflips += data_nbits - bitmap_weight(buf, data_nbits);
+
+		buf += chip->ecc.size;
+		addr += chip->ecc.size;
+
+		/* Too many bitflips */
+		if (bitflips > chip->ecc.strength)
+			return -EBADMSG;
+
+		max_bitflips = max(max_bitflips, bitflips);
+	}
+
+	return max_bitflips;
 }
 
 static int brcmstb_nand_read(struct mtd_info *mtd,
@@ -1057,44 +1147,55 @@ static int brcmstb_nand_read(struct mtd_info *mtd,
 {
 	struct brcmstb_nand_host *host = chip->priv;
 	struct brcmstb_nand_controller *ctrl = host->ctrl;
-	u64 err_addr;
+	u64 err_addr = 0;
+	int err;
 
 	DBG("%s %llx -> %p\n", __func__, (unsigned long long)addr, buf);
 
-	BDEV_WR_RB(BCHP_NAND_ECC_UNC_ADDR, 0);
-	BDEV_WR_RB(BCHP_NAND_ECC_CORR_ADDR, 0);
 #if CONTROLLER_VER >= 60
 	BDEV_WR_RB(BCHP_NAND_UNCORR_ERROR_COUNT, 0);
 #endif
 
 	if (has_flash_dma(ctrl) && !oob && flash_dma_buf_ok(buf)) {
-		if (brcmstb_nand_dma_trans(host, addr, buf, trans * FC_BYTES,
-					CMD_PAGE_READ))
-			return -EIO;
+		err = brcmstb_nand_dma_trans(host, addr, buf, trans * FC_BYTES,
+					     CMD_PAGE_READ);
+		if (err) {
+			if (mtd_is_bitflip_or_eccerr(err))
+				err_addr = addr;
+			else
+				return -EIO;
+		}
 	} else {
-
-		BDEV_WR_RB(BCHP_NAND_CMD_EXT_ADDRESS,
-				(host->cs << 16) | ((addr >> 32) & 0xffff));
-
 		if (oob)
 			memset(oob, 0x99, mtd->oobsize);
 
-		brcmstb_nand_read_by_pio(mtd, chip, addr, trans, buf, oob);
+		err = brcmstb_nand_read_by_pio(mtd, chip, addr, trans, buf,
+					       oob, &err_addr);
 	}
 
-	err_addr = BDEV_RD(BCHP_NAND_ECC_UNC_ADDR) |
-		((u64)(BDEV_RD(BCHP_NAND_ECC_UNC_EXT_ADDR) & 0xffff) << 32);
-	if (err_addr != 0) {
-		dev_warn(&host->pdev->dev, "uncorrectable error at 0x%llx\n",
-			(unsigned long long)err_addr);
-		mtd->ecc_stats.failed++;
-		/* NAND layer expects zero on ECC errors */
-		return 0;
+	if (mtd_is_eccerr(err)) {
+		int ret = brcmstb_nand_verify_erased_page(mtd, chip, buf, addr);
+		if (ret < 0) {
+			dev_warn(&host->pdev->dev,
+					"uncorrectable error at 0x%llx\n",
+					(unsigned long long)err_addr);
+			mtd->ecc_stats.failed++;
+			/* NAND layer expects zero on ECC errors */
+			return 0;
+		} else {
+			if (buf)
+				memset(buf, 0xff, FC_BYTES * trans);
+			if (oob)
+				memset(oob, 0xff, mtd->oobsize);
+
+			dev_info(&host->pdev->dev,
+					"corrected %d bitflips in blank page at 0x%llx\n",
+					ret, (unsigned long long)addr);
+			return ret;
+		}
 	}
 
-	err_addr = BDEV_RD(BCHP_NAND_ECC_CORR_ADDR) |
-		((u64)(BDEV_RD(BCHP_NAND_ECC_CORR_EXT_ADDR) & 0xffff) << 32);
-	if (err_addr) {
+	if (mtd_is_bitflip(err)) {
 		unsigned int corrected = CORR_ERROR_COUNT;
 		dev_info(&host->pdev->dev, "corrected error at 0x%llx\n",
 			(unsigned long long)err_addr);
@@ -1689,7 +1790,10 @@ static int brcmstb_nand_init_cs(struct brcmstb_nand_host *host)
 		return -ENXIO;
 
 	/* nand_scan_tail() needs this to be set up */
-	chip->ecc.strength = host->hwcfg.ecc_level
+	if (is_hamming_ecc(&host->hwcfg))
+		chip->ecc.strength = 1;
+	else
+		chip->ecc.strength = host->hwcfg.ecc_level
 				<< host->hwcfg.sector_size_1k;
 	chip->ecc.size = host->hwcfg.sector_size_1k ? 1024 : 512;
 	/* only use our internal HW threshold */

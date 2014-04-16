@@ -1,5 +1,5 @@
 /***************************************************************************
- *     Copyright (c) 1999-2013, Broadcom Corporation
+ *     Copyright (c) 1999-2014, Broadcom Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Fri Oct 25 17:33:26 2013
- *                 Full Compile MD5 Checksum 8344a9003ae3c954c1e4a33b9128d4d6
+ * Date:           Generated on              Sun Mar  2 03:13:19 2014
+ *                 Full Compile MD5 Checksum f3b455369bcbd0ca8eecee5a6b238790
  *                   (minus title and desc)  
- *                 MD5 Checksum              383dbfcd91460427fa61afa66d6c98f8
+ *                 MD5 Checksum              4e0dee2e0b33f05d3773939456d142a5
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -747,10 +747,10 @@
 #define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_reserved0_MASK         0xfffffe00
 #define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_reserved0_SHIFT        9
 
-/* HIF_CPUBIUCTRL :: RAC_CONFIG1_REG :: RAC_TAG_ERROR_EN [08:08] */
-#define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TAG_ERROR_EN_MASK  0x00000100
-#define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TAG_ERROR_EN_SHIFT 8
-#define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TAG_ERROR_EN_DEFAULT 0x00000000
+/* HIF_CPUBIUCTRL :: RAC_CONFIG1_REG :: RAC_TBD_CTRL8 [08:08] */
+#define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TBD_CTRL8_MASK     0x00000100
+#define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TBD_CTRL8_SHIFT    8
+#define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TBD_CTRL8_DEFAULT  0x00000000
 
 /* HIF_CPUBIUCTRL :: RAC_CONFIG1_REG :: RAC_TBD_CTRL7to6 [07:06] */
 #define BCHP_HIF_CPUBIUCTRL_RAC_CONFIG1_REG_RAC_TBD_CTRL7to6_MASK  0x000000c0
@@ -3395,9 +3395,24 @@
 /***************************************************************************
  *CPU_UBUS_CONFIG - UBUS Configuration Register
  ***************************************************************************/
-/* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: reserved0 [31:05] */
-#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_reserved0_MASK         0xffffffe0
-#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_reserved0_SHIFT        5
+/* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: reserved0 [31:08] */
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_reserved0_MASK         0xffffff00
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_reserved0_SHIFT        8
+
+/* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: Uniq_pid_enable [07:07] */
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Uniq_pid_enable_MASK   0x00000080
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Uniq_pid_enable_SHIFT  7
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Uniq_pid_enable_DEFAULT 0x00000000
+
+/* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: Ubus_Dev_fast_wr [06:06] */
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Ubus_Dev_fast_wr_MASK  0x00000040
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Ubus_Dev_fast_wr_SHIFT 6
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Ubus_Dev_fast_wr_DEFAULT 0x00000000
+
+/* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: Ubus_Dev_fast_rd [05:05] */
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Ubus_Dev_fast_rd_MASK  0x00000020
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Ubus_Dev_fast_rd_SHIFT 5
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_Ubus_Dev_fast_rd_DEFAULT 0x00000000
 
 /* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: wr_with_ack_enable [04:04] */
 #define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_wr_with_ack_enable_MASK 0x00000010
@@ -3407,7 +3422,7 @@
 /* HIF_CPUBIUCTRL :: CPU_UBUS_CONFIG :: cd_ctrl [03:00] */
 #define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_cd_ctrl_MASK           0x0000000f
 #define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_cd_ctrl_SHIFT          0
-#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_cd_ctrl_DEFAULT        0x00000000
+#define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CONFIG_cd_ctrl_DEFAULT        0x00000004
 
 /***************************************************************************
  *CPU_SCRATCH_REG - Scratch Register

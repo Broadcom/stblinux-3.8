@@ -2,7 +2,16 @@
 
 set -e
 
-waketimer=/sys/devices/*.waketimer
+function find_waketimer {
+	for i in /sys/bus/platform/drivers/brcm-waketimer/*
+	do
+		[ -d $i ] && echo $i && return 0
+	done
+	echo "Error: no wake-timer found" >&2
+	exit 1
+}
+
+waketimer=`find_waketimer`
 power_sysfs=/sys/power/state
 cpu_sysfs=/sys/devices/system/cpu
 

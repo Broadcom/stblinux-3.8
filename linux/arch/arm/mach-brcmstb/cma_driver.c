@@ -21,6 +21,7 @@
 #define pr_fmt(fmt) "cma_driver: " fmt
 
 #include <linux/of.h>
+#include <linux/of_fdt.h>
 #include <linux/cdev.h>
 #include <linux/dma-contiguous.h>
 #include <linux/dma-mapping.h>
@@ -106,9 +107,63 @@ static int __init cma_low_kern_rsv_pct_set(char *p)
 }
 early_param("brcm_cma_low_kern_rsv_pct", cma_low_kern_rsv_pct_set);
 
+/*
+ * Determine how many bytes of memory have been reserved in the DT
+ * reserve map (/memreserve/).
+ *
+ * Note: It is expected that the only user of /memreserve/ is the bolt
+ * 'splashmem' implementation. All other users that require contiguous memory
+ * should use the standard CMA interfaces.
+ */
+static u32 __init parse_static_rsv_entries(const u64 range_start,
+						const u64 range_size)
+{
+	u64 *rsv_map;
+	u32 bytes_reserved = 0;
+	const u64 range_end = range_start + range_size;
+
+	if (!initial_boot_params) {
+		pr_err("no fdt found\n");
+		return 0;
+	}
+
+	rsv_map = ((void *)initial_boot_params) +
+			be32_to_cpu(initial_boot_params->off_mem_rsvmap);
+	for (;;) {
+		const u64 base = be64_to_cpup(rsv_map++);
+		const u64 size = be64_to_cpup(rsv_map++);
+		const u64 end = base + size;
+
+		if (!size)
+			break;
+
+		/* 'splashmem' is expected to only carve memory out at the end
+		 * of the MEMC. All other reservations should modify the
+		 * DT 'memory' node so that the automatic CMA reservation
+		 * code doesn't fail.
+		 */
+		if (base >= range_start && base < range_end) {
+			if (end >= range_start) {
+				if (end < range_end)
+					bytes_reserved += size;
+				else
+					bytes_reserved += range_end - base;
+			}
+		}
+	}
+
+	return bytes_reserved;
+}
+
 static int __init cma_calc_rsv_range(int bank_nr, phys_addr_t *base,
 					phys_addr_t *size)
 {
+	/* This is the alignment used in dma_contiguous_reserve_area() */
+	const phys_addr_t alignment =
+			PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
+	u64 total = 0;
+	u32 bytes_reserved;
+
 	/*
 	 * In DT, the 'reg' property in the 'memory' node is typically
 	 * arranged as follows:
@@ -153,11 +208,11 @@ static int __init cma_calc_rsv_range(int bank_nr, phys_addr_t *base,
 			tmp = ((u64)meminfo.bank[bank_nr].size) *
 					(100 - cma_data.prm_low_kern_rsv_pct);
 			rem = do_div(tmp, 100);
-			*size = tmp + rem;
+			total = tmp + rem;
 		} else {
 			if (meminfo.bank[bank_nr].size >=
 				cma_data.prm_kern_rsv_mb) {
-				*size = meminfo.bank[bank_nr].size -
+				total = meminfo.bank[bank_nr].size -
 					cma_data.prm_kern_rsv_mb;
 			} else {
 				pr_debug("bank start=%xh size=%xh is smaller than cma_data.prm_kern_rsv_mb=%llxh - skipping\n",
@@ -173,7 +228,16 @@ static int __init cma_calc_rsv_range(int bank_nr, phys_addr_t *base,
 			*base = 0;
 		}
 	} else
-		*size = meminfo.bank[bank_nr].size;
+		total = meminfo.bank[bank_nr].size;
+
+	/* Subtract the size of any DT-based (/memreserve/) memblock
+	 * reservations that overlap with the current range from the total.
+	 */
+	bytes_reserved = parse_static_rsv_entries(*base, total);
+	if (total >= bytes_reserved)
+		total -= bytes_reserved;
+
+	*size = round_down(total, alignment);
 
 	return 0;
 }
@@ -414,6 +478,9 @@ struct cma_dev *cma_dev_get_cma_dev(int memc)
 {
 	struct list_head *pos;
 	struct cma_dev *cma_dev = NULL;
+
+	if (!cma_root_dev)
+		return NULL;
 
 	mutex_lock(&cma_dev_mutex);
 
@@ -798,11 +865,6 @@ void *cma_dev_kva_map(struct page *page, int num_pages, pgprot_t pgprot)
 {
 	void *va;
 
-	if (cma_root_dev->dev == NULL) {
-		pr_err("cma root dev not initialized\n");
-		return NULL;
-	}
-
 	/* get the virtual address for this range if it exists */
 	va = page_to_virt_contig(page, num_pages, pgprot);
 	if (IS_ERR(va)) {
@@ -839,11 +901,6 @@ EXPORT_SYMBOL(cma_dev_kva_map);
  */
 int cma_dev_kva_unmap(const void *kva)
 {
-	if (cma_root_dev->dev == NULL) {
-		pr_err("cma root dev not initialized\n");
-		return -EINVAL;
-	}
-
 	if (kva == NULL)
 		return -EINVAL;
 
