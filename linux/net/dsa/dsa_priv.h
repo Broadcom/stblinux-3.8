@@ -33,6 +33,10 @@ struct dsa_slave_priv {
 	 * to this port.
 	 */
 	struct phy_device	*phy;
+	phy_interface_t		phy_interface;
+	int			old_link;
+	int			old_pause;
+	int			old_duplex;
 };
 
 /* dsa.c */
@@ -55,6 +59,10 @@ extern struct packet_type edsa_packet_type;
 /* tag_trailer.c */
 netdev_tx_t trailer_xmit(struct sk_buff *skb, struct net_device *dev);
 extern struct packet_type trailer_packet_type;
+
+/* tag_brcm.c */
+netdev_tx_t brcm_tag_xmit(struct sk_buff *skb, struct net_device *dev);
+extern struct packet_type brcm_tag_packet_type;
 
 
 #endif

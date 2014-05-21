@@ -36,4 +36,16 @@ config NET_DSA_MV88E6123_61_65
 	  This enables support for the Marvell 88E6123/6161/6165
 	  ethernet switch chips.
 
+config NET_DSA_BCM_SF2
+	tristate "Broadcom Starfighter 2 Ethernet switch support"
+	select NET_DSA
+	select NET_DSA_TAG_BRCM
+	select BCM7XXX_PHY
+	select BCM531XX_PHY
+	select MDIO_UNIMAC
+	default y if BRCMSTB
+	---help---
+	  This enables support for the Broadcom Starfighter 2 ethernet
+	  switch chips.
+
 endmenu

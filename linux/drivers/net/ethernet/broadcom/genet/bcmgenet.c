@@ -137,11 +137,6 @@ static int debug = -1;
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "GENET debug level");
 
-enum bcmgenet_version __genet_get_version(struct bcmgenet_priv *priv)
-{
-	return priv->version;
-}
-
 /* interrupt l2 registers accessors */
 static inline u32 bcmgenet_intrl2_0_readl(struct bcmgenet_priv *priv, u32 off)
 {
@@ -1472,21 +1467,17 @@ static void bcmgenet_power_down(struct bcmgenet_priv *priv, int mode)
 	dev = priv->dev;
 	switch (mode) {
 	case GENET_POWER_CABLE_SENSE:
-#if 0
-		/* EPHY bug, setting ext_pwr_down_dll and ext_pwr_down_phy cause
-		 * link IRQ bouncing.
-		 */
 		reg = bcmgenet_ext_readl(priv, EXT_EXT_PWR_MGMT);
 		reg |= (EXT_PWR_DOWN_PHY |
-				EXT_PWR_DOWN_DLL | EXT_PWR_DOWN_BIAS);
+			EXT_PWR_DOWN_DLL | EXT_PWR_DOWN_BIAS);
 		bcmgenet_ext_writel(priv, reg, EXT_EXT_PWR_MGMT);
-#else
+
 		/* Workaround for putting EPHY in iddq mode. */
-		if (priv->phydev)
+		if (priv->phydev && priv->phydev->drv->suspend)
 			ret = priv->phydev->drv->suspend(priv->phydev);
 		if (ret)
 			pr_warn("failed to suspend PHY\n");
-#endif
+
 		break;
 	case GENET_POWER_WOL_MAGIC:
 	case GENET_POWER_WOL_ACPI:
@@ -3542,7 +3533,6 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 
 	priv->dev = dev;
 
-#ifdef CONFIG_GENET_RUNTIME_DETECT
 	if (of_device_is_compatible(dn, "brcm,genet-v4"))
 		priv->version = GENET_V4;
 	else if (of_device_is_compatible(dn, "brcm,genet-v3"))
@@ -3556,7 +3546,7 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 		err = -EINVAL;
 		goto err;
 	}
-#endif
+
 	bcmgenet_set_hw_params(priv);
 
 	spin_lock_init(&priv->lock);

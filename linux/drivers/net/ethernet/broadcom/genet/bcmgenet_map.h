@@ -31,15 +31,7 @@ struct status_64 {
 	u32	length_status;		/* length and peripheral status */
 	u32	ext_status;		/* Extended status*/
 	u32	rx_csum;		/* partial rx checksum */
-#if CONFIG_BRCM_GENET_VERSION < 3
-	u32	filter_index;		/* Filter index */
-	u32	extracted_bytes[4];	/* Extracted byte 0 - 16 */
-	u32	reserved[4];
-#else /* GENET_V3+ */
-	u32	filter_index[2];	/* Filter index */
-	u32	extracted_bytes[4];	/* Extracted byte 0 - 16 */
-	u32	reserved[3];
-#endif
+	u32	unused1[9];		/* unused */
 	u32	tx_csum_info;		/* Tx checksum info. */
 	u32	unused[3];		/* unused */
 } ;

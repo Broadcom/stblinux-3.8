@@ -49,34 +49,11 @@ struct brcmstb_l2_intc_data {
 	int parent_irq;
 	void __iomem *base;
 	struct irq_domain *domain;
-	struct irq_chip chip;
-	spinlock_t lock;
+	struct irq_chip_generic *gc;
 	bool can_wake;
-	u32 wakeup_enabled; /* vector of enabled wakeup interrupts */
 	u32 saved_mask; /* for suspend/resume */
 	struct notifier_block reboot_notifier;
 };
-
-static void brcmstb_l2_intc_mask(struct irq_data *d)
-{
-	struct brcmstb_l2_intc_data *b = irq_data_get_irq_chip_data(d);
-
-	__raw_writel(1 << d->hwirq, b->base + CPU_MASK_SET);
-}
-
-static void brcmstb_l2_intc_unmask(struct irq_data *d)
-{
-	struct brcmstb_l2_intc_data *b = irq_data_get_irq_chip_data(d);
-
-	__raw_writel(1 << d->hwirq, b->base + CPU_MASK_CLEAR);
-}
-
-static void brcmstb_l2_intc_ack(struct irq_data *d)
-{
-	struct brcmstb_l2_intc_data *b = irq_data_get_irq_chip_data(d);
-
-	__raw_writel(1 << d->hwirq, b->base + CPU_CLEAR);
-}
 
 static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
 {
@@ -86,10 +63,8 @@ static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
 
 	chained_irq_enter(chip, desc);
 
-	spin_lock(&b->lock);
 	status = __raw_readl(b->base + CPU_STATUS) &
 		~(__raw_readl(b->base + CPU_MASK_STATUS));
-	spin_unlock(&b->lock);
 
 	if (status == 0) {
 		do_bad_IRQ(irq, desc);
@@ -107,66 +82,36 @@ out:
 	chained_irq_exit(chip, desc);
 }
 
-static int brcmstb_l2_intc_map(struct irq_domain *d, unsigned int irq,
-				irq_hw_number_t hwirq)
-{
-	struct brcmstb_l2_intc_data *data = d->host_data;
-
-	irq_set_chip_data(irq, data);
-	irq_set_chip_and_handler(irq, &data->chip, handle_level_irq);
-	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-
-	return 0;
-}
-
-static struct irq_domain_ops brcmstb_l2_intc_ops = {
-	.map = brcmstb_l2_intc_map,
-	.xlate = irq_domain_xlate_onecell,
-};
-
 static void brcmstb_l2_intc_suspend(struct irq_data *d)
 {
-	struct brcmstb_l2_intc_data *b = irq_data_get_irq_chip_data(d);
+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+	struct brcmstb_l2_intc_data *b = gc->private;
 
-	spin_lock(&b->lock);
+	irq_gc_lock(gc);
 	/* Save the current mask */
 	b->saved_mask = __raw_readl(b->base + CPU_MASK_STATUS);
 
 	if (b->can_wake) {
 		/* Program the wakeup mask */
-		__raw_writel(~b->wakeup_enabled, b->base + CPU_MASK_SET);
-		__raw_writel(b->wakeup_enabled, b->base + CPU_MASK_CLEAR);
+		__raw_writel(~gc->wake_active, b->base + CPU_MASK_SET);
+		__raw_writel(gc->wake_active, b->base + CPU_MASK_CLEAR);
 	}
-	spin_unlock(&b->lock);
+	irq_gc_unlock(gc);
 }
 
 static void brcmstb_l2_intc_resume(struct irq_data *d)
 {
-	struct brcmstb_l2_intc_data *b = irq_data_get_irq_chip_data(d);
+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+	struct brcmstb_l2_intc_data *b = gc->private;
 
-	spin_lock(&b->lock);
+	irq_gc_lock(gc);
 	/* Clear unmasked non-wakeup interrupts */
-	__raw_writel(~b->saved_mask & ~b->wakeup_enabled, b->base + CPU_CLEAR);
+	__raw_writel(~b->saved_mask & ~gc->wake_active, b->base + CPU_CLEAR);
 
 	/* Restore the saved mask */
 	__raw_writel(b->saved_mask, b->base + CPU_MASK_SET);
 	__raw_writel(~b->saved_mask, b->base + CPU_MASK_CLEAR);
-	spin_unlock(&b->lock);
-}
-
-static int brcmstb_l2_intc_set_wake(struct irq_data *d, unsigned int state)
-{
-	struct brcmstb_l2_intc_data *b = irq_data_get_irq_chip_data(d);
-	u32 mask = 1 << d->hwirq;
-
-	spin_lock(&b->lock);
-	if (state)
-		b->wakeup_enabled |= mask;
-	else
-		b->wakeup_enabled &= ~mask;
-	spin_unlock(&b->lock);
-
-	return 0;
+	irq_gc_unlock(gc);
 }
 
 static int brcmstb_l2_intc_reboot(struct notifier_block *nb,
@@ -175,17 +120,17 @@ static int brcmstb_l2_intc_reboot(struct notifier_block *nb,
 	struct brcmstb_l2_intc_data *b;
 	b = container_of(nb, struct brcmstb_l2_intc_data, reboot_notifier);
 
-	spin_lock(&b->lock);
+	irq_gc_lock(b->gc);
 
 	if (action == SYS_POWER_OFF) {
-		if (!b->wakeup_enabled)
+		if (!b->gc->wake_active)
 			pr_err("WARNING: NO WAKEUP SOURCE CONFIGURED\n");
 		/* Program the wakeup mask */
-		__raw_writel(~b->wakeup_enabled, b->base + CPU_MASK_SET);
-		__raw_writel(b->wakeup_enabled, b->base + CPU_MASK_CLEAR);
+		__raw_writel(~b->gc->wake_active, b->base + CPU_MASK_SET);
+		__raw_writel(b->gc->wake_active, b->base + CPU_MASK_CLEAR);
 	}
 
-	spin_unlock(&b->lock);
+	irq_gc_unlock(b->gc);
 
 	return NOTIFY_DONE;
 }
@@ -194,12 +139,14 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
 					struct device_node *parent)
 {
 	struct brcmstb_l2_intc_data *data;
+	struct irq_chip_generic *gc;
+	struct irq_chip_type *ct;
+	int irq_base;
+	int ret;
 
 	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (!data)
 		return -ENOMEM;
-
-	spin_lock_init(&data->lock);
 
 	data->base = of_iomap(np, 0);
 	if (!data->base) {
@@ -207,21 +154,68 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
 		return -ENOMEM;
 	}
 
+	/* Disable all interrupts by default */
+	__raw_writel(0xffffffff, data->base + CPU_MASK_SET);
+	__raw_writel(0xffffffff, data->base + CPU_CLEAR);
+
 	data->parent_irq = irq_of_parse_and_map(np, 0);
 	if (data->parent_irq < 0) {
 		pr_err("failed to find parent interrupt\n");
 		return data->parent_irq;
 	}
 
-	data->chip.name = np->full_name;
-	data->chip.irq_ack = brcmstb_l2_intc_ack;
-	data->chip.irq_mask = brcmstb_l2_intc_mask;
-	data->chip.irq_unmask = brcmstb_l2_intc_unmask;
-	data->chip.irq_suspend = brcmstb_l2_intc_suspend;
-	data->chip.irq_resume = brcmstb_l2_intc_resume;
+	/* Allocate a new irq_base for our generic irq chip, otherwise
+	 * this will conflict with the existing ones (e.g: L1 INTC)
+	 */
+	irq_base = irq_alloc_descs(-1, 0, 32, numa_node_id());
+	if (irq_base < 0) {
+		pr_err("failed to allocate an irq_base\n");
+		goto out_unmap;
+	}
+
+	/* Allocate a legacy IRQ domain */
+	data->domain = irq_domain_add_legacy(np, 32, irq_base, 0,
+			&irq_domain_simple_ops, NULL);
+	if (!data->domain) {
+		ret = -ENOMEM;
+		goto out_free_desc;
+	}
+
+	/* Allocate a single Generic IRQ chip for this node */
+	data->gc = irq_alloc_generic_chip(np->full_name, 1, irq_base,
+			data->base, handle_level_irq);
+	if (!data->gc) {
+		ret = -ENOMEM;
+		goto out_free_domain;
+	}
+
+	/* Set the IRQ chaining logic */
+	irq_set_handler_data(data->parent_irq, data);
+	irq_set_chained_handler(data->parent_irq, brcmstb_l2_intc_irq_handle);
+
+	gc = data->gc;
+	gc->private = data;
+	ct = gc->chip_types;
+
+	ct->chip.irq_ack = irq_gc_ack_set_bit;
+	ct->regs.ack = CPU_CLEAR;
+
+	ct->chip.irq_mask = irq_gc_mask_disable_reg;
+	ct->regs.disable = CPU_MASK_SET;
+
+	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
+	ct->regs.enable = CPU_MASK_CLEAR;
+
+	ct->chip.irq_suspend = brcmstb_l2_intc_suspend;
+	ct->chip.irq_resume = brcmstb_l2_intc_resume;
+
 	if (of_property_read_bool(np, "brcm,irq-can-wake")) {
 		data->can_wake = true;
-		data->chip.irq_set_wake = brcmstb_l2_intc_set_wake;
+		/* This IRQ chip can wake the system, set all child interrupts
+		 * in wake_enabled mask
+		 */
+		gc->wake_enabled = 0xffffffff;
+		ct->chip.irq_set_wake = irq_gc_set_wake;
 
 		/* Run reboot notifier last */
 		data->reboot_notifier.priority = -1;
@@ -229,23 +223,19 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
 		register_reboot_notifier(&data->reboot_notifier);
 	}
 
-	irq_set_handler_data(data->parent_irq, data);
-	irq_set_chained_handler(data->parent_irq, brcmstb_l2_intc_irq_handle);
-
-	/* Disable all interrupts by default */
-	__raw_writel(0xffffffff, data->base + CPU_MASK_SET);
-	__raw_writel(0xffffffff, data->base + CPU_CLEAR);
-
-	/* Add a linear domain of 32 interrupts, we could probably parse some
-	 * sort of mask
-	 */
-	data->domain = irq_domain_add_linear(np, 32,
-				&brcmstb_l2_intc_ops, data);
-	if (!data->domain)
-		return -ENODEV;
+	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0, IRQ_LEVEL | IRQF_VALID);
 
 	pr_info("registered L2 intc (mem: 0x%p, parent irq: %d)\n",
 			data->base, data->parent_irq);
 
 	return 0;
+
+out_free_domain:
+	irq_domain_remove(data->domain);
+out_free_desc:
+	irq_free_descs(irq_base, 32);
+out_unmap:
+	iounmap(data->base);
+	kfree(data);
+	return ret;
 }

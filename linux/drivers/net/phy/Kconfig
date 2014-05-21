@@ -66,6 +66,12 @@ config BROADCOM_PHY
 	  Currently supports the BCM5411, BCM5421, BCM5461, BCM5464, BCM5481
 	  and BCM5482 PHYs.
 
+config BCM531XX_PHY
+	tristate "Drivers for Broadcom BCM531XX switches"
+	---help---
+	  Currently supports the Broadcom BCM53101 and BCM53125 external
+	  switches.
+
 config BCM63XX_PHY
 	tristate "Drivers for Broadcom 63xx SOCs internal PHY"
 	depends on BCM63XX
@@ -182,6 +188,12 @@ config MDIO_BUS_MUX_MMIOREG
 	  the FPGA's registers.
 
 	  Currently, only 8-bit registers are supported.
+
+config MDIO_UNIMAC
+	tristate "Broadcom UniMAC MDIO bus controller"
+	help
+	  This module provides a driver for the Broadcom UniMAC MDIO busses.
+	  It is required by the Broadcom GENET Ethernet device drivers.
 
 endif # PHYLIB
 

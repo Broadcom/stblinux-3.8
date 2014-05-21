@@ -235,6 +235,8 @@ static struct of_device_id aon_ctrl_dt_ids[] = {
 
 static struct of_device_id ddr_phy_dt_ids[] = {
 	{ .compatible = "brcm,brcmstb-ddr-phy-v225.1" },
+	/* TODO: add warm boot support */
+	{ .compatible = "brcm,brcmstb-ddr-phy-v240.1" },
 	{}
 };
 

@@ -73,34 +73,48 @@ static void __init brcmstb_map_io(void)
 }
 
 #ifdef CONFIG_FIXED_PHY
+static int of_add_one_fixed_phy(struct device_node *np)
+{
+	struct fixed_phy_status status = {};
+	u32 *fixed_link;
+	int ret;
+
+	fixed_link  = (u32 *)of_get_property(np, "fixed-link", NULL);
+	if (!fixed_link)
+		return 1;
+
+	status.link = 1;
+	status.duplex = be32_to_cpu(fixed_link[1]);
+	status.speed = be32_to_cpu(fixed_link[2]);
+	status.pause = be32_to_cpu(fixed_link[3]);
+	status.asym_pause = be32_to_cpu(fixed_link[4]);
+
+	ret = fixed_phy_add(PHY_POLL, be32_to_cpu(fixed_link[0]), &status);
+	if (ret)
+		of_node_put(np);
+
+	return ret;
+}
+
 static int __init of_add_fixed_phys(void)
 {
-	int ret;
-	struct device_node *np;
-	u32 *fixed_link;
+	struct device_node *np, *child, *port;
 	u32 phy_type;
 	struct fixed_phy_status status = {};
-	unsigned int found = 0;
 	unsigned int i = 0;
 
-	for_each_node_by_type(np, "network") {
-		fixed_link  = (u32 *)of_get_property(np, "fixed-link", NULL);
-		if (!fixed_link)
-			continue;
-
-		status.link = 1;
-		status.duplex = be32_to_cpu(fixed_link[1]);
-		status.speed = be32_to_cpu(fixed_link[2]);
-		status.pause = be32_to_cpu(fixed_link[3]);
-		status.asym_pause = be32_to_cpu(fixed_link[4]);
-
-		ret = fixed_phy_add(PHY_POLL, be32_to_cpu(fixed_link[0]), &status);
-		if (ret) {
-			of_node_put(np);
-			return ret;
+	for_each_compatible_node(np, NULL, "brcm,bcm7445-switch-v4.0") {
+		for_each_child_of_node(np, child) {
+			for_each_child_of_node(child, port) {
+				if (of_add_one_fixed_phy(port))
+					continue;
+			}
 		}
-		found = 1;
 	}
+
+	/* SYSTEMPORT Ethernet MAC also uses the 'fixed-link' property */
+	for_each_compatible_node(np, NULL, "brcm,systemport-v1.00")
+		of_add_one_fixed_phy(np);
 
 	/* For compatibility with the old DT binding, we just match
 	 * against our specific Ethernet driver compatible property
@@ -112,21 +126,28 @@ static int __init of_add_fixed_phys(void)
 		status.pause = 0;
 		status.asym_pause = 0;
 
-		/* Do not register a fixed PHY for internal PHYs */
+		/* Look for the old binding, identified by the 'phy-type'
+		 * property existence
+		 */
 		if (!of_property_read_u32(np, "phy-type", &phy_type)) {
+			/* Do not register a fixed PHY for internal PHYs */
 			if (phy_type == BRCM_PHY_TYPE_INT)
 				continue;
-		}
 
-		if (!of_property_read_u32(np, "phy-speed", &status.speed)) {
-			/* Convention with the old (inflexible) binding is
-			 * 0 -> MoCA, 1 -> anything else
-			 */
-			if (phy_type == BRCM_PHY_TYPE_MOCA)
-				i = 0;
-			else
-				i = 1;
-			fixed_phy_add(PHY_POLL, i, &status);
+			if (!of_property_read_u32(np, "phy-speed",
+						&status.speed)) {
+				/* Convention with the old (inflexible) binding
+				 * is 0 -> MoCA, 1 -> anything else
+				 */
+				if (phy_type == BRCM_PHY_TYPE_MOCA)
+					i = 0;
+				else
+					i = 1;
+				fixed_phy_add(PHY_POLL, i, &status);
+			}
+		} else {
+			/* Or try the new, standard 'fixed-link' binding */
+			of_add_one_fixed_phy(np);
 		}
 	}
 
@@ -224,6 +245,12 @@ void brcmstb_mega_barrier(void)
 	panic("mega-barrier workaround requires CMA, but CMA was not enabled");
 }
 #endif /* CONFIG_CMA */
+#else /* !CONFIG_BRCMSTB_USE_MEGA_BARRIER */
+void brcmstb_mega_barrier(void)
+{
+	; /* this is an empty stub left in as a courtesy for the refsw folks */
+}
+EXPORT_SYMBOL(brcmstb_mega_barrier);
 #endif /* CONFIG_BRCMSTB_USE_MEGA_BARRIER */
 
 static void __init brcmstb_machine_init(void)

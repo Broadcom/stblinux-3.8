@@ -121,4 +121,16 @@ config BNX2X
 	  To compile this driver as a module, choose M here: the module
 	  will be called bnx2x.  This is recommended.
 
+config SYSTEM_PORT
+	tristate "Broadcom System Port Ethernet support"
+	depends on BRCMSTB
+	default y
+	select PHYLIB
+	select FIXED_PHY
+	---help---
+	  This driver supports the Broadcom System Port Ethernet controller
+	  found in Broadcom BCM7xxx ARM-based Set Top Box platforms. To
+	  compile this driver as a module, choose M here: the module
+	  will be called bcmsysport. This is recommended.
+
 endif # NET_VENDOR_BROADCOM

@@ -28,10 +28,35 @@
 
 #include "sdhci-pltfm.h"
 
+#if defined(CONFIG_BCM7445C0) || defined(CONFIG_BCM7439A0) || \
+	defined(CONFIG_BCM7366A0)
+/*
+ * HW7445-1183
+ * Setting the RESET_ALL or RESET_DATA bits will hang the SDIO
+ * core so don't allow these bits to be set. This workaround
+ * allows the driver to be used for development and testing
+ * but will prevent recovery from normally recoverable errors
+ * and should NOT be used in production systems.
+ */
+static void sdhci_brcmstb_writeb(struct sdhci_host *host, u8 val, int reg)
+{
+	if (reg == SDHCI_SOFTWARE_RESET)
+		val &= ~(SDHCI_RESET_ALL | SDHCI_RESET_DATA);
+	writeb(val, host->ioaddr + reg);
+}
 
-static struct sdhci_pltfm_data sdhci_brcmstb_pdata = {
+static struct sdhci_ops sdhci_brcmstb_ops = {
+	.write_b	= sdhci_brcmstb_writeb,
 };
 
+static struct sdhci_pltfm_data sdhci_brcmstb_pdata = {
+	.ops	= &sdhci_brcmstb_ops,
+};
+
+#else
+static struct sdhci_pltfm_data sdhci_brcmstb_pdata = {
+};
+#endif
 
 static int sdhci_brcmstb_probe(struct platform_device *pdev)
 {

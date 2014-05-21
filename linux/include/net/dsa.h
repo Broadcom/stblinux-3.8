@@ -15,6 +15,9 @@
 #include <linux/list.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
+#include <linux/of.h>
+#include <linux/phy.h>
+#include <linux/phy_fixed.h>
 
 #define DSA_MAX_SWITCHES	4
 #define DSA_MAX_PORTS		12
@@ -26,6 +29,12 @@ struct dsa_chip_data {
 	struct device	*mii_bus;
 	int		sw_addr;
 
+	/* Device tree node pointer for this specific switch chip
+	 * used during switch setup in case additional properties
+	 * and resources needs to be used
+	 */
+	struct device_node *of_node;
+
 	/*
 	 * The names of the switch's ports.  Use "cpu" to
 	 * designate the switch port that the cpu is connected to,
@@ -34,6 +43,7 @@ struct dsa_chip_data {
 	 * or any other string to indicate this is a physical port.
 	 */
 	char		*port_names[DSA_MAX_PORTS];
+	struct device_node *port_dn[DSA_MAX_PORTS];
 
 	/*
 	 * An array (with nr_chips elements) of which element [a]
@@ -170,6 +180,14 @@ struct dsa_switch_driver {
 	void	(*poll_link)(struct dsa_switch *ds);
 
 	/*
+	 * Link state adjustment (called from libphy)
+	 */
+	void	(*adjust_link)(struct dsa_switch *ds, int port,
+				struct phy_device *phydev);
+	void	(*fixed_link_update)(struct dsa_switch *ds, int port,
+				struct fixed_phy_status *st);
+
+	/*
 	 * ethtool hardware statistics.
 	 */
 	void	(*get_strings)(struct dsa_switch *ds, int port, uint8_t *data);
@@ -196,6 +214,11 @@ static inline bool dsa_uses_dsa_tags(struct dsa_switch_tree *dst)
 static inline bool dsa_uses_trailer_tags(struct dsa_switch_tree *dst)
 {
 	return !!(dst->tag_protocol == htons(ETH_P_TRAILER));
+}
+
+static inline bool dsa_uses_brcm_tags(struct dsa_switch_tree *dst)
+{
+	return !!(dst->tag_protocol == htons(ETH_P_BRCMTAG));
 }
 
 #endif

@@ -81,63 +81,10 @@ enum bcmgenet_version {
 	GENET_V4
 };
 
-enum bcmgenet_version __genet_get_version(struct bcmgenet_priv *priv);
-
-#ifdef CONFIG_BRCM_GENET_V1
-# ifdef genet_get_version
-#  undef genet_get_version
-#  define genet_get_version(p)	__genet_get_version(p)
-#  define CONFIG_GENET_RUNTIME_DETECT
-# else
-#  define genet_get_version(p)	GENET_V1
-# endif
-# define GENET_IS_V1(p)		(genet_get_version(p) == GENET_V1)
-#else
-# define GENET_IS_V1(p)		(0)
-#endif
-
-#ifdef CONFIG_BRCM_GENET_V2
-# ifdef genet_get_version
-#  undef genet_get_version
-#  define genet_get_version(p)	__genet_get_version(p)
-#  define CONFIG_GENET_RUNTIME_DETECT
-# else
-#  define genet_get_version(p)	GENET_V2
-# endif
-# define GENET_IS_V2(p)		(genet_get_version(p) == GENET_V2)
-#else
-# define GENET_IS_V2(p)		(0)
-#endif
-
-#ifdef CONFIG_BRCM_GENET_V3
-# ifdef genet_get_version
-#  undef genet_get_version
-#  define genet_get_version(p)	__genet_get_version(p)
-#  define CONFIG_GENET_RUNTIME_DETECT
-# else
-#  define genet_get_version(p)	GENET_V3
-# endif
-# define GENET_IS_V3(p)		(genet_get_version(p) == GENET_V3)
-#else
-# define GENET_IS_V3(p)		(0)
-#endif
-
-#ifdef CONFIG_BRCM_GENET_V4
-# ifdef genet_get_version
-#  undef genet_get_version
-#  define genet_get_version(p)	__genet_get_version(p)
-#  define CONFIG_GENET_RUNTIME_DETECT
-# else
-#  define genet_get_version(p)	GENET_V4
-# endif
-# define GENET_IS_V4(p)		(genet_get_version(p) == GENET_V4)
-#else
-# define GENET_IS_V4(p)		(0)
-#endif
-
-#ifndef genet_get_version
-#error "No GENET configuration defined"
-#endif
+#define GENET_IS_V1(p)		((p)->version == GENET_V1)
+#define GENET_IS_V2(p)		((p)->version == GENET_V2)
+#define GENET_IS_V3(p)		((p)->version == GENET_V3)
+#define GENET_IS_V4(p)		((p)->version == GENET_V4)
 
 /* Hardware flags */
 #define GENET_HAS_40BITS	(1 << 0)

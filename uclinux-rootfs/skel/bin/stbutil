@@ -223,7 +223,6 @@ function handle_opt_2()
 	rem_img=ubifs-$(($flash_erasesize / 1024))k-$(($flash_writesize))-${plat}.img
 
 	if tftp_fetch -q $tftphost $tftppath/$rem_img /tmp/rootfs.img; then
-		flash_erase $mtd 0 0
 		ubiformat $mtd --yes --flash-image=/tmp/rootfs.img
 	else
 		echo ""
@@ -231,7 +230,6 @@ function handle_opt_2()
 		echo ""
 		rem_img=nfsroot-${plat}.tar.bz2
 		tftp_fetch $tftphost $tftppath/$rem_img /tmp/rootfs.tar.bz2
-		flash_erase $mtd 0 0
 		ubiformat $mtd --yes
 		ubiattach -m $rootfs_part -d 0
 		# NOTE: ubiattach/mdev may run asynchronously
@@ -299,7 +297,6 @@ function handle_opt_4()
 	rem_img=squashfs-${plat}.img
 
 	tftp_fetch $tftphost $tftppath/$rem_img /tmp/rootfs.img
-	flash_erase $mtd 0 0
 	if flash_is_nand $rootfs_part; then
 		imgsize=$(du -k /tmp/rootfs.img | sed 's/[ \t].*//')
 		ubiformat $mtd --yes
@@ -320,6 +317,7 @@ function handle_opt_4()
 		ubidetach -d 0
 		cmdline="ubi.mtd=${rootfs_mtd_name} root=/dev/mtdblock${newpart}"
 	else
+		flash_erase $mtd 0 0
 		newpart=$rootfs_part
 		dd if=/tmp/rootfs.img of=$mtd
 		cmdline="root=/dev/mtdblock${rootfs_part}"

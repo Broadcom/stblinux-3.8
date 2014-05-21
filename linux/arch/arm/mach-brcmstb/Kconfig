@@ -11,6 +11,7 @@ config ARCH_BRCMSTB
 	select HAVE_CLK
 	select ARCH_HAS_OPP
 	select PM_OPP if PM
+	select GENERIC_IRQ_CHIP
 	help
 	  This enables support for Broadcom ARM-based set-top box chipsets.
 
@@ -117,13 +118,11 @@ config BCM7445C0
 config BCM7445D0
 	bool "7445 Dx"
 	select BCM7445
-	select BRCM_GENET_V4
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_1
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
-	select BRCMSTB_USE_MEGA_BARRIER
 
 endchoice
 
@@ -138,13 +137,14 @@ config SPI_BRCMSTB
 
 config BCMGENET
 	tristate "Broadcom STB 10/100/1000 MAC/PHY support"
-	depends on ETHERNET && BRCMSTB && (BRCM_GENET_V3 || BRCM_GENET_V4)
+	depends on ETHERNET && BRCMSTB
 	default y
 	select CRC32
 	select MII
 	select PHYLIB
 	select FIXED_PHY
 	select BCM7XXX_PHY
+	select BCM531XX_PHY
 	help
 	  Say Y to support the internal 10/100/1000 GENET MAC/PHY on
 	  Broadcom set-top chips.  This driver also supports the datapath

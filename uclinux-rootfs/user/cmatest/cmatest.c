@@ -163,7 +163,7 @@ static int cma_get_num_regions(int fd, uint32_t dev_index, uint32_t *num)
 }
 
 static int cma_get_region_info(int fd, uint32_t dev_index, uint32_t region_num,
-				uint32_t *memc, uint64_t *addr,
+				int32_t *memc, uint64_t *addr,
 				uint32_t *num_bytes)
 {
 	int ret;
@@ -200,7 +200,7 @@ static void reset_all(int fd, uint32_t cma_idx)
 
 	while (count != 0) {
 		int ret;
-		uint32_t memc;
+		int32_t memc;
 		uint64_t addr;
 		uint32_t len;
 
@@ -234,7 +234,7 @@ static int list_one(int fd, uint32_t cma_dev_index)
 	printf("num regions = %d\n", num_regions);
 
 	for (i = 0; i < num_regions; i++) {
-		uint32_t memc;
+		int32_t memc;
 		uint64_t addr;
 		uint32_t num_bytes;
 
@@ -261,6 +261,7 @@ static void run_unit_tests(int fd)
 	uint32_t len[32];
 	uint32_t x;
 	uint64_t y;
+	int32_t z;
 
 	/* === TEST CASE 1 === */
 
@@ -296,7 +297,7 @@ static void run_unit_tests(int fd)
 
 	printf("t: verify (2) regions have expected alignment and size\n");
 	for (i = 0; i < 2; i++) {
-		uint32_t memc;
+		int32_t memc;
 		uint64_t addr;
 		uint32_t num_bytes;
 
@@ -389,7 +390,7 @@ static void run_unit_tests(int fd)
 	/* === TEST CASE 8 === */
 
 	printf("t: attempt retrieval of invalid region info\n");
-	assert(cma_get_region_info(fd, 1, 42, &x, &y, &x) == -EINVAL);
+	assert(cma_get_region_info(fd, 1, 42, &z, &y, &x) == -EINVAL);
 	printf("ok\n\n");
 
 	/* === TEST CASE 9 === */
@@ -596,7 +597,7 @@ static void show_usage(char *argv)
 	int i;
 	char *execname = basename(argv);
 
-	printf("usage: %s <command> <device> <args...>\n", execname);
+	printf("usage: %s <device> <command> <args...>\n", execname);
 	printf("\ncommands <args...>:\n");
 
 	for (i = 0; i < (int)ARRAY_SIZE(cmds); i++)

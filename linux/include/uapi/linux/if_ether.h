@@ -121,6 +121,7 @@
 #define ETH_P_PHONET	0x00F5		/* Nokia Phonet frames          */
 #define ETH_P_IEEE802154 0x00F6		/* IEEE802.15.4 frame		*/
 #define ETH_P_CAIF	0x00F7		/* ST-Ericsson CAIF protocol	*/
+#define ETH_P_BRCMTAG	0x00F8		/* Broadcom tag (4 bytes *)	*/
 
 /*
  *	This is an Ethernet frame header.

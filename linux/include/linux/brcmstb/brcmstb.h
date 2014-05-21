@@ -878,9 +878,7 @@ struct wktmr_time {
 void wktmr_read(struct wktmr_time *t);
 unsigned long wktmr_elapsed(struct wktmr_time *t);
 
-#if defined(CONFIG_BRCMSTB_USE_MEGA_BARRIER)
 extern void brcmstb_mega_barrier(void);
-#endif
 
 /* BCMGENET device tree properties */
 #define BRCM_PHY_ID_AUTO	0x100

@@ -194,6 +194,8 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
 		return htons(ETH_P_DSA);
 	if (netdev_uses_trailer_tags(dev))
 		return htons(ETH_P_TRAILER);
+	if (netdev_uses_brcm_tags(dev))
+		return htons(ETH_P_BRCMTAG);
 
 	if (ntohs(eth->h_proto) >= 1536)
 		return eth->h_proto;

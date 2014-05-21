@@ -44,6 +44,7 @@ struct cma_dev {
 	struct mem_range range; /* addresses that this cma_dev controls */
 	struct region_list regions;
 	struct list_head list;
+	int memc;
 };
 
 /*
@@ -59,7 +60,7 @@ int cma_dev_get_mem(struct cma_dev *cma_dev, u64 *addr, u32 len,
 int cma_dev_put_mem(struct cma_dev *cma_dev, u64 addr, u32 len);
 int cma_dev_get_num_regions(struct cma_dev *cma_dev);
 int cma_dev_get_region_info(struct cma_dev *cma_dev, int region_num,
-	u32 *memc, u64 *addr, u32 *num_bytes);
+	s32 *memc, u64 *addr, u32 *num_bytes);
 int cma_dev_get_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	unsigned long start, struct page **page);
 void *cma_dev_kva_map(struct page *page, int num_pages, pgprot_t pgprot);

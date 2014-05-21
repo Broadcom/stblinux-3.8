@@ -160,8 +160,8 @@ static void brcm_sata3_phy_enable(const struct sata_brcm_pdata *pdata, int port)
 	 * magic registers.
 	 */
 	const u32 port_to_phy_ctrl_ofs[MAX_PHY_CTRL_PORTS] = {
-		SATA_TOP_CTRL_PHY_CTRL_2,
-		SATA_TOP_CTRL_PHY_CTRL_4
+		SATA_TOP_CTRL_PHY_CTRL_OFS + (0 * SATA_TOP_CTRL_PHY_CTRL_LEN),
+		SATA_TOP_CTRL_PHY_CTRL_OFS + (1 * SATA_TOP_CTRL_PHY_CTRL_LEN),
 	};
 	void __iomem *top_ctrl;
 	u32 reg;
@@ -186,11 +186,23 @@ defined(BCHP_SUN_TOP_CTRL_GENERAL_CTRL_0_sata_phy_disable_MASK))
 	}
 
 	if (port < MAX_PHY_CTRL_PORTS) {
-		reg = readl(top_ctrl + port_to_phy_ctrl_ofs[port]);
-		reg |= SATA_TOP_CTRL_PHY_GLOBAL_RESET;
-		writel(reg, top_ctrl + port_to_phy_ctrl_ofs[port]);
-		reg &= ~SATA_TOP_CTRL_PHY_GLOBAL_RESET;
-		writel(reg, top_ctrl + port_to_phy_ctrl_ofs[port]);
+		void __iomem *p;
+
+		/* clear PHY_DEFAULT_POWER_STATE */
+		p = top_ctrl + port_to_phy_ctrl_ofs[port] +
+			SATA_TOP_CTRL_PHY_CTRL_1;
+		reg = readl(p);
+		reg &= ~SATA_TOP_CTRL_2_PHY_DEFAULT_POWER_STATE;
+		writel(reg, p);
+
+		/* toggle PHY_GLOBAL_RST */
+		p = top_ctrl + port_to_phy_ctrl_ofs[port] +
+			SATA_TOP_CTRL_PHY_CTRL_2;
+		reg = readl(p);
+		reg |= SATA_TOP_CTRL_1_PHY_GLOBAL_RESET;
+		writel(reg, p);
+		reg &= ~SATA_TOP_CTRL_1_PHY_GLOBAL_RESET;
+		writel(reg, p);
 	}
 
 	iounmap(top_ctrl);

@@ -22,6 +22,7 @@
 
 #include <linux/of.h>
 #include <linux/of_fdt.h>
+#include <linux/of_address.h>
 #include <linux/cdev.h>
 #include <linux/dma-contiguous.h>
 #include <linux/dma-mapping.h>
@@ -469,6 +470,64 @@ done:
 	return match;
 }
 
+#define NUM_BUS_RANGES 10
+#define BUS_RANGE_ULIMIT_SHIFT 4
+#define BUS_RANGE_LLIMIT_SHIFT 4
+#define BUS_RANGE_PA_SHIFT 12
+
+enum {
+	BUSNUM_MCP0 = 0x4,
+	BUSNUM_MCP1 = 0x5,
+	BUSNUM_MCP2 = 0x6,
+};
+
+/*
+ * If the DT nodes are handy, determine which MEMC holds the specified
+ * physical address.
+ */
+static int phys_addr_to_memc(phys_addr_t pa)
+{
+	int memc = -1;
+	int i;
+	struct device_node *np;
+	void __iomem *cpubiuctrl = NULL;
+	void __iomem *curr;
+
+	np = of_find_compatible_node(NULL, NULL, "brcm,brcmstb-cpu-biu-ctrl");
+	if (!np)
+		goto cleanup;
+
+	cpubiuctrl = of_iomap(np, 0);
+	if (!cpubiuctrl)
+		goto cleanup;
+
+	for (i = 0, curr = cpubiuctrl; i < NUM_BUS_RANGES; i++, curr += 8) {
+		const u64 ulimit_raw = readl(curr);
+		const u64 llimit_raw = readl(curr + 4);
+		const u64 ulimit =
+			((ulimit_raw >> BUS_RANGE_ULIMIT_SHIFT)
+			 << BUS_RANGE_PA_SHIFT) | 0xfff;
+		const u64 llimit = (llimit_raw >> BUS_RANGE_LLIMIT_SHIFT)
+				   << BUS_RANGE_PA_SHIFT;
+		const u32 busnum = (u32)(ulimit_raw & 0xf);
+
+		if (pa >= llimit && pa <= ulimit) {
+			if (busnum >= BUSNUM_MCP0 && busnum <= BUSNUM_MCP2) {
+				memc = busnum - BUSNUM_MCP0;
+				break;
+			}
+		}
+	}
+
+cleanup:
+	if (cpubiuctrl)
+		iounmap(cpubiuctrl);
+
+	of_node_put(np);
+
+	return memc;
+}
+
 /**
  * cma_dev_get_cma_dev() - Get a cma_dev * by memc index
  *
@@ -653,7 +712,7 @@ EXPORT_SYMBOL(cma_dev_get_num_regions);
  * @num_bytes: Size of region in bytes
  */
 int cma_dev_get_region_info(struct cma_dev *cma_dev, int region_num,
-				   u32 *memc, u64 *addr, u32 *num_bytes)
+				   s32 *memc, u64 *addr, u32 *num_bytes)
 {
 	int status = -EINVAL;
 	struct list_head *pos;
@@ -664,7 +723,7 @@ int cma_dev_get_region_info(struct cma_dev *cma_dev, int region_num,
 		if (count == 0) {
 			region = list_entry(pos, struct region_list, list);
 
-			*memc = cma_dev->cma_dev_index;
+			*memc = (s32)cma_dev->memc;
 			*addr = region->region.base;
 			*num_bytes = region->region.size;
 
@@ -1093,6 +1152,7 @@ static int __init cma_drvr_config_platdev(struct platform_device *pdev,
 	cma_dev->range.base = data->start;
 	cma_dev->range.size = data->size;
 	cma_dev->cma_dev_index = pdev->id;
+	cma_dev->memc = phys_addr_to_memc(data->start);
 
 	ret = cma_assign_device(dev, data->start);
 	if (ret) {

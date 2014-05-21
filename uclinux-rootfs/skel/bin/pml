@@ -28,11 +28,12 @@ wakeup_time=1
 function usage
 {
 	echo "pml: power management script version 1.0"
-	echo "Usage: pml [-lN] [-mMODE] [-tchd] [-sN] [-wN]"
+	echo "Usage: pml [-lN] [-mMODE] [-tchdp] [-sN] [-wN]"
 	echo "where:"
 	echo "    -lN    - number of loops (decimal:1); negative value - infinite loop"
 	echo "    -mMODE - system suspend debug mode (none, core, platform, devices, freezer:none)"
 	echo "    -d     - deep standby (s3)"
+	echo "    -p     - cold standby (S5); shut down gracefully"
 	echo "    -t     - turn secondary CPUs off before test (no)"
 	echo "    -c     - hotplug-cycle secondary CPUs after each iteration (no)"
 	echo "    -sN    - seconds to sleep between iterations (decimal:0)"
@@ -49,7 +50,15 @@ function failure
 }
 
 function supported_pmmodes {
-	cat $power_sysfs
+	local modes=`cat $power_sysfs`
+	echo -n $modes
+
+	# Hack in a 'poweroff' mode
+	if which poweroff > /dev/null 2>&1
+	then
+		[ "$modes" != "" ] && echo -n " "
+		echo -n "poweroff"
+	fi
 }
 
 function supports_pmmode {
@@ -83,11 +92,13 @@ function set_cpus_power {
 }
 
 quit_on_failure=false
-while getopts "hl:m:tcs:w:x:X:d" option
+while getopts "hl:m:tcs:w:x:X:dp" option
 do
 	case $option in
 	d)
 		pm_mode=mem ;;
+	p)
+		pm_mode=poweroff ;;
 	x)
 		command=$OPTARG ;;
 	X)
@@ -129,6 +140,13 @@ fi
 set_cpus_power $tp_all
 
 set_sleep_timeout $wakeup_time
+
+# S5 ==> poweroff
+if [ "$pm_mode" = "poweroff" ]; then
+	echo "Entering S5 soft off state, wakeup_time=$wakeup_time"
+	poweroff
+	exit $?
+fi
 
 function one_pass
 {

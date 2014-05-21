@@ -48,7 +48,7 @@ struct ioc_params {
 	__u32 align_bytes;	/* [in] alignment */
 	__u32 region;		/* [in] region */
 	__u32 num_regions;	/* [out] num regions */
-	__u32 memc;		/* [out] memc */
+	__s32 memc;		/* [out] memc */
 	__u32 status;		/* [out] status */
 };
 

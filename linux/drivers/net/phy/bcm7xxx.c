@@ -237,7 +237,6 @@ static struct phy_driver bcm7xxx_driver[] = {
 	.config_init	= bcm7xxx_28nm_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
-	.suspend	= bcm7xxx_suspend,
 	.resume		= bcm7xxx_28nm_config_init,
 	.driver		= { .owner = THIS_MODULE },
 }, {
@@ -250,7 +249,6 @@ static struct phy_driver bcm7xxx_driver[] = {
 	.config_init	= bcm7xxx_28nm_afe_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
-	.suspend	= bcm7xxx_suspend,
 	.resume		= bcm7xxx_28nm_afe_config_init,
 	.driver		= { .owner = THIS_MODULE },
 }, {
@@ -263,7 +261,6 @@ static struct phy_driver bcm7xxx_driver[] = {
 	.config_init	= bcm7xxx_28nm_afe_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
-	.suspend	= bcm7xxx_suspend,
 	.resume		= bcm7xxx_28nm_afe_config_init,
 	.driver		= { .owner = THIS_MODULE },
 }, {
@@ -276,7 +273,6 @@ static struct phy_driver bcm7xxx_driver[] = {
 	.config_init	= bcm7xxx_28nm_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
-	.suspend	= bcm7xxx_suspend,
 	.resume		= bcm7xxx_28nm_config_init,
 	.driver		= { .owner = THIS_MODULE },
 }, {
@@ -289,7 +285,6 @@ static struct phy_driver bcm7xxx_driver[] = {
 	.config_init	= bcm7xxx_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
-	.suspend	= bcm7xxx_suspend,
 	.resume		= bcm7xxx_config_init,
 	.driver		= { .owner = THIS_MODULE },
 }, {

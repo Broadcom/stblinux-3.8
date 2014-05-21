@@ -87,9 +87,9 @@ static unsigned char swdata[16];
     #define REG_RGMII_CTRL_P5                             0x65
 
         #define REG_RGMII_CTRL_ENABLE_GMII                0x80
-        #define REG_RGMII_CTRL_DLL_IQQD                   0x04
-        #define REG_RGMII_CTRL_DLL_RXC_BYPASS             0x02
-        #define REG_RGMII_CTRL_TIMING_SEL                 0x01
+        #define REG_RGMII_CTRL_TIMING_SEL                 0x04
+        #define REG_RGMII_CTRL_DLL_RXC                    0x02
+        #define REG_RGMII_CTRL_DLL_TXC                    0x01
 
 #define SWITCH_PORT_MAP_IMP                               0x0100
 
@@ -381,11 +381,30 @@ static int ethsw_reset_ports(struct phy_device *phydev)
 		ethsw_wreg(phydev, PAGE_CONTROL, REG_PORT_CTRL + i, &v8, 1);
 	}
 
-	/* Config IMP port RGMII clock delay by DLL disabled and tx_clk aligned timing */
+	/* Config IMP port RGMII clock delay by DLL disabled and tx_clk aligned
+	 * timing (restoring to reset defaults)
+	 */
 	ethsw_rreg(phydev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
-	v8 &= ~(REG_RGMII_CTRL_DLL_RXC_BYPASS | REG_RGMII_CTRL_TIMING_SEL);
+	v8 &= ~(REG_RGMII_CTRL_DLL_RXC | REG_RGMII_CTRL_DLL_TXC);
+	v8 &= ~REG_RGMII_CTRL_TIMING_SEL;
+
+	/* PHY_INTERFACE_MODE_RGMII_TXID means TX internal delay, make sure
+	 * that we enable the IMP Port TX clock internal delay to account for
+	 * this internal delay that is inserted, otherwise the switch won't be
+	 * able to receive correctly.
+	 *
+	 * PHY_INTERFACE_MODE_RGMII means that we are not introducing any delay
+	 * neither on transmission nor reception, so the BCM53125 must also be
+	 * configured accordingly to account for the lack of delay and
+	 * introduce
+	 *
+	 * The BCM53125 switch has its RX clock and TX clock control swapped,
+	 * hence the reason why we modify the TX clock path in the "RGMII" case
+	 */
+	if (phydev->interface == PHY_INTERFACE_MODE_RGMII_TXID)
+		v8 |= REG_RGMII_CTRL_DLL_TXC;
 	if (phydev->interface == PHY_INTERFACE_MODE_RGMII)
-		v8 |= REG_RGMII_CTRL_DLL_RXC_BYPASS;
+		v8 |= REG_RGMII_CTRL_DLL_TXC | REG_RGMII_CTRL_DLL_RXC;
 	v8 |= REG_RGMII_CTRL_TIMING_SEL;
 	ethsw_wreg(phydev, PAGE_CONTROL, REG_RGMII_CTRL_IMP, &v8, sizeof(v8));
 

@@ -10,3 +10,4 @@ obj-$(CONFIG_BNX2X) += bnx2x/
 obj-$(CONFIG_SB1250_MAC) += sb1250-mac.o
 obj-$(CONFIG_TIGON3) += tg3.o
 obj-$(CONFIG_BCMGENET) += genet/
+obj-$(CONFIG_SYSTEM_PORT) += bcmsysport.o

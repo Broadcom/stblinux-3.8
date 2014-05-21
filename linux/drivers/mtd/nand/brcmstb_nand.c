@@ -39,6 +39,7 @@
 #include <linux/of_platform.h>
 #include <linux/slab.h>
 #include <linux/list.h>
+#include <linux/log2.h>
 
 #include <linux/brcmstb/brcmstb.h>
 
@@ -1109,8 +1110,11 @@ static int brcmstb_nand_verify_erased_page(struct mtd_info *mtd,
 	int page = addr >> chip->page_shift;
 	int ret;
 
-	if (!buf)
+	if (!buf) {
 		buf = chip->buffers->databuf;
+		/* Invalidate page cache */
+		chip->pagebuf = -1;
+	}
 
 	sas = mtd->oobsize / chip->ecc.steps;
 	oob_nbits = sas << 3;
@@ -1176,7 +1180,7 @@ static int brcmstb_nand_read(struct mtd_info *mtd,
 	if (mtd_is_eccerr(err)) {
 		int ret = brcmstb_nand_verify_erased_page(mtd, chip, buf, addr);
 		if (ret < 0) {
-			dev_warn(&host->pdev->dev,
+			dev_dbg(&host->pdev->dev,
 					"uncorrectable error at 0x%llx\n",
 					(unsigned long long)err_addr);
 			mtd->ecc_stats.failed++;
@@ -1197,7 +1201,7 @@ static int brcmstb_nand_read(struct mtd_info *mtd,
 
 	if (mtd_is_bitflip(err)) {
 		unsigned int corrected = CORR_ERROR_COUNT;
-		dev_info(&host->pdev->dev, "corrected error at 0x%llx\n",
+		dev_dbg(&host->pdev->dev, "corrected error at 0x%llx\n",
 			(unsigned long long)err_addr);
 		mtd->ecc_stats.corrected += corrected;
 		/* Always exceed the software-imposed threshold */
@@ -1541,9 +1545,10 @@ static bool brcmstb_nand_config_match(struct brcmstb_nand_cfg *orig,
 		return false;
 	if (orig->col_adr_bytes != new->col_adr_bytes)
 		return false;
-	if (orig->blk_adr_bytes != new->blk_adr_bytes)
+	/* blk_adr_bytes can be larger than expected, but not smaller */
+	if (orig->blk_adr_bytes < new->blk_adr_bytes)
 		return false;
-	if (orig->ful_adr_bytes != new->ful_adr_bytes)
+	if (orig->ful_adr_bytes < new->ful_adr_bytes)
 		return false;
 
 	/* Positive matches */
@@ -1551,6 +1556,18 @@ static bool brcmstb_nand_config_match(struct brcmstb_nand_cfg *orig,
 		return true;
 	return orig->spare_area_size >= 27 &&
 	       orig->spare_area_size <= new->spare_area_size;
+}
+
+/*
+ * Minimum number of bytes to address a page. Calculated as:
+ *     roundup(log2(size / page-size) / 8)
+ *
+ * NB: the following does not "round up" for non-power-of-2 'size'; but this is
+ *     OK because many other things will break if 'size' is irregular...
+ */
+static inline int get_blk_adr_bytes(u64 size, u32 writesize)
+{
+	return ALIGN(ilog2(size) - ilog2(writesize), 8) >> 3;
 }
 
 static int brcmstb_nand_setup_dev(struct brcmstb_nand_host *host)
@@ -1570,18 +1587,13 @@ static int brcmstb_nand_setup_dev(struct brcmstb_nand_host *host)
 	new_cfg.spare_area_size = mtd->oobsize / (mtd->writesize >> FC_SHIFT);
 	new_cfg.device_width = (chip->options & NAND_BUSWIDTH_16) ? 16 : 8;
 	new_cfg.col_adr_bytes = 2;
+	new_cfg.blk_adr_bytes = get_blk_adr_bytes(mtd->size, mtd->writesize);
 
+	new_cfg.ful_adr_bytes = new_cfg.blk_adr_bytes;
 	if (mtd->writesize > 512)
-		if (mtd->size >= (256 << 20))
-			new_cfg.blk_adr_bytes = 3;
-		else
-			new_cfg.blk_adr_bytes = 2;
+		new_cfg.ful_adr_bytes += new_cfg.col_adr_bytes;
 	else
-		if (mtd->size >= (64 << 20))
-			new_cfg.blk_adr_bytes = 3;
-		else
-			new_cfg.blk_adr_bytes = 2;
-	new_cfg.ful_adr_bytes = new_cfg.blk_adr_bytes + new_cfg.col_adr_bytes;
+		new_cfg.ful_adr_bytes += 1;
 
 	if (new_cfg.spare_area_size > MAX_CONTROLLER_OOB)
 		new_cfg.spare_area_size = MAX_CONTROLLER_OOB;
