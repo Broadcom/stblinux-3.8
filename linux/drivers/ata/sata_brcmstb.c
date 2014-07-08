@@ -185,7 +185,24 @@ done:
 	return status;
 }
 
-static int brcm_sata3_init(struct device *dev, void __iomem *addr)
+static void clk_cfg(struct device *dev, int enable)
+{
+	int status = 0;
+	struct clk *clk = clk_get(dev, 0);
+
+	if (!IS_ERR(clk)) {
+		if (enable) {
+			status = clk_prepare_enable(clk);
+			if (status)
+				pr_err("sata clk enable failed\n");
+		} else
+			clk_disable_unprepare(clk);
+		clk_put(clk);
+	} else
+		pr_debug("failed to get sata clock\n");
+}
+
+static int brcm_sata3_cfg(struct device *dev, void __iomem *addr, int init)
 {
 	int status = 0;
 	int i;
@@ -200,15 +217,23 @@ static int brcm_sata3_init(struct device *dev, void __iomem *addr)
 		goto done;
 	}
 
+	if (init)
+		clk_cfg(dev, 1);
+
 	brcm_pdata = brcm_pdev->dev.platform_data;
 	ports = fls(readl(addr + HOST_PORTS_IMPL));
 
-	status = brcm_sata3_init_config(addr, ahci_pdev, brcm_pdata);
-	if (status)
-		goto done;
+	if (init) {
+		status = brcm_sata3_init_config(addr, ahci_pdev, brcm_pdata);
+		if (status)
+			goto done;
+	}
 
 	for (i = 0; i < ports; i++)
-		brcm_sata3_phy_init(brcm_pdata, i);
+		brcm_sata3_phy_cfg(brcm_pdata, i, init);
+
+	if (!init)
+		clk_cfg(dev, 0);
 
 done:
 	return status;
@@ -216,7 +241,7 @@ done:
 
 static int brcm_ahci_init(struct device *dev, void __iomem *addr)
 {
-	return brcm_sata3_init(dev, addr);
+	return brcm_sata3_cfg(dev, addr, 1);
 }
 
 static void brcm_ahci_exit(struct device *dev)
@@ -225,7 +250,11 @@ static void brcm_ahci_exit(struct device *dev)
 
 static int brcm_ahci_suspend(struct device *dev)
 {
-	return 0;
+	struct ata_host *host = dev_get_drvdata(dev);
+	struct ahci_host_priv *hpriv = host->private_data;
+	void __iomem *addr = hpriv->mmio;
+
+	return brcm_sata3_cfg(dev, addr, 0);
 }
 
 static int brcm_ahci_resume(struct device *dev)
@@ -234,7 +263,7 @@ static int brcm_ahci_resume(struct device *dev)
 	struct ahci_host_priv *hpriv = host->private_data;
 	void __iomem *addr = hpriv->mmio;
 
-	return brcm_sata3_init(dev, addr);
+	return brcm_sata3_cfg(dev, addr, 1);
 }
 
 static const struct of_device_id ahci_of_match[] = {
@@ -459,10 +488,10 @@ static struct platform_driver brcm_ahci_driver = {
 	.probe = brcm_ahci_probe,
 	.remove = brcm_ahci_remove,
 	.driver = {
-		   .name = "brcm-ahci",
-		   .owner = THIS_MODULE,
-		   .of_match_table = ahci_of_match,
-		   },
+		.name = "brcm-ahci",
+		.owner = THIS_MODULE,
+		.of_match_table = ahci_of_match,
+	},
 };
 
 module_platform_driver(brcm_ahci_driver);

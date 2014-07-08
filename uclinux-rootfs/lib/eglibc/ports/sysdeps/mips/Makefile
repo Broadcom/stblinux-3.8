@@ -16,6 +16,8 @@ CFLAGS-backtrace.c += -funwind-tables
 endif
 
 ifeq ($(subdir),csu)
+# get offset to rtld_global._dl_platform
+gen-as-const-headers += rtld-global-offsets.sym
 CPPFLAGS-crti.S += $(pic-ccflag)
 CPPFLAGS-crtn.S += $(pic-ccflag)
 endif
@@ -25,4 +27,10 @@ CPPFLAGS-pt-crti.S += $(pic-ccflag)
 CPPFLAGS-crtn.S += $(pic-ccflag)
 endif
 
+ifeq ($(subdir),string)
+sysdep_routines += memcpy-bmips
+endif
+
 ASFLAGS-.os += $(pic-ccflag)
+
+CPPFLAGS-memcpy.S += -DMEMCPY_NAME=__glibc_memcpy

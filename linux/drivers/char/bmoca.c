@@ -124,6 +124,16 @@
 #define M2M_READ		(BIT(30) | BIT(27))
 #endif
 
+#define RESET_HIGH_CPU		BIT(0)
+#define RESET_MOCA_SYS		BIT(1)
+#define RESET_LOW_CPU		BIT(2)
+#define RESET_GMII		BIT(3)
+#define RESET_PHY_0		BIT(4)
+#define RESET_PHY_1		BIT(5)
+#define DISABLE_CLOCKS		BIT(7)
+#define DISABLE_PHY_0_CLOCK	BIT(8)
+#define DISABLE_PHY_1_CLOCK	BIT(9)
+
 #define M2M_TIMEOUT_MS		10
 
 #define NO_FLUSH_IRQ		0
@@ -183,7 +193,7 @@ struct moca_priv_data {
 	struct work_struct	work;
 	void __iomem		*base;
 	void __iomem		*i2c_base;
-	struct platform_device	*enet_pdev;
+	struct device_node	*enet_node;
 
 	unsigned int		mbx_offset[2]; /* indexed by MoCA cpu */
 	struct page		*fw_pages[MAX_FW_PAGES];
@@ -490,21 +500,19 @@ static void moca_hw_reset(struct moca_priv_data *priv)
 	/* assert resets */
 
 	/* reset CPU first, both CPUs for MoCA 20 HW */
-	if (moca_is_20(priv))
-		MOCA_SET(priv->base + r->sw_reset_offset, 5);
-	else
-		MOCA_SET(priv->base + r->sw_reset_offset, 1);
-
+	MOCA_SET(priv->base + r->sw_reset_offset, RESET_HIGH_CPU |
+		 (moca_is_20(priv) ? RESET_LOW_CPU : 0));
 	MOCA_RD(priv->base + r->sw_reset_offset);
 
 	udelay(20);
 
 	/* reset everything else except clocks */
-	MOCA_SET(priv->base + r->sw_reset_offset, ~(BIT(3) | BIT(7)));
+	MOCA_SET(priv->base + r->sw_reset_offset,
+		 ~(RESET_GMII | DISABLE_CLOCKS));
 	MOCA_RD(priv->base + r->sw_reset_offset);
 
 	/* disable clocks */
-	MOCA_SET(priv->base + r->sw_reset_offset, ~BIT(3));
+	MOCA_SET(priv->base + r->sw_reset_offset, ~RESET_GMII);
 	MOCA_RD(priv->base + r->sw_reset_offset);
 
 	MOCA_WR(priv->base + r->l2_clear_offset, 0xffffffff);
@@ -546,17 +554,18 @@ clk_err_chk:
 
 	if (action == MOCA_ENABLE) {
 		/* deassert moca_sys_reset and clock */
-		MOCA_UNSET(priv->base + r->sw_reset_offset, BIT(1) | BIT(7));
+		MOCA_UNSET(priv->base + r->sw_reset_offset,
+			   RESET_MOCA_SYS | DISABLE_CLOCKS);
 
 		if (priv->hw_rev >= HWREV_MOCA_20_GEN22) {
 			/* Take PHY0 out of reset and enable clock */
 			MOCA_UNSET(priv->base + r->sw_reset_offset,
-				   BIT(4) | BIT(8));
+				   RESET_PHY_0 | DISABLE_PHY_0_CLOCK);
 
 			if (priv->bonded_mode) {
 				/* Take PHY1 out of reset and enable clock */
 				MOCA_UNSET(priv->base + r->sw_reset_offset,
-					   BIT(5) | BIT(9));
+					   RESET_PHY_1 | DISABLE_PHY_1_CLOCK);
 			}
 		}
 		MOCA_RD(priv->base + r->sw_reset_offset);
@@ -663,13 +672,15 @@ static u32 moca_start_mips(struct moca_priv_data *priv, u32 cpu)
 
 	if (moca_is_20(priv)) {
 		if (cpu == 1)
-			MOCA_UNSET(priv->base + r->sw_reset_offset, BIT(0));
+			MOCA_UNSET(priv->base + r->sw_reset_offset,
+				   RESET_HIGH_CPU);
 		else {
 			moca_mmp_init(priv, 1);
-			MOCA_UNSET(priv->base + r->sw_reset_offset, BIT(2));
+			MOCA_UNSET(priv->base + r->sw_reset_offset,
+				   RESET_LOW_CPU);
 		}
 	} else
-		MOCA_UNSET(priv->base + r->sw_reset_offset, BIT(0));
+		MOCA_UNSET(priv->base + r->sw_reset_offset, RESET_HIGH_CPU);
 	MOCA_RD(priv->base + r->sw_reset_offset);
 	return 0;
 }
@@ -1744,17 +1755,17 @@ static int moca_ioctl_get_drv_info(struct moca_priv_data *priv,
 	info.rf_band = pd->rf_band;
 	info.phy_freq = priv->phy_freq;
 
-	if (priv->enet_pdev && get_device(&priv->enet_pdev->dev)) {
+	if (priv->enet_node) {
 		struct net_device *enet_dev;
+
 		rcu_read_lock();
-		enet_dev = platform_get_drvdata(priv->enet_pdev);
+		enet_dev = of_find_net_device_by_node(priv->enet_node);
 		if (enet_dev) {
 			dev_hold(enet_dev);
 			strlcpy(info.enet_name, enet_dev->name, IFNAMSIZ);
 			dev_put(enet_dev);
 		}
 		rcu_read_unlock();
-		put_device(&priv->enet_pdev->dev);
 		info.enet_id = MOCA_IFNAME_USE_ID;
 	} else {
 		strlcpy(info.enet_name, pd->enet_name, IFNAMSIZ);
@@ -2155,7 +2166,7 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 {
 	struct platform_device *pdev = priv->pdev;
 	struct moca_platform_data pd;
-	struct device_node *of_node = pdev->dev.of_node, *enet_node;
+	struct device_node *of_node = pdev->dev.of_node;
 	phandle enet_ph;
 	int status = 0, i = 0;
 	const u8 *macaddr;
@@ -2172,10 +2183,8 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 	status = of_property_read_u32(of_node, "enet-id", &enet_ph);
 	if (status)
 		goto err;
-	enet_node = of_find_node_by_phandle(enet_ph);
-	priv->enet_pdev = of_find_device_by_node(enet_node);
-	of_node_put(enet_node);
-	if (!priv->enet_pdev) {
+	priv->enet_node = of_find_node_by_phandle(enet_ph);
+	if (!priv->enet_node) {
 		dev_err(&pdev->dev,
 			"can't find associated network interface\n");
 		return -EINVAL;
@@ -2400,6 +2409,21 @@ static int moca_suspend(struct device *dev)
 
 static int moca_resume(struct device *dev)
 {
+	int minor;
+	for (minor = 0; minor < NUM_MINORS; minor++) {
+		struct moca_priv_data *priv = minor_tbl[minor];
+		if (priv && priv->enabled &&
+		    (MOCA_RD(priv->base + priv->regs->sw_reset_offset) &
+		     RESET_MOCA_SYS)) {
+			/*
+			 * If we lost power to the block (e.g. unclean S3
+			 * transition), but the driver still thinks the core
+			 * is enabled, try to get things back in sync.
+			 */
+			priv->enabled = 0;
+			moca_msg_reset(priv);
+		}
+	}
 	return 0;
 }
 

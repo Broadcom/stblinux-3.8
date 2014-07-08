@@ -25,6 +25,7 @@
 #include <linux/irqchip/brcmstb-l2.h>
 #include <linux/dma-contiguous.h>
 #include <linux/export.h>
+#include <asm/hardware/gic.h>
 
 #include <asm/arch_timer.h>
 #include <asm/mach/arch.h>
@@ -255,11 +256,15 @@ EXPORT_SYMBOL(brcmstb_mega_barrier);
 
 static void __init brcmstb_machine_init(void)
 {
+	int ret;
+
 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
 	of_add_fixed_phys();
 	brcmstb_hook_fault_code();
 	brcmstb_clocks_init();
-	brcmstb_pm_init();
+	ret = brcmstb_pm_init();
+	if (ret)
+		pr_warn("PM: initialization failed with code %d\n", ret);
 	cma_register();
 }
 
@@ -287,12 +292,20 @@ static struct sys_timer __initdata brcmstb_timer = {
 	.init = timer_init,
 };
 
-void __init brcmstb_dt_init_irq(void)
+void brcmstb_irq0_init(void)
 {
 	BDEV_WR(BCHP_IRQ0_IRQEN, BCHP_IRQ0_IRQEN_uarta_irqen_MASK
 		| BCHP_IRQ0_IRQEN_uartb_irqen_MASK
 		| BCHP_IRQ0_IRQEN_uartc_irqen_MASK
 		);
+}
+
+void __init brcmstb_dt_init_irq(void)
+{
+	/* Force lazily-disabled IRQs to be masked before suspend */
+	gic_arch_extn.flags |= IRQCHIP_MASK_ON_SUSPEND;
+
+	brcmstb_irq0_init();
 	of_irq_init(brcmstb_dt_irq_match);
 }
 

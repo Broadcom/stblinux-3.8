@@ -27,21 +27,23 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
-#include <linux/brcmstb/brcmstb.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
 #include <linux/usb/hcd.h>
-#else
-#include "../core/hcd.h"
-#endif
 
-#define MAX_HCD			8
+#include "usb-brcm-common-init.h"
 
 static struct clk *usb_clk;
 
 /* FIXME */
 #define clk_enable(...) do { } while (0)
 #define clk_disable(...) do { } while (0)
+
+struct brcm_usb_instance {
+	void __iomem		*ctrl_regs;
+	int			ioc;
+	int			ipp;
+	int			has_xhci;
+};
 
 /***********************************************************************
  * Library functions
@@ -97,11 +99,7 @@ int brcm_usb_probe(struct platform_device *pdev, char *hcd_name,
 	/* disable autosuspend by default to preserve
 	 * original behavior
 	 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 32)
 	usb_disable_autosuspend(hcd->self.root_hub);
-#else
-	hcd->self.root_hub->autosuspend_disabled = 1;
-#endif
 #endif
 
 	return ret;
@@ -148,70 +146,13 @@ EXPORT_SYMBOL(brcm_usb_resume);
  * DT support for USB instances
  ***********************************************************************/
 
-struct brcm_usb_instance {
-	void __iomem		*ctrl_regs;
-	int			ioc;
-	int			ipp;
-};
-
-#ifdef __LITTLE_ENDIAN
-#define ENDIAN_SETTING		0x03 /* !WABO !FNBO FNHW BABO */
-#else
-#define ENDIAN_SETTING		0x0e /* WABO FNBO FNHW !BABO */
-#endif
-
-#define ENDIAN_m		0x0f
-#define IOC_m			BIT(4)
-#define IPP_m			BIT(5)
-
-#define SEQ_EN_m		BIT(0)
-#define SCB_SIZE_s		7
-#define SCB_SIZE_m		(0x1f << SCB_SIZE_s)
-
-#define SCB1_EN_m		BIT(14)
-#define SCB2_EN_m		BIT(15)
-
-#define SETUP_REG		0x00
-#define EBRIDGE_REG		0x0c
-#define OBRIDGE_REG		0x10
-
-static void brcm_usb_instance_hw_init(struct brcm_usb_instance *priv)
-{
-	u32 reg;
-
-	/* set up byte order for DRAM accesses */
-	reg = (readl(priv->ctrl_regs + SETUP_REG) & ~ENDIAN_m) |
-	      ENDIAN_SETTING;
-
-	/* enable the second and third memory controller interfaces */
-	reg |= (SCB1_EN_m | SCB2_EN_m);
-
-	/* set overcurrent and power polarity based on DT properties */
-	reg &= ~(IOC_m | IPP_m);
-	if (priv->ioc)
-		reg |= IOC_m;
-	if (priv->ipp)
-		reg |= IPP_m;
-	writel(reg, priv->ctrl_regs + SETUP_REG);
-
-	/* override lame bridge defaults */
-	reg = readl(priv->ctrl_regs + OBRIDGE_REG);
-	reg &= ~SEQ_EN_m;
-	writel(reg, priv->ctrl_regs + OBRIDGE_REG);
-
-	reg = readl(priv->ctrl_regs + EBRIDGE_REG);
-	reg &= ~SEQ_EN_m;
-	reg &= ~SCB_SIZE_m;
-	reg |= 0x08 << SCB_SIZE_s;
-	writel(reg, priv->ctrl_regs + EBRIDGE_REG);
-}
-
 static int brcm_usb_instance_probe(struct platform_device *pdev)
 {
 	struct device_node *dn = pdev->dev.of_node;
 	struct resource ctrl_res;
 	const u32 *prop;
 	struct brcm_usb_instance *priv;
+	struct device_node *node;
 
 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -237,10 +178,33 @@ static int brcm_usb_instance_probe(struct platform_device *pdev)
 	if (prop)
 		priv->ioc = be32_to_cpup(prop);
 
-	brcm_usb_instance_hw_init(priv);
-
+	node = of_find_compatible_node(dn, NULL, "xhci-platform");
+	of_node_put(node);
+	priv->has_xhci = node != NULL;
+	brcm_usb_common_ctrl_init((uintptr_t)priv->ctrl_regs, priv->ioc,
+				priv->ipp, priv->has_xhci);
 	return of_platform_populate(dn, NULL, NULL, NULL);
 }
+
+#ifdef CONFIG_PM
+static int brcm_usb_instance_resume(struct device *dev)
+{
+	struct brcm_usb_instance *priv = dev_get_drvdata(dev);
+	brcm_usb_common_ctrl_init((uintptr_t)priv->ctrl_regs, priv->ioc,
+				priv->ipp, priv->has_xhci);
+	return 0;
+}
+
+
+static const struct dev_pm_ops brcm_usb_instance_pmops = {
+	.resume_early	= brcm_usb_instance_resume,
+};
+
+#define BRCM_USB_INSTANCE_PMOPS (&brcm_usb_instance_pmops)
+
+#else
+#define BRCM_USB_INSTANCE_PMOPS NULL
+#endif
 
 static const struct of_device_id brcm_usb_instance_match[] = {
 	{ .compatible = "brcm,usb-instance" },
@@ -252,6 +216,7 @@ static struct platform_driver brcm_usb_instance_driver = {
 		.name = "usb-brcm",
 		.bus = &platform_bus_type,
 		.of_match_table = of_match_ptr(brcm_usb_instance_match),
+		.pm = BRCM_USB_INSTANCE_PMOPS,
 	}
 };
 

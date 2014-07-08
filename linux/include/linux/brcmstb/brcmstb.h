@@ -125,6 +125,7 @@
 #include <linux/brcmstb/7145a0/bchp_switch_intrl2_1.h>
 #include <linux/brcmstb/7145a0/bchp_switch_mdio.h>
 #include <linux/brcmstb/7145a0/bchp_switch_reg.h>
+#include <linux/brcmstb/7145a0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7145a0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7145B0)
@@ -184,6 +185,7 @@
 #include <linux/brcmstb/7145b0/bchp_switch_intrl2_1.h>
 #include <linux/brcmstb/7145b0/bchp_switch_mdio.h>
 #include <linux/brcmstb/7145b0/bchp_switch_reg.h>
+#include <linux/brcmstb/7145b0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7145b0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7364A0)
@@ -224,6 +226,7 @@
 #include <linux/brcmstb/7364a0/bchp_pcie_0_rgr1.h>
 #include <linux/brcmstb/7364a0/bchp_shimphy_addr_cntl_0.h>
 #include <linux/brcmstb/7364a0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7364a0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7364a0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7366A0)
@@ -264,6 +267,7 @@
 #include <linux/brcmstb/7366a0/bchp_pcie_0_rgr1.h>
 #include <linux/brcmstb/7366a0/bchp_shimphy_addr_cntl_0.h>
 #include <linux/brcmstb/7366a0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7366a0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7366a0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7366B0)
@@ -304,6 +308,7 @@
 #include <linux/brcmstb/7366b0/bchp_pcie_0_rgr1.h>
 #include <linux/brcmstb/7366b0/bchp_shimphy_addr_cntl_0.h>
 #include <linux/brcmstb/7366b0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7366b0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7366b0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7439A0)
@@ -344,6 +349,7 @@
 #include <linux/brcmstb/7439a0/bchp_pcie_0_rgr1.h>
 #include <linux/brcmstb/7439a0/bchp_shimphy_addr_cntl_0.h>
 #include <linux/brcmstb/7439a0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7439a0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7439a0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7445A0)
@@ -400,6 +406,7 @@
 #include <linux/brcmstb/7445a0/bchp_shimphy_addr_cntl_1.h>
 #include <linux/brcmstb/7445a0/bchp_shimphy_addr_cntl_2.h>
 #include <linux/brcmstb/7445a0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7445a0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7445a0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7445B0)
@@ -456,6 +463,7 @@
 #include <linux/brcmstb/7445b0/bchp_shimphy_addr_cntl_1.h>
 #include <linux/brcmstb/7445b0/bchp_shimphy_addr_cntl_2.h>
 #include <linux/brcmstb/7445b0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7445b0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7445b0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7445C0)
@@ -512,6 +520,7 @@
 #include <linux/brcmstb/7445c0/bchp_shimphy_addr_cntl_1.h>
 #include <linux/brcmstb/7445c0/bchp_shimphy_addr_cntl_2.h>
 #include <linux/brcmstb/7445c0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7445c0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7445c0/bchp_wktmr.h>
 
 #elif defined(CONFIG_BCM7445D0)
@@ -568,12 +577,16 @@
 #include <linux/brcmstb/7445d0/bchp_shimphy_addr_cntl_1.h>
 #include <linux/brcmstb/7445d0/bchp_shimphy_addr_cntl_2.h>
 #include <linux/brcmstb/7445d0/bchp_sun_top_ctrl.h>
+#include <linux/brcmstb/7445d0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7445d0/bchp_wktmr.h>
+#include <linux/brcmstb/7445d0/bchp_xpt_bus_if.h>
+#include <linux/brcmstb/7445d0/bchp_xpt_fe.h>
+#include <linux/brcmstb/7445d0/bchp_xpt_memdma_mcpb.h>
+#include <linux/brcmstb/7445d0/bchp_xpt_memdma_mcpb_ch0.h>
+#include <linux/brcmstb/7445d0/bchp_xpt_security_ns.h>
+#include <linux/brcmstb/7445d0/bchp_xpt_security_ns_intr2_0.h>
 
 #endif
-
-#define BRCM_NMI_VEC		0x80000000
-#define BRCM_WARM_RESTART_VEC	0x80000380
 
 /* Kernel will program WKTMR to expire in 1 second */
 #define BRCM_STANDBY_TEST		0x01
@@ -587,13 +600,6 @@
 #define BRCM_STANDBY_MIPS_PLL_ON	0x10
 /* Don't shut down DDR PLL */
 #define BRCM_STANDBY_DDR_PLL_ON		0x20
-
-#if defined(BCHP_AON_CTRL_SYSTEM_DATA_00)
-#define AON_RAM_BASE		BCHP_AON_CTRL_SYSTEM_DATA_00
-#else
-#define AON_RAM_BASE		BCHP_AON_CTRL_SYSTEM_DATA_RAMi_ARRAY_BASE
-#endif
-#define AON_RAM(idx)		(AON_RAM_BASE + (idx << 2))
 
 #define UPGTMR_FREQ		27000000
 
@@ -830,27 +836,6 @@ ssize_t brcm_pm_show_time_at_wakeup(struct device *dev,
 #endif
 #endif
 #endif
-
-int brcm_pm_s3_standby(int dcache_linesz, unsigned long options);
-
-#define NUM_MEMC_CLIENTS		128
-void brcm_pm_save_restore_rts(unsigned long reg_addr, u32 *data, int restore);
-
-#define BRCM_MEM_DMA_SCRAM_NONE		0
-#define BRCM_MEM_DMA_SCRAM_BLOCK	1
-#define BRCM_MEM_DMA_SCRAM_MPEG		2
-#define BRCM_MEM_DMA_SCRAM_DTV		3
-
-asmlinkage void brcm_pm_irq(void);
-int brcm_pm_deep_sleep(void);
-
-void brcm_pm_sata3(int enable);
-
-extern unsigned long brcm_dram0_size_mb;
-extern unsigned long brcm_dram1_size_mb;
-extern unsigned long brcm_dram1_linux_mb;
-extern unsigned long brcm_dram1_start;
-extern unsigned long brcm_min_auth_region_size;
 
 /* NMI / TP1 reset vector */
 extern char brcm_reset_nmi_vec[];

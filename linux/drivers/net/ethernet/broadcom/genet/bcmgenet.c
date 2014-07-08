@@ -3309,10 +3309,19 @@ static int bcmgenet_set_mac_addr(struct net_device *dev, void *p)
 	return 0;
 }
 
+static u16 bcmgenet_select_queue(struct net_device *dev, struct sk_buff *skb)
+{
+	/* Do not use HW queues 1 to 4 as they are not yet properly managed
+	 * and will lead to flow control issues and transmit timeouts
+	 */
+	return 0;
+}
+
 static const struct net_device_ops bcmgenet_netdev_ops = {
 	.ndo_open = bcmgenet_open,
 	.ndo_stop = bcmgenet_close,
 	.ndo_start_xmit = bcmgenet_xmit,
+	.ndo_select_queue = bcmgenet_select_queue,
 	.ndo_tx_timeout = bcmgenet_timeout,
 	.ndo_set_rx_mode = bcmgenet_set_rx_mode,
 	.ndo_set_mac_address = bcmgenet_set_mac_addr,

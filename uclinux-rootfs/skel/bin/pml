@@ -77,10 +77,62 @@ function set_sleep_timeout {
 	echo $timeout > $waketimer/timeout
 }
 
+#
+# Expand patterns like this:
+#   1-3,7,12
+# into lists like this:
+#   1 2 3 7 12
+# Used for interpreting sysfs files like:
+#   /sys/devices/system/cpu/{possible,present,online}
+#
+function expand_pattern {
+	[ "$1" = "" ] && echo && return
+
+	chars=`echo $1 | grep -o .`
+	nums=""
+
+	curr=0 # Current number being processed
+	prev=-1 # Lower bound of a range
+	for char in $chars
+	do
+		case $char in
+		[0-9])
+			curr=$((10*curr + char));;
+		-)
+			prev=$curr; curr=0;;
+		,)
+			# Comma terminates a singleton or range
+			if [ $prev -ge 0 ]; then # range
+				nums="$nums `seq $prev $curr`"
+			else # singleton
+				nums="$nums $curr"
+			fi
+			prev=-1; curr=0;;
+		*)
+			echo "Error in input" && return 1;;
+		esac
+	done
+
+	# Pattern ended in...
+	if [ $prev -ge 0 ]; then # range
+		nums="$nums `seq $prev $curr`"
+	else
+		nums="$nums $curr"
+	fi
+
+	echo $nums
+}
+
 function set_cpus_power {
 	online=$1
+	possible=$(expand_pattern $(cat $cpu_sysfs/possible))
+	present=$(expand_pattern $(cat $cpu_sysfs/present))
 	for cpu in $cpu_sysfs/cpu[1-9]*
 	do
+		cpuX=`basename $cpu`
+		cpuX=${cpuX#cpu}
+		if ! [[ $possible =~ $cpuX ]]; then continue; fi
+		if ! [[ $present =~ $cpuX ]]; then continue; fi
 		if [ `cat $cpu/online` -eq $online ]; then continue; fi
 		if [ $online -eq 0 ]; then
 			echo "Power down `basename $cpu`"
@@ -137,7 +189,7 @@ else
 	echo $mode > /sys/power/pm_test
 fi
 
-set_cpus_power $tp_all
+[ "$tp_all" -eq 0 ] && set_cpus_power $tp_all
 
 set_sleep_timeout $wakeup_time
 

@@ -170,18 +170,25 @@ static int brcmstb_waketmr_probe(struct platform_device *pdev)
 
 	timer->wake_timeout = BRCMSTB_WKTMR_DEFAULT_TIMEOUT;
 
-	return device_create_file(dev, &dev_attr_timeout);
+	ret = device_create_file(dev, &dev_attr_timeout);
+	if (ret)
+		unregister_reboot_notifier(&timer->reboot_notifier);
+	else
+		dev_info(dev, "registered, with irq %d\n", timer->irq);
+	return ret;
 }
 
 static int brcmstb_waketmr_remove(struct platform_device *pdev)
 {
 	struct brcmstb_waketmr *timer = dev_get_drvdata(&pdev->dev);
 
+	device_remove_file(&pdev->dev, &dev_attr_timeout);
 	unregister_reboot_notifier(&timer->reboot_notifier);
 
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int brcmstb_waketmr_suspend(struct device *dev)
 {
 	struct brcmstb_waketmr *timer = dev_get_drvdata(dev);
@@ -203,6 +210,7 @@ static int brcmstb_waketmr_resume(struct device *dev)
 
 	return ret;
 }
+#endif /* CONFIG_PM_SLEEP */
 
 static SIMPLE_DEV_PM_OPS(brcmstb_waketmr_pm_ops, brcmstb_waketmr_suspend,
 		brcmstb_waketmr_resume);

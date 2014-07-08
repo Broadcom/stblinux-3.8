@@ -120,7 +120,7 @@ static int cma_put_mem(int fd, uint32_t dev_index, uint64_t addr,
 }
 
 static int cma_get_phys_info(int fd, uint32_t dev_index, uint64_t *addr,
-	uint32_t *num_bytes)
+	uint32_t *num_bytes, int32_t *memc)
 {
 	int ret;
 	struct ioc_params physinfo_p;
@@ -137,8 +137,9 @@ static int cma_get_phys_info(int fd, uint32_t dev_index, uint64_t *addr,
 	if (ret == 0) {
 		*addr = physinfo_p.addr;
 		*num_bytes = physinfo_p.num_bytes;
-		printf("	physinfo PA=%llxh LEN=%xh\n", *addr,
-			*num_bytes);
+		*memc = physinfo_p.memc;
+		printf("	physinfo PA=%llxh LEN=%xh MEMC=%d\n",
+		       *addr, *num_bytes, *memc);
 	} else
 		printf("	getphysinfo failed\n");
 
@@ -220,8 +221,9 @@ static int list_one(int fd, uint32_t cma_dev_index)
 	uint32_t num_regions;
 	uint64_t addr;
 	uint32_t len;
+	int32_t memc;
 
-	ret = cma_get_phys_info(fd, cma_dev_index, &addr, &len);
+	ret = cma_get_phys_info(fd, cma_dev_index, &addr, &len, &memc);
 	if (ret)
 		goto done;
 
@@ -234,12 +236,13 @@ static int list_one(int fd, uint32_t cma_dev_index)
 	printf("num regions = %d\n", num_regions);
 
 	for (i = 0; i < num_regions; i++) {
-		int32_t memc;
+		int32_t reg_memc;
 		uint64_t addr;
 		uint32_t num_bytes;
 
-		ret = cma_get_region_info(fd, cma_dev_index, i, &memc,
-					&addr, &num_bytes);
+		ret = cma_get_region_info(fd, cma_dev_index, i,
+					  &reg_memc, &addr,
+					  &num_bytes);
 		if (ret) {
 			BUG_PRINT(ret);
 			goto done;
@@ -395,7 +398,36 @@ static void run_unit_tests(int fd)
 
 	/* === TEST CASE 9 === */
 	printf("t: attempt retrieval of invalid phys info\n");
-	assert(cma_get_phys_info(fd, 42, &y, &x) == -1);
+	assert(cma_get_phys_info(fd, 42, &y, &x, &z) == -1);
+	printf("ok\n\n");
+
+	/* === TEST CASE 10 === */
+	printf("t: alloc (1) region and free a chunk from the middle\n");
+	len[0] = 0x100000;
+	len[1] = 0x1000;
+	assert(cma_get_mem(fd, 1, len[0], 0, &addr[0]) == 0);
+	assert(cma_put_mem(fd, 1, addr[0] + 0x1000, len[1]) == 0);
+	assert(cma_get_num_regions(fd, 1, &x) == 0);
+	assert(x == 2);
+	{
+		int32_t  reg_memc;
+		uint64_t reg_addr;
+		uint32_t reg_numbytes;
+
+		assert(cma_get_region_info(fd, 1, 0, &reg_memc, &reg_addr,
+					   &reg_numbytes) == 0);
+		assert(reg_addr == addr[0]);
+		assert(reg_numbytes == 0x1000);
+
+		assert(cma_get_region_info(fd, 1, 1, &reg_memc, &reg_addr,
+					   &reg_numbytes) == 0);
+		assert(reg_addr == (addr[0] + 0x2000));
+		assert(reg_numbytes == (len[0] - 0x2000));
+
+		assert(cma_put_mem(fd, 1, addr[0], 0x1000) == 0);
+		assert(cma_put_mem(fd, 1, addr[0] + 0x2000,
+				   len[0] - 0x2000) == 0);
+	}
 	printf("ok\n\n");
 
 	printf("UNIT TEST PASSED!\n");

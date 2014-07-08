@@ -13,4 +13,5 @@
 obj-y := common.o gisb.o
 obj-$(CONFIG_SMP) += headsmp.o hotplug.o platsmp.o
 obj-$(CONFIG_CMA) += cma_driver.o
-obj-$(CONFIG_PM) += s2.o pm.o
+obj-$(CONFIG_PM) += s2.o pm.o regsave.o
+obj-$(CONFIG_BRCMSTB_XPT_HASH) += xpt_dma.o

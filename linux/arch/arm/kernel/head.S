@@ -229,6 +229,10 @@ __create_page_tables:
 	ldr	r6, =(_end - 1)
 	orr	r3, r8, r7
 	add	r6, r4, r6, lsr #(SECTION_SHIFT - PMD_ORDER)
+#ifdef CONFIG_BRCMSTB
+	/* map a 1MB section after the kernel in case the DTB is copied there */
+	add	r6, #4
+#endif
 1:	str	r3, [r0], #1 << PMD_ORDER
 	add	r3, r3, #1 << SECTION_SHIFT
 	cmp	r0, r6

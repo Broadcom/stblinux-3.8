@@ -1,3 +1,11 @@
+2014-05-19  Gregory Fong  <gregory@broadcom.com>
+
+	* sysdeps/mips/Makefile: Add rule to gen rtld-global-offsets header.
+	Use memcpy-bmips and set regular memcpy name to __glibc_memcpy.
+	* sysdeps/mips/memcpy-bmips.S: New file.
+	* sysdeps/mips/rtld-global-offsets.sym: New file. Provides macro for
+	accessing _dl_platform from _rtld_global_ro
+
 2013-07-02  Joseph Myers  <joseph@codesourcery.com>
 
 	* sysdeps/mips/mips32/libm-test-ulps: Regenerated.

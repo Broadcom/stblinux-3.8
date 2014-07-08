@@ -42,7 +42,6 @@ struct cma_dev {
 	struct device *dev;
 	u32 cma_dev_index;
 	struct mem_range range; /* addresses that this cma_dev controls */
-	struct region_list regions;
 	struct list_head list;
 	int memc;
 };

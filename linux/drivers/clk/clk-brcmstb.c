@@ -14,10 +14,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+
 #define pr_fmt(fmt) "clk-brcmstb: " fmt
 
 #include <linux/io.h>
 #include <linux/of.h>
+#include <linux/delay.h>
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/slab.h>
@@ -38,7 +40,24 @@ struct bcm_clk {
 	void __iomem	*clk_cfg;
 };
 
+struct bcm_clk_gate {
+	struct clk_hw hw;
+	void __iomem *reg;
+	u8 bit_idx;
+	u8 flags;
+	u32 delay[2];
+	spinlock_t *lock;
+	struct clk_ops ops;
+};
+
+struct bcm_clk_sw {
+	struct clk_hw hw;
+	struct clk_ops ops;
+};
+
 #define to_brcmstb_clk(p) container_of(p, struct bcm_clk, hw)
+#define to_brcmstb_clk_gate(p) container_of(p, struct bcm_clk_gate, hw)
+#define to_brcmstb_clk_sw(p) container_of(p, struct bcm_clk_sw, hw)
 
 static int
 brcmstb_clk_pll_enable(struct clk_hw *hwclk)
@@ -339,9 +358,259 @@ err:
 		iounmap(reg);
 }
 
-static const __initconst struct of_device_id brcmstb_clk_match[] = {
-	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
-	{ .compatible = "brcm,brcmstb-cpu-clk-div", .data = cpu_clk_div_setup, },
+/*
+ * It works on following logic:
+ *
+ * For enabling clock, enable = 1
+ *	set2dis = 1	-> clear bit	-> set = 0
+ *	set2dis = 0	-> set bit	-> set = 1
+ *
+ * For disabling clock, enable = 0
+ *	set2dis = 1	-> set bit	-> set = 1
+ *	set2dis = 0	-> clear bit	-> set = 0
+ *
+ * So, result is always: enable xor set2dis.
+ */
+static void brcmstb_clk_gate_endisable(struct clk_hw *hw, int enable)
+{
+	struct bcm_clk_gate *gate = to_brcmstb_clk_gate(hw);
+	int set = gate->flags & CLK_GATE_SET_TO_DISABLE ? 1 : 0;
+	unsigned long flags = 0;
+	u32 reg;
+
+	set ^= enable;
+
+	if (gate->lock)
+		spin_lock_irqsave(gate->lock, flags);
+
+	reg = readl(gate->reg);
+
+	if (set)
+		reg |= BIT(gate->bit_idx);
+	else
+		reg &= ~BIT(gate->bit_idx);
+
+	writel(reg, gate->reg);
+
+	if (set == 0 && gate->delay[0])
+		udelay(gate->delay[0]);
+	else if (set == 1 && gate->delay[1])
+		udelay(gate->delay[1]);
+
+	if (gate->lock)
+		spin_unlock_irqrestore(gate->lock, flags);
+}
+
+static int brcmstb_clk_gate_enable(struct clk_hw *hw)
+{
+	brcmstb_clk_gate_endisable(hw, 1);
+	return 0;
+}
+
+static void brcmstb_clk_gate_disable(struct clk_hw *hw)
+{
+	brcmstb_clk_gate_endisable(hw, 0);
+}
+
+static int brcmstb_clk_gate_is_enabled(struct clk_hw *hw)
+{
+	u32 reg;
+	struct bcm_clk_gate *gate = to_brcmstb_clk_gate(hw);
+
+	reg = readl(gate->reg);
+
+	/* if a set bit disables this clk, flip it before masking */
+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+		reg ^= BIT(gate->bit_idx);
+
+	reg &= BIT(gate->bit_idx);
+	return reg ? 1 : 0;
+}
+
+const struct clk_ops brcmstb_clk_gate_ops = {
+	.enable = brcmstb_clk_gate_enable,
+	.disable = brcmstb_clk_gate_disable,
+	.is_enabled = brcmstb_clk_gate_is_enabled,
+};
+
+/**
+ * brcm_clk_gate_register - register a bcm gate clock with the clock framework.
+ * @dev: device that is registering this clock
+ * @name: name of this clock
+ * @parent_name: name of this clock's parent
+ * @flags: framework-specific flags for this clock
+ * @reg: register address to control gating of this clock
+ * @bit_idx: which bit in the register controls gating of this clock
+ * @clk_gate_flags: gate-specific flags for this clock
+ * @delay: usec delay in turning on, off.
+ * @lock: shared register lock for this clock
+ */
+struct clk __init *brcm_clk_gate_register(
+	struct device *dev, const char *name, const char *parent_name,
+	unsigned long flags, void __iomem *reg, u8 bit_idx,
+	u8 clk_gate_flags, u32 delay[2], spinlock_t *lock)
+{
+	struct bcm_clk_gate *gate;
+	struct clk *clk;
+	struct clk_init_data init;
+
+	/* allocate the gate */
+	gate = kzalloc(sizeof(struct bcm_clk_gate), GFP_KERNEL);
+	if (!gate) {
+		pr_err("%s: could not allocate bcm gated clk\n", __func__);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	init.name = name;
+	init.ops = &brcmstb_clk_gate_ops;
+	init.parent_names = (parent_name ? &parent_name : NULL);
+	init.num_parents = (parent_name ? 1 : 0);
+	init.flags = flags | (parent_name ? 0 : CLK_IS_ROOT);
+	init.flags |= CLK_IGNORE_UNUSED; /* FIXME */
+
+	/* struct bcm_gate assignments */
+	gate->reg = reg;
+	gate->bit_idx = bit_idx;
+	gate->flags = clk_gate_flags;
+	gate->lock = lock;
+	gate->delay[0] = delay[0];
+	gate->delay[1] = delay[1];
+	gate->hw.init = &init;
+
+	clk = clk_register(dev, &gate->hw);
+
+	if (IS_ERR(clk))
+		kfree(gate);
+
+	return clk;
+}
+
+const struct clk_ops brcmstb_clk_sw_ops = {};
+
+/**
+ * brcmstb_clk_sw_register - register a bcm gate clock with the clock framework.
+ * @dev: device that is registering this clock
+ * @name: name of this clock
+ * @parents: name of this clock's parents; not known by clock framework
+ * @num_parents: number of parents
+ * @flags: framework-specific flags for this clock
+ * @lock: shared register lock for this clock
+ */
+struct clk __init *brcmstb_clk_sw_register(
+	struct device *dev, const char *name, const char **parent_names,
+	int num_parents, unsigned long flags, spinlock_t *lock)
+{
+	struct bcm_clk_sw *sw_clk;
+	struct clk *clk;
+	struct clk_init_data init;
+
+	/* allocate the gate */
+	sw_clk = kzalloc(sizeof(struct bcm_clk_sw), GFP_KERNEL);
+	if (!sw_clk) {
+		pr_err("%s: could not allocate bcm sw clk\n", __func__);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	init.name = name;
+	init.ops = &brcmstb_clk_sw_ops;
+	init.parent_names = parent_names;
+	init.num_parents = num_parents;
+	init.flags = flags | CLK_IS_BASIC | CLK_IS_SW;
+	init.flags |= CLK_IGNORE_UNUSED; /* FIXME */
+
+	sw_clk->hw.init = &init;
+	clk = clk_register(dev, &sw_clk->hw);
+	if (IS_ERR(clk))
+		kfree(sw_clk);
+	return clk;
+}
+
+/**
+ * of_brcmstb_gate_clk_setup() - Setup function for brcmstb gate clock
+ */
+static void __init of_brcmstb_clk_gate_setup(struct device_node *node)
+{
+	struct clk *clk;
+	const char *clk_name = node->name;
+	void __iomem *reg;
+	const char *parent_name;
+	u8 clk_gate_flags = 0;
+	u32 bit_idx = 0;
+	u32 delay[2] = {0, 0};
+	int ret;
+
+	of_property_read_string(node, "clock-output-names", &clk_name);
+	parent_name = of_clk_get_parent_name(node, 0);
+	if (of_property_read_u32(node, "bit-shift", &bit_idx)) {
+		pr_err("%s: missing bit-shift property for %s\n",
+				__func__, node->name);
+		return;
+	}
+	reg = of_iomap(node, 0);
+	if (!reg) {
+		pr_err("unable to iomap cpu clk divider register!\n");
+		return;
+	}
+
+	of_property_read_u32_array(node, "brcm,delay", delay, 2);
+
+	if (of_property_read_bool(node, "set-bit-to-disable"))
+		clk_gate_flags |= CLK_GATE_SET_TO_DISABLE;
+
+	clk = brcm_clk_gate_register(NULL, clk_name, parent_name, 0, reg,
+				     (u8) bit_idx, clk_gate_flags, delay,
+				     &lock);
+	if (!IS_ERR(clk)) {
+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+		ret = clk_register_clkdev(clk, clk_name, NULL);
+		if (ret)
+			pr_err("%s: clk device registration failed for '%s'\n",
+			       __func__, clk_name);
+	}
+}
+
+static void __init of_brcmstb_clk_sw_setup(struct device_node *node)
+{
+	struct clk *clk;
+	const char *clk_name = node->name;
+	int num_parents;
+	const char **parent_names;
+	int ret, i;
+
+	of_property_read_string(node, "clock-output-names", &clk_name);
+	num_parents = of_property_count_strings(node, "clock-names");
+	if (num_parents < 1) {
+		pr_err("%s: brcm-sw-clock %s must have parent(s)\n",
+				__func__, node->name);
+		return;
+	}
+	parent_names = kzalloc((sizeof(char *) * num_parents),
+			GFP_KERNEL);
+
+	for (i = 0; i < num_parents; i++)
+		parent_names[i] = of_clk_get_parent_name(node, i);
+
+	clk = brcmstb_clk_sw_register(NULL, clk_name, parent_names, num_parents,
+				   0, NULL);
+
+	if (!IS_ERR(clk)) {
+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+		ret = clk_register_clkdev(clk, clk_name, NULL);
+		if (ret)
+			pr_err("%s: clk device registration failed for '%s'\n",
+			       __func__, clk_name);
+	}
+}
+
+static const struct of_device_id brcmstb_clk_match[] __initconst = {
+	{ .compatible = "fixed-clock",
+	  .data = of_fixed_clk_setup, },
+	{ .compatible = "brcm,brcmstb-gate-clk",
+	  .data = of_brcmstb_clk_gate_setup, },
+	{ .compatible = "brcm,brcmstb-sw-clk",
+	  .data = of_brcmstb_clk_sw_setup, },
+	{ .compatible = "brcm,brcmstb-cpu-clk-div",
+	  .data = cpu_clk_div_setup, },
 	{}
 };
 

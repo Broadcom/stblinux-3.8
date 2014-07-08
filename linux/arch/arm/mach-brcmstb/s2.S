@@ -14,14 +14,7 @@
 #include <linux/linkage.h>
 #include <asm/assembler.h>
 
-/* PLL power-down; use CPU ready-for-powerdown signal; initiate power-down */
-#define PM_STANDBY_COMMAND	0x07
-
-#define AON_CTRL_RESET_CTRL		0x00
-#define AON_CTRL_PM_CTRL		0x04
-#define AON_CTRL_PM_STATUS		0x08
-#define AON_CTRL_PM_INITIATE		0x88
-#define AON_CTRL_HOST_MISC_CMDS		0x8c
+#include "pm.h"
 
 	.text
 	.align	3
@@ -42,7 +35,7 @@ ENTRY(brcmstb_pm_do_s2)
 	dsb
 
 	/* power down request */
-	ldr	r0, =PM_STANDBY_COMMAND
+	ldr	r0, =PM_S2_COMMAND
 	ldr	r1, =0
 	str	r1, [AON_CTRL_REG, #AON_CTRL_PM_CTRL]
 	ldr	r1, [AON_CTRL_REG, #AON_CTRL_PM_CTRL]

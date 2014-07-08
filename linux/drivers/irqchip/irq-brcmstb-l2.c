@@ -183,7 +183,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
 
 	/* Allocate a single Generic IRQ chip for this node */
 	data->gc = irq_alloc_generic_chip(np->full_name, 1, irq_base,
-			data->base, handle_level_irq);
+			data->base, handle_edge_irq);
 	if (!data->gc) {
 		ret = -ENOMEM;
 		goto out_free_domain;
@@ -223,7 +223,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
 		register_reboot_notifier(&data->reboot_notifier);
 	}
 
-	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0, IRQ_LEVEL | IRQF_VALID);
+	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, 0, 0);
 
 	pr_info("registered L2 intc (mem: 0x%p, parent irq: %d)\n",
 			data->base, data->parent_irq);

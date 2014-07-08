@@ -3,7 +3,9 @@
 Required properties:
 - compatible: should be one of "brcm,systemport-v1.00" or "brcm,systemport"
 - reg: address and length of the register set for the device.
-- interrupts: interrupt(s) for the device
+- interrupts: interrupt(s) for the device, 1 interrupt is the RX and misc
+  interrupts, the second is the TX queues interrupts. A 3rd optional interupt
+  is used for Wake-on-LAN
 - local-mac-address: Ethernet MAC address (48 bits) of this adapter
 - phy-mode: Should be a string describing the PHY interface to the
   Ethernet switch/PHY

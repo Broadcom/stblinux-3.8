@@ -1,0 +1,32 @@
+* Broadcom Register Save/Restore Mechanism
+
+Broadcom leverages the syscon functionality [1] to save and restore register
+sets during PM operations.  Examples of such register sets are pinmux registers,
+memc registers, etc.  Each register set to be saved/restored is described by a
+syscon node which is defined in [1], for example:
+
+	sun_top_ctrl: syscon@f0404000 {
+		compatible = "brcm,brcmstb-sun-top-ctrl",
+			"syscon";
+		reg = <0xf0404000 0x51c>;
+	};
+
+There may be several of these syscons nodes defined.  If syscon nodes are used,
+the device tree must define an 's3' node as follows:
+
+Required properties:
+- syscon-refs: a phandle list that refers to all of the defined syscon nodes.
+
+Example:
+	s3 {
+		syscon-refs = <&sun_top_ctrl_pin_mux_ctrl>,
+			<&sun_top_ctrl_pin_mux_pad_ctrl>,
+			<&aon_pin_ctrl_pin_mux_ctrl>,
+			<&aon_pin_ctrl_pad_mux_ctrl>,
+			<&memc_arb_0_client_info>,
+			<&memc_arb_1_client_info>,
+			<&memc_arb_2_client_info>;
+	};
+
+
+1. linux/Documentation/devicetree/bindings/mfd/syscon.txt

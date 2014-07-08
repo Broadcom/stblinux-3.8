@@ -152,7 +152,8 @@ void brcm_sata3_phy_spd_set(struct sata_brcm_pdata *pdata, int port, int val)
 	pdata->phy_force_spd[port / SPD_SETTING_WIDTH] = tmp;
 }
 
-static void brcm_sata3_phy_enable(const struct sata_brcm_pdata *pdata, int port)
+static void _brcm_sata3_phy_cfg(const struct sata_brcm_pdata *pdata, int port,
+			       int enable)
 {
 	/* yfzhang@broadcom.com has stated that the core will only have (2)
 	 * ports. Further, the RDB currently lacks documentation for these
@@ -164,7 +165,6 @@ static void brcm_sata3_phy_enable(const struct sata_brcm_pdata *pdata, int port)
 		SATA_TOP_CTRL_PHY_CTRL_OFS + (1 * SATA_TOP_CTRL_PHY_CTRL_LEN),
 	};
 	void __iomem *top_ctrl;
-	u32 reg;
 
 	if (pdata->quirks & SATA_BRCM_QK_ALT_RST) {
 #if (defined(CONFIG_BRCMSTB) && \
@@ -187,28 +187,58 @@ defined(BCHP_SUN_TOP_CTRL_GENERAL_CTRL_0_sata_phy_disable_MASK))
 
 	if (port < MAX_PHY_CTRL_PORTS) {
 		void __iomem *p;
+		u32 reg;
 
-		/* clear PHY_DEFAULT_POWER_STATE */
-		p = top_ctrl + port_to_phy_ctrl_ofs[port] +
-			SATA_TOP_CTRL_PHY_CTRL_1;
-		reg = readl(p);
-		reg &= ~SATA_TOP_CTRL_2_PHY_DEFAULT_POWER_STATE;
-		writel(reg, p);
+		if (enable) {
+			/* clear PHY_DEFAULT_POWER_STATE */
+			p = top_ctrl + port_to_phy_ctrl_ofs[port] +
+				SATA_TOP_CTRL_PHY_CTRL_1;
+			reg = readl(p);
+			reg &= ~SATA_TOP_CTRL_1_PHY_DEFAULT_POWER_STATE;
+			writel(reg, p);
 
-		/* toggle PHY_GLOBAL_RST */
-		p = top_ctrl + port_to_phy_ctrl_ofs[port] +
-			SATA_TOP_CTRL_PHY_CTRL_2;
-		reg = readl(p);
-		reg |= SATA_TOP_CTRL_1_PHY_GLOBAL_RESET;
-		writel(reg, p);
-		reg &= ~SATA_TOP_CTRL_1_PHY_GLOBAL_RESET;
-		writel(reg, p);
+			/* reset the PHY digital logic */
+			p = top_ctrl + port_to_phy_ctrl_ofs[port] +
+				SATA_TOP_CTRL_PHY_CTRL_2;
+			reg = readl(p);
+			reg &= ~(SATA_TOP_CTRL_2_SW_RST_MDIOREG |
+				 SATA_TOP_CTRL_2_SW_RST_OOB |
+				 SATA_TOP_CTRL_2_SW_RST_RX);
+			reg |= SATA_TOP_CTRL_2_SW_RST_TX;
+			writel(reg, p);
+			reg = readl(p);
+			reg |= SATA_TOP_CTRL_2_PHY_GLOBAL_RESET;
+			writel(reg, p);
+			reg = readl(p);
+			reg &= ~SATA_TOP_CTRL_2_PHY_GLOBAL_RESET;
+			writel(reg, p);
+			reg = readl(p);
+		} else {
+			/* power-off the PHY digital logic */
+			p = top_ctrl + port_to_phy_ctrl_ofs[port] +
+				SATA_TOP_CTRL_PHY_CTRL_2;
+			reg = readl(p);
+			reg |= (SATA_TOP_CTRL_2_SW_RST_MDIOREG |
+				SATA_TOP_CTRL_2_SW_RST_OOB |
+				SATA_TOP_CTRL_2_SW_RST_RX |
+				SATA_TOP_CTRL_2_SW_RST_TX |
+				SATA_TOP_CTRL_2_PHY_GLOBAL_RESET);
+			writel(reg, p);
+
+			/* set PHY_DEFAULT_POWER_STATE */
+			p = top_ctrl + port_to_phy_ctrl_ofs[port] +
+				SATA_TOP_CTRL_PHY_CTRL_1;
+			reg = readl(p);
+			reg |= SATA_TOP_CTRL_1_PHY_DEFAULT_POWER_STATE;
+			writel(reg, p);
+		}
 	}
 
 	iounmap(top_ctrl);
 }
 
-void brcm_sata3_phy_init(const struct sata_brcm_pdata *pdata, int port)
+void brcm_sata3_phy_cfg(const struct sata_brcm_pdata *pdata, int port,
+			int enable)
 {
 	const u32 phy_base = pdata->phy_base_addr;
 	const int ssc_enable = pdata->phy_enable_ssc_mask & (1 << port);
@@ -241,17 +271,18 @@ void brcm_sata3_phy_init(const struct sata_brcm_pdata *pdata, int port)
 				PLL_REG_BANK_0_PLLCONTROL_0,
 				0xfffffffe, 0x0);
 		}
-
-		brcm_sata3_phy_enable(pdata, port);
 	} else
 		cfg_op = &cfg_op_tbl[SATA_PHY_MDIO_LEGACY];
 
-	if (cfg_op->cfg_ssc)
-		cfg_op->cfg_ssc(base, port, ssc_enable);
+	if (enable) {
+		_brcm_sata3_phy_cfg(pdata, port, 1);
+		if (cfg_op->cfg_ssc)
+			cfg_op->cfg_ssc(base, port, ssc_enable);
+	} else
+		_brcm_sata3_phy_cfg(pdata, port, 0);
 
 	iounmap(base);
 
 err:
 	return;
 }
-

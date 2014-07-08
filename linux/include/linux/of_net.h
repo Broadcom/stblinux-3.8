@@ -9,8 +9,14 @@
 
 #ifdef CONFIG_OF_NET
 #include <linux/of.h>
+
+struct net_device;
+
 extern const int of_get_phy_mode(struct device_node *np);
 extern const void *of_get_mac_address(struct device_node *np);
+#ifdef CONFIG_BRCMSTB
+extern struct net_device *of_find_net_device_by_node(struct device_node *np);
+#endif
 #else
 static inline const int of_get_phy_mode(struct device_node *np)
 {
@@ -21,6 +27,13 @@ static inline const void *of_get_mac_address(struct device_node *np)
 {
 	return NULL;
 }
+
+#ifdef CONFIG_BRCMSTB
+static inline struct net_device *of_find_net_device_by_node(struct device_node *np)
+{
+	return NULL
+};
+#endif /* CONFIG_BRCMSTB */
 #endif
 
 #endif /* __LINUX_OF_NET_H */

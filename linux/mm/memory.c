@@ -1628,6 +1628,62 @@ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long add
 	       stack_guard_page_end(vma, addr+PAGE_SIZE);
 }
 
+#if defined(CONFIG_BRCMSTB)
+static int cma_get_page(struct mm_struct *mm, struct vm_area_struct *vma,
+			unsigned long start, struct page **page)
+{
+#if defined(CONFIG_CMA)
+	const unsigned long pg = start & PAGE_MASK;
+	int ret = -EFAULT;
+	pgd_t *pgd;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+	struct page *tmp_page;
+
+	pgd = pgd_offset(mm, pg);
+	BUG_ON(pgd_none(*pgd));
+	pud = pud_offset(pgd, pg);
+	BUG_ON(pud_none(*pud));
+	pmd = pmd_offset(pud, pg);
+	if (pmd_none(*pmd))
+		return ret;
+
+	pte = pte_offset_map(pmd, pg);
+	if (!pte)
+		return ret;
+
+	if (pte_none(*pte))
+		goto out;
+
+	tmp_page = pte_page(*pte);
+	if (!tmp_page)
+		goto out;
+
+	if (!page_count(tmp_page))
+		goto out;
+
+	if (page_mapped(tmp_page))
+		goto out;
+
+	if (get_pageblock_migratetype(tmp_page) != MIGRATE_CMA)
+		goto out;
+
+	if (page) {
+		*page = tmp_page;
+		get_page(*page);
+	}
+	ret = 0;
+
+out:
+	pte_unmap(pte);
+	return ret;
+#else
+	return 0;
+#endif
+}
+#endif
+
 /**
  * __get_user_pages() - pin user pages in memory
  * @tsk:	task_struct of target task
@@ -1764,10 +1820,10 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 			goto next_page;
 		}
 
-#if defined(CONFIG_BRCMSTB) && defined(CONFIG_CMA)
+#if defined(CONFIG_BRCMSTB)
 		/* handle direct I/O on CMA regions */
-		if (!cma_dev_get_page(mm, vma, start,
-				       pages ? &pages[i] : NULL)) {
+		if (!cma_get_page(mm, vma, start,
+				  pages ? &pages[i] : NULL)) {
 			if (vmas)
 				vmas[i] = vma;
 			i++;

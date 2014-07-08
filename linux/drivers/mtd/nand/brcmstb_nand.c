@@ -43,9 +43,6 @@
 
 #include <linux/brcmstb/brcmstb.h>
 
-/* FIXME */
-#define brcm_pm_deep_sleep()	1
-
 /*
  * SWLINUX-1818: this flag controls if WP stays on between erase/write
  * commands to mitigate flash corruption due to power glitches. Values:
@@ -253,7 +250,6 @@ struct brcmstb_nand_controller {
 	u32			nand_cs_nand_select;
 	u32			nand_cs_nand_xor;
 	u32			corr_stat_threshold;
-	u32			hif_intr2;
 	u32			flash_dma_mode;
 
 #ifdef HW7445_988_WORKAROUND
@@ -276,6 +272,7 @@ struct brcmstb_nand_cfg {
 	/* use for low-power standby/resume only */
 	u32			acc_control;
 	u32			config;
+	u32			config_ext;
 	u32			timing_1;
 	u32			timing_2;
 };
@@ -1688,6 +1685,13 @@ static int brcmstb_check_exceptions(struct mtd_info *mtd)
 	chip->options |= NAND_SCAN_SILENT_NODEV;
 	nand_scan_ident(mtd, 1, brcmstb_empty_flash_table);
 	chip->options &= ~NAND_SCAN_SILENT_NODEV;
+	/*
+	 * NAND_USE_BOUNCE_BUFFER option prevents us from getting
+	 * passed kmapped buffer that we cannot DMA.
+	 * When option is set nand_base passes preallocated poi
+	 * buffer that is used as bounce buffer for DMA
+	 */
+	chip->options |= NAND_USE_BOUNCE_BUFFER;
 
 	/* Send the command for reading device ID */
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
@@ -1830,29 +1834,30 @@ static int brcmstb_nand_suspend(struct device *dev)
 	struct brcmstb_nand_controller *ctrl = dev_get_drvdata(dev);
 	struct brcmstb_nand_host *host;
 
-	if (!brcm_pm_deep_sleep())
-		return 0;
-
 	dev_dbg(dev, "Save state for S3 suspend\n");
-	ctrl->nand_cs_nand_select = BDEV_RD(BCHP_NAND_CS_NAND_SELECT);
-	ctrl->nand_cs_nand_xor = BDEV_RD(BCHP_NAND_CS_NAND_XOR);
-	ctrl->corr_stat_threshold =
-		BDEV_RD(BCHP_NAND_CORR_STAT_THRESHOLD);
-
-	if (!ctrl->irq_cascaded)
-		ctrl->hif_intr2 = HIF_ENABLED_IRQ(NAND_CTLRDY);
-	if (has_flash_dma(ctrl)) {
-		if (!ctrl->irq_cascaded)
-			ctrl->hif_intr2 |= flash_dma_irq_enabled(ctrl);
-		ctrl->flash_dma_mode = flash_dma_readl(ctrl, FLASH_DMA_MODE);
-	}
 
 	list_for_each_entry(host, &ctrl->host_list, node) {
 		host->hwcfg.acc_control = BDEV_RD(REG_ACC_CONTROL(host->cs));
 		host->hwcfg.config = BDEV_RD(REG_CONFIG(host->cs));
+#if CONTROLLER_VER >= 71
+		host->hwcfg.config_ext = BDEV_RD(REG_CONFIG_EXT(host->cs));
+#endif
 		host->hwcfg.timing_1 = BDEV_RD(REG_TIMING_1(host->cs));
 		host->hwcfg.timing_2 = BDEV_RD(REG_TIMING_2(host->cs));
 	}
+
+	ctrl->nand_cs_nand_select = BDEV_RD(BCHP_NAND_CS_NAND_SELECT);
+	ctrl->nand_cs_nand_xor = BDEV_RD(BCHP_NAND_CS_NAND_XOR);
+	ctrl->corr_stat_threshold = BDEV_RD(BCHP_NAND_CORR_STAT_THRESHOLD);
+
+	if (!ctrl->irq_cascaded) {
+		HIF_DISABLE_IRQ(NAND_CTLRDY);
+		if (has_flash_dma(ctrl))
+			flash_dma_irq_disable(ctrl);
+	}
+
+	if (has_flash_dma(ctrl))
+		ctrl->flash_dma_mode = flash_dma_readl(ctrl, FLASH_DMA_MODE);
 
 	return 0;
 }
@@ -1861,9 +1866,6 @@ static int brcmstb_nand_resume(struct device *dev)
 {
 	struct brcmstb_nand_controller *ctrl = dev_get_drvdata(dev);
 	struct brcmstb_nand_host *host;
-
-	if (!brcm_pm_deep_sleep())
-		return 0;
 
 	dev_dbg(dev, "Restore state after S3 suspend\n");
 
@@ -1877,7 +1879,7 @@ static int brcmstb_nand_resume(struct device *dev)
 	BDEV_WR_RB(BCHP_NAND_CORR_STAT_THRESHOLD,
 			ctrl->corr_stat_threshold);
 
-	if (!ctrl->irq_cascaded && ctrl->hif_intr2) {
+	if (!ctrl->irq_cascaded) {
 		HIF_ACK_IRQ(NAND_CTLRDY);
 		HIF_ENABLE_IRQ(NAND_CTLRDY);
 		if (has_flash_dma(ctrl))
@@ -1890,6 +1892,9 @@ static int brcmstb_nand_resume(struct device *dev)
 
 		BDEV_WR_RB(REG_ACC_CONTROL(host->cs), host->hwcfg.acc_control);
 		BDEV_WR_RB(REG_CONFIG(host->cs), host->hwcfg.config);
+#if CONTROLLER_VER >= 71
+		BDEV_WR_RB(REG_CONFIG_EXT(host->cs), host->hwcfg.config_ext);
+#endif
 		BDEV_WR_RB(REG_TIMING_1(host->cs), host->hwcfg.timing_1);
 		BDEV_WR_RB(REG_TIMING_2(host->cs), host->hwcfg.timing_2);
 
@@ -2125,14 +2130,14 @@ static int brcmstb_nand_remove(struct platform_device *pdev)
 {
 	struct brcmstb_nand_controller *ctrl = dev_get_drvdata(&pdev->dev);
 	struct brcmstb_nand_host *host;
-	struct mtd_info *mtd = &host->mtd;
 
 	list_for_each_entry(host, &ctrl->host_list, node)
-		nand_release(mtd);
+		nand_release(&host->mtd);
 
 	if (!ctrl->irq_cascaded) {
 		HIF_DISABLE_IRQ(NAND_CTLRDY);
-		flash_dma_irq_disable(ctrl);
+		if (has_flash_dma(ctrl))
+			flash_dma_irq_disable(ctrl);
 	}
 
 	dev_set_drvdata(&pdev->dev, NULL);

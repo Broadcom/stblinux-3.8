@@ -612,6 +612,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
 					const struct of_device_id **match)
 {
 	struct device_node *np;
+	const struct of_device_id *m;
 
 	if (match)
 		*match = NULL;
@@ -619,9 +620,10 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
 	read_lock(&devtree_lock);
 	np = from ? from->allnext : of_allnodes;
 	for (; np; np = np->allnext) {
-		if (of_match_node(matches, np) && of_node_get(np)) {
+		m = of_match_node(matches, np);
+		if (m && of_node_get(np)) {
 			if (match)
-				*match = matches;
+				*match = m;
 			break;
 		}
 	}
@@ -968,6 +970,16 @@ int of_property_count_strings(struct device_node *np, const char *propname)
 	return i;
 }
 EXPORT_SYMBOL_GPL(of_property_count_strings);
+
+void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
+{
+	int i;
+	printk("%s %s", msg, of_node_full_name(args->np));
+	for (i = 0; i < args->args_count; i++)
+		printk(i ? ",%08x" : ":%08x", args->args[i]);
+	printk("\n");
+}
+
 
 /**
  * of_parse_phandle - Resolve a phandle property to a device_node pointer

@@ -32,6 +32,7 @@
 #define BCM53101_PHY_ID		0x03625ed0
 
 static unsigned char swdata[16];
+static struct proc_dir_entry *p;
 
 #define PSEUDO_PHY_ADDR	0x1e
 
@@ -659,10 +660,7 @@ static int proc_set_sw_param(struct file *f, const char *buf, unsigned long cnt,
 
 static int ethsw_add_proc_files(struct phy_device *phydev)
 {
-	struct proc_dir_entry *p;
-
 	p = create_proc_entry("switch", 0644, NULL);
-
 	if (p == NULL)
 		return -1;
 
@@ -682,6 +680,12 @@ static int bcm53x25_ethsw_init(struct phy_device *phydev)
 	ethsw_config_learning(phydev);
 
 	return 0;
+}
+
+static int bcm53x25_ethsw_resume(struct phy_device *phydev)
+{
+	bcm53x25_ethsw_init(phydev);
+	return ethsw_force_speed(phydev);
 }
 
 static int bcm53x25_config_aneg(struct phy_device *phydev)
@@ -723,7 +727,10 @@ static int bcm53x25_probe(struct phy_device *phydev)
 		return -ENODEV;
 	}
 
-
+	if (p) {
+		remove_proc_entry("switch", NULL);
+		p = NULL;
+	}
 	ethsw_add_proc_files(phydev);
 
 	return 0;
@@ -746,6 +753,7 @@ static struct phy_driver bcm53x25_driver[] = {
 		.config_init	= bcm53x25_ethsw_init,
 		.config_aneg	= bcm53x25_config_aneg,
 		.read_status	= bcm53x25_read_status,
+		.resume		= bcm53x25_ethsw_resume,
 		.driver		= { .owner = THIS_MODULE },
 	},
 	{
@@ -758,6 +766,7 @@ static struct phy_driver bcm53x25_driver[] = {
 		.config_init	= bcm53x25_ethsw_init,
 		.config_aneg	= bcm53x25_config_aneg,
 		.read_status	= bcm53x25_read_status,
+		.resume		= bcm53x25_ethsw_resume,
 		.driver		= { .owner = THIS_MODULE },
 	},
 };

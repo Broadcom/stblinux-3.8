@@ -32,9 +32,6 @@
 
 #include <linux/brcmstb/brcmstb.h>
 
-/* FIXME */
-#define brcm_pm_deep_sleep()	1
-
 #if 0
 #define DBG printk
 #else
@@ -1536,26 +1533,21 @@ static int bcmspi_remove(struct platform_device *pdev)
 
 static int bcmspi_suspend(struct device *dev)
 {
-	if (brcm_pm_deep_sleep()) {
-		struct bcmspi_priv *priv = dev_get_drvdata(dev);
-		priv->s3_intr2_mask =
-			BDEV_RD(BCHP_HIF_SPI_INTR2_CPU_MASK_STATUS);
-	}
+	struct bcmspi_priv *priv = dev_get_drvdata(dev);
+	priv->s3_intr2_mask = BDEV_RD(BCHP_HIF_SPI_INTR2_CPU_MASK_STATUS);
 	return 0;
 };
 
 static int bcmspi_resume(struct device *dev)
 {
-	if (brcm_pm_deep_sleep()) {
-		struct bcmspi_priv *priv = dev_get_drvdata(dev);
-		int curr_cs = priv->curr_cs;
-		BDEV_WR_RB(BCHP_HIF_SPI_INTR2_CPU_MASK_CLEAR,
-			~priv->s3_intr2_mask);
-		bcmspi_hw_init(priv);
-		bcmspi_set_mode(priv, -1, -1, -1);
-		priv->curr_cs = -1;
-		bcmspi_set_chip_select(priv, curr_cs);
-	}
+	struct bcmspi_priv *priv = dev_get_drvdata(dev);
+	int curr_cs = priv->curr_cs;
+	BDEV_WR_RB(BCHP_HIF_SPI_INTR2_CPU_MASK_CLEAR, ~priv->s3_intr2_mask);
+	bcmspi_hw_init(priv);
+	bcmspi_set_mode(priv, -1, -1, -1);
+	priv->curr_cs = -1;
+	bcmspi_set_chip_select(priv, curr_cs);
+
 	return 0;
 }
 

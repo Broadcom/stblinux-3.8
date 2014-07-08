@@ -33,12 +33,6 @@
 #include <linux/mm_types.h>
 #include <linux/dma-contiguous.h>
 
-struct cma {
-	unsigned long	base_pfn;
-	unsigned long	count;
-	unsigned long	*bitmap;
-};
-
 static DEFINE_MUTEX(cma_mutex);
 
 struct cma *dma_contiguous_def_area;

@@ -14,6 +14,8 @@
 
 /* Register set relative to 'REG' */
 #define REG_SWITCH_CNTRL		0x00
+#define  MDIO_MASTER_SEL		(1 << 0)
+
 #define REG_SWITCH_STATUS		0x04
 #define REG_DIR_DATA_WRITE		0x08
 #define REG_DIR_DATA_READ		0x0C
@@ -137,17 +139,25 @@
 #define  UC_FWD_EN			(1 << 6)
 #define  MC_FWD_EN			(1 << 7)
 
+#define CORE_SWITCH_CTRL		0x00088
+#define  MII_DUMB_FWDG_EN		(1 << 6)
+
 #define CORE_SFT_LRN_CTRL		0x000f8
 #define  SW_LEARN_CNTL(x)		(1 << (x))
 
 #define CORE_STS_OVERRIDE_GMIIP_PORT(x)	(0x160 + (x) * 4)
 #define  LINK_STS			(1 << 0)
 #define  DUPLX_MODE			(1 << 1)
-#define  SPEED_SHIFT			(1 << 2)
+#define  SPEED_SHIFT			2
 #define  SPEED_MASK			0x3
 #define  RXFLOW_CNTL			(1 << 4)
 #define  TXFLOW_CNTL			(1 << 5)
 #define  SW_OVERRIDE			(1 << 6)
+
+#define CORE_WATCHDOG_CTRL		0x001e4
+#define  SOFTWARE_RESET			(1 << 7)
+#define  EN_CHIP_RST			(1 << 6)
+#define  EN_SW_RESET			(1 << 4)
 
 #define CORE_LNKSTS			0x00400
 #define  LNK_STS_MASK			0x1ff
@@ -202,8 +212,15 @@
 #define CORE_BRCM_HDR_RX_DIS		0x0980
 #define CORE_BRCM_HDR_TX_DIS		0x0988
 
+#define CORE_MEM_PSM_VDD_CTRL		0x2380
+#define  P_TXQ_PSM_VDD_SHIFT		2
+#define  P_TXQ_PSM_VDD_MASK		0x3
+#define  P_TXQ_PSM_VDD(x)		(P_TXQ_PSM_VDD_MASK << \
+					((x) * P_TXQ_PSM_VDD_SHIFT))
+
 #define	CORE_P0_MIB_OFFSET		0x8000
 #define P_MIB_SIZE			0x400
 #define CORE_P_MIB_OFFSET(x)		(CORE_P0_MIB_OFFSET + (x) * P_MIB_SIZE)
+
 
 #endif /* __BCM_SF2_REGS_H */

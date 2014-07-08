@@ -134,9 +134,9 @@ static int bcm_sysport_set_rx_csum(struct net_device *dev,
 	struct bcm_sysport_priv *priv = netdev_priv(dev);
 	u32 reg;
 
-	priv->rx_csum_en = !!(wanted & NETIF_F_RXCSUM);
+	priv->rx_chk_en = !!(wanted & NETIF_F_RXCSUM);
 	reg = rxchk_readl(priv, RXCHK_CONTROL);
-	if (priv->rx_csum_en)
+	if (priv->rx_chk_en)
 		reg |= RXCHK_EN;
 	else
 		reg &= ~RXCHK_EN;
@@ -144,7 +144,7 @@ static int bcm_sysport_set_rx_csum(struct net_device *dev,
 	/* If UniMAC forwards CRC, we need to skip over it to get
 	 * a valid CHK bit to be set in the per-packet status word
 	 */
-	if (priv->rx_csum_en && priv->crc_fwd)
+	if (priv->rx_chk_en && priv->crc_fwd)
 		reg |= RXCHK_SKIP_FCS;
 	else
 		reg &= ~RXCHK_SKIP_FCS;
@@ -423,6 +423,64 @@ static void bcm_sysport_get_stats(struct net_device *dev,
 		p += s->stat_offset;
 		data[i] = *(u32 *)p;
 	}
+}
+
+static void bcm_sysport_get_wol(struct net_device *dev,
+				struct ethtool_wolinfo *wol)
+{
+	struct bcm_sysport_priv *priv = netdev_priv(dev);
+	u32 reg;
+
+	wol->supported = WAKE_MAGIC | WAKE_MAGICSECURE;
+	wol->wolopts = priv->wolopts;
+
+	if (!(priv->wolopts & WAKE_MAGICSECURE))
+		return;
+
+	/* Return the programmed SecureOn password */
+	reg = umac_readl(priv, UMAC_PSW_MS);
+	put_unaligned_be16(reg, &wol->sopass[0]);
+	reg = umac_readl(priv, UMAC_PSW_LS);
+	put_unaligned_be32(reg, &wol->sopass[2]);
+}
+
+static int bcm_sysport_set_wol(struct net_device *dev,
+				struct ethtool_wolinfo *wol)
+{
+	struct bcm_sysport_priv *priv = netdev_priv(dev);
+	struct device *kdev = &priv->pdev->dev;
+	u32 supported = WAKE_MAGIC | WAKE_MAGICSECURE;
+
+	if (!device_can_wakeup(kdev))
+		return -ENOTSUPP;
+
+	if (wol->wolopts & ~supported)
+		return -EINVAL;
+
+	/* Program the SecureOn password */
+	if (wol->wolopts & WAKE_MAGICSECURE) {
+		umac_writel(priv, get_unaligned_be16(&wol->sopass[0]),
+				UMAC_PSW_MS);
+		umac_writel(priv, get_unaligned_be32(&wol->sopass[2]),
+				UMAC_PSW_LS);
+	}
+
+	/* Flag the device and relevant IRQ as wakeup capable */
+	if (wol->wolopts) {
+		device_set_wakeup_enable(kdev, 1);
+		enable_irq_wake(priv->wol_irq);
+		priv->wol_irq_disabled = 0;
+	} else {
+		device_set_wakeup_enable(kdev, 0);
+		/* Avoid unbalanced disable_irq_wake calls */
+		if (!priv->wol_irq_disabled)
+			disable_irq_wake(priv->wol_irq);
+		priv->wol_irq_disabled = 1;
+	}
+
+	priv->wolopts = wol->wolopts;
+
+	return 0;
 }
 
 static void bcm_sysport_free_cb(struct bcm_sysport_cb *cb)
@@ -719,6 +777,20 @@ static int bcm_sysport_poll(struct napi_struct *napi, int budget)
 	return work_done;
 }
 
+static void bcm_sysport_resume_from_wol(struct bcm_sysport_priv *priv)
+{
+	u32 reg;
+
+	/* Stop monitoring MPD interrupt */
+	intrl2_0_mask_set(priv, INTRL2_0_MPD);
+
+	/* Clear the MagicPacket detection logic */
+	reg = umac_readl(priv, UMAC_MPD_CTRL);
+	reg &= ~MPD_EN;
+	umac_writel(priv, reg, UMAC_MPD_CTRL);
+
+	netif_dbg(priv, wol, priv->netdev, "resumed from WOL\n");
+}
 
 /* RX and misc interrupt routine */
 static irqreturn_t bcm_sysport_rx_isr(int irq, void *dev_id)
@@ -749,6 +821,11 @@ static irqreturn_t bcm_sysport_rx_isr(int irq, void *dev_id)
 	if (priv->irq0_stat & INTRL2_0_TX_RING_FULL)
 		bcm_sysport_tx_reclaim_all(priv);
 
+	if (priv->irq0_stat & INTRL2_0_MPD) {
+		netdev_info(priv->netdev, "Wake-on-LAN interrupt!\n");
+		bcm_sysport_resume_from_wol(priv);
+	}
+
 	return IRQ_HANDLED;
 }
 
@@ -774,6 +851,15 @@ static irqreturn_t bcm_sysport_tx_isr(int irq, void *dev_id)
 
 		bcm_sysport_tx_reclaim(priv, &priv->tx_rings[ring]);
 	}
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t bcm_sysport_wol_isr(int irq, void *dev_id)
+{
+	struct bcm_sysport_priv *priv = dev_id;
+
+	pm_wakeup_event(&priv->pdev->dev, 0);
 
 	return IRQ_HANDLED;
 }
@@ -1267,28 +1353,17 @@ static inline void umac_enable_set(struct bcm_sysport_priv *priv,
 		usleep_range(1000, 2000);
 }
 
-static inline int umac_reset(struct bcm_sysport_priv *priv)
+static inline void umac_reset(struct bcm_sysport_priv *priv)
 {
-	unsigned int timeout = 0;
 	u32 reg;
-	int ret = 0;
 
-	umac_writel(priv, 0, UMAC_CMD);
-	while (timeout++ < 1000) {
-		reg = umac_readl(priv, UMAC_CMD);
-		if (!(reg & CMD_SW_RESET))
-			break;
-
-		udelay(1);
-	}
-
-	if (timeout == 1000) {
-		dev_err(&priv->pdev->dev,
-			"timeout waiting for MAC to come out of reset\n");
-		ret = -ETIMEDOUT;
-	}
-
-	return ret;
+	reg = umac_readl(priv, UMAC_CMD);
+	reg |= CMD_SW_RESET;
+	umac_writel(priv, reg, UMAC_CMD);
+	udelay(10);
+	reg = umac_readl(priv, UMAC_CMD);
+	reg &= ~CMD_SW_RESET;
+	umac_writel(priv, reg, UMAC_CMD);
 }
 
 static void umac_set_hw_addr(struct bcm_sysport_priv *priv,
@@ -1324,19 +1399,23 @@ static void bcm_sysport_netif_start(struct net_device *dev)
 	netif_tx_start_all_queues(dev);
 }
 
+static void rbuf_init(struct bcm_sysport_priv *priv)
+{
+	u32 reg;
+
+	reg = rbuf_readl(priv, RBUF_CONTROL);
+	reg |= RBUF_4B_ALGN | RBUF_RSB_EN;
+	rbuf_writel(priv, reg, RBUF_CONTROL);
+}
+
 static int bcm_sysport_open(struct net_device *dev)
 {
 	struct bcm_sysport_priv *priv = netdev_priv(dev);
 	unsigned int i;
-	u32 reg;
 	int ret;
 
 	/* Reset UniMAC */
-	ret = umac_reset(priv);
-	if (ret) {
-		netdev_err(dev, "UniMAC reset failed\n");
-		return ret;
-	}
+	umac_reset(priv);
 
 	/* Flush TX and RX FIFOs at TOPCTRL level */
 	topctrl_flush(priv);
@@ -1345,9 +1424,7 @@ static int bcm_sysport_open(struct net_device *dev)
 	umac_enable_set(priv, CMD_RX_EN | CMD_TX_EN, 0);
 
 	/* Enable RBUF 2bytes alignment and Receive Status Block */
-	reg = rbuf_readl(priv, RBUF_CONTROL);
-	reg |= RBUF_4B_ALGN | RBUF_RSB_EN;
-	rbuf_writel(priv, reg, RBUF_CONTROL);
+	rbuf_init(priv);
 
 	/* Set maximum frame length */
 	umac_writel(priv, UMAC_MAX_MTU_SIZE, UMAC_MAX_FRAME_LEN);
@@ -1514,6 +1591,8 @@ static struct ethtool_ops bcm_sysport_ethtool_ops = {
 	.get_strings		= bcm_sysport_get_strings,
 	.get_ethtool_stats	= bcm_sysport_get_stats,
 	.get_sset_count		= bcm_sysport_get_sset_count,
+	.get_wol		= bcm_sysport_get_wol,
+	.set_wol		= bcm_sysport_set_wol,
 };
 
 static const struct net_device_ops bcm_sysport_netdev_ops = {
@@ -1555,6 +1634,7 @@ static int bcm_sysport_probe(struct platform_device *pdev)
 
 	priv->irq0 = platform_get_irq(pdev, 0);
 	priv->irq1 = platform_get_irq(pdev, 1);
+	priv->wol_irq = platform_get_irq(pdev, 2);
 	if (priv->irq0 <= 0 || priv->irq1 <= 0) {
 		dev_err(&pdev->dev, "invalid interrupts\n");
 		ret = -EINVAL;
@@ -1596,15 +1676,16 @@ static int bcm_sysport_probe(struct platform_device *pdev)
 			    NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
 			    NETIF_F_HW_VLAN_TX;
 
+	/* Request the WOL interrupt and advertise suspend if available */
+	priv->wol_irq_disabled = 1;
+	ret = devm_request_irq(&pdev->dev, priv->wol_irq,
+				bcm_sysport_wol_isr, 0, dev->name, priv);
+	if (!ret)
+		device_set_wakeup_capable(&pdev->dev, 1);
+
 	/* Set the needed headroom once and for all */
 	BUILD_BUG_ON(sizeof(struct tsb) != 8);
 	dev->needed_headroom += sizeof(struct tsb);
-
-	/* We are interfaced to a switch which handles the multicast
-	 * filtering for us, so we do not support programming any
-	 * multicast hash table in this Ethernet MAC.
-	 */
-	dev->flags &= ~IFF_MULTICAST;
 
 	ret = register_netdev(dev);
 	if (ret) {
@@ -1640,17 +1721,63 @@ static int bcm_sysport_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM_SLEEP
+static int bcm_sysport_suspend_to_wol(struct bcm_sysport_priv *priv)
+{
+	struct net_device *ndev = priv->netdev;
+	unsigned int timeout = 1000;
+	u32 reg;
+
+	/* Password has already been programmed */
+	reg = umac_readl(priv, UMAC_MPD_CTRL);
+	reg |= MPD_EN;
+	reg &= ~PSW_EN;
+	if (priv->wolopts & WAKE_MAGICSECURE)
+		reg |= PSW_EN;
+	umac_writel(priv, reg, UMAC_MPD_CTRL);
+
+	/* Make sure RBUF entered WoL mode as result */
+	do {
+		reg = rbuf_readl(priv, RBUF_STATUS);
+		if (reg & RBUF_WOL_MODE)
+			break;
+
+		udelay(10);
+	} while (timeout-- > 0);
+
+	/* Do not leave the UniMAC RBUF matching only MPD packets */
+	if (!timeout) {
+		reg = umac_readl(priv, UMAC_MPD_CTRL);
+		reg &= ~MPD_EN;
+		umac_writel(priv, reg, UMAC_MPD_CTRL);
+		netif_err(priv, wol, ndev, "failed to enter WOL mode\n");
+		return -ETIMEDOUT;
+	}
+
+	/* UniMAC receive needs to be turned on */
+	umac_enable_set(priv, CMD_RX_EN, 1);
+
+	/* Enable the interrupt wake-up source */
+	intrl2_0_mask_clear(priv, INTRL2_0_MPD);
+
+	netif_dbg(priv, wol, ndev, "entered WOL mode\n");
+
+	return 0;
+}
+
 static int bcm_sysport_suspend(struct device *d)
 {
 	struct net_device *dev = dev_get_drvdata(d);
 	struct bcm_sysport_priv *priv = netdev_priv(dev);
-	int ret;
+	unsigned int i;
+	int ret = 0;
 	u32 reg;
 
 	if (!netif_running(dev))
 		return 0;
 
 	bcm_sysport_netif_stop(dev);
+
+	phy_suspend(priv->phydev);
 
 	netif_device_detach(dev);
 
@@ -1664,14 +1791,15 @@ static int bcm_sysport_suspend(struct device *d)
 	}
 
 	/* Disable RXCHK if enabled */
-	if (priv->rx_csum_en) {
+	if (priv->rx_chk_en) {
 		reg = rxchk_readl(priv, RXCHK_CONTROL);
 		reg &= ~RXCHK_EN;
 		rxchk_writel(priv, reg, RXCHK_CONTROL);
 	}
 
 	/* Flush RX pipe */
-	topctrl_writel(priv, RX_FLUSH, RX_FLUSH_CNTL);
+	if (!priv->wolopts)
+		topctrl_writel(priv, RX_FLUSH, RX_FLUSH_CNTL);
 
 	ret = tdma_enable_set(priv, 0);
 	if (ret) {
@@ -1686,18 +1814,53 @@ static int bcm_sysport_suspend(struct device *d)
 
 	topctrl_writel(priv, TX_FLUSH, TX_FLUSH_CNTL);
 
-	return 0;
+	/* Free RX/TX rings SW structures */
+	for (i = 0; i < dev->num_tx_queues; i++)
+		bcm_sysport_fini_tx_ring(priv, i);
+	bcm_sysport_fini_rx_ring(priv);
+
+	/* Get prepared for Wake-on-LAN */
+	if (device_may_wakeup(d) && priv->wolopts)
+		ret = bcm_sysport_suspend_to_wol(priv);
+
+	return ret;
 }
 
 static int bcm_sysport_resume(struct device *d)
 {
 	struct net_device *dev = dev_get_drvdata(d);
 	struct bcm_sysport_priv *priv = netdev_priv(dev);
+	unsigned int i;
 	u32 reg;
 	int ret;
 
 	if (!netif_running(dev))
 		return 0;
+
+	/* We may have been suspended and never received a WOL event that
+	 * would turn off MPD detection, take care of that now
+	 */
+	bcm_sysport_resume_from_wol(priv);
+
+	/* Initialize both hardware and software ring */
+	for (i = 0; i < dev->num_tx_queues; i++) {
+		ret = bcm_sysport_init_tx_ring(priv, i);
+		if (ret) {
+			netdev_err(dev, "failed to initialize TX ring %d\n",
+					i);
+			goto out_free_tx_rings;
+		}
+	}
+
+	/* Initialize linked-list */
+	tdma_writel(priv, TDMA_LL_RAM_INIT_BUSY, TDMA_STATUS);
+
+	/* Initialize RX ring */
+	ret = bcm_sysport_init_rx_ring(priv);
+	if (ret) {
+		netdev_err(dev, "failed to initialize RX ring\n");
+		goto out_free_rx_ring;
+	}
 
 	netif_device_attach(dev);
 
@@ -1710,15 +1873,23 @@ static int bcm_sysport_resume(struct device *d)
 	ret = rdma_enable_set(priv, 1);
 	if (ret) {
 		netdev_err(dev, "failed to enable RDMA\n");
-		return ret;
+		goto out_free_rx_ring;
 	}
 
 	/* Enable rxhck */
-	if (priv->rx_csum_en) {
+	if (priv->rx_chk_en) {
 		reg = rxchk_readl(priv, RXCHK_CONTROL);
 		reg |= RXCHK_EN;
 		rxchk_writel(priv, reg, RXCHK_CONTROL);
 	}
+
+	rbuf_init(priv);
+
+	/* Set maximum frame length */
+	umac_writel(priv, UMAC_MAX_MTU_SIZE, UMAC_MAX_FRAME_LEN);
+
+	/* Set MAC address */
+	umac_set_hw_addr(priv, dev->dev_addr);
 
 	umac_enable_set(priv, CMD_RX_EN, 1);
 
@@ -1730,12 +1901,21 @@ static int bcm_sysport_resume(struct device *d)
 	ret = tdma_enable_set(priv, 1);
 	if (ret) {
 		netdev_err(dev, "TDMA timeout!\n");
-		return ret;
+		goto out_free_rx_ring;
 	}
+
+	phy_resume(priv->phydev);
 
 	bcm_sysport_netif_start(dev);
 
 	return 0;
+
+out_free_rx_ring:
+	bcm_sysport_fini_rx_ring(priv);
+out_free_tx_rings:
+	for (i = 0; i < dev->num_tx_queues; i++)
+		bcm_sysport_fini_tx_ring(priv, i);
+	return ret;
 }
 #endif
 

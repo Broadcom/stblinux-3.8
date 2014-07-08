@@ -189,6 +189,9 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
 		return NULL;
 
 	phy_id = of_get_property(net_np, "fixed-link", &sz);
+	if (!phy_id)
+		phy_id = of_get_property(dev->dev.of_node, "fixed-link", &sz);
+
 	if (!phy_id || sz < sizeof(*phy_id))
 		return NULL;
 

@@ -28,36 +28,60 @@
 #include <linux/delay.h>
 #include <linux/compiler.h>
 #include <linux/pm.h>
+#include <linux/bitops.h>
+#include <linux/dma-mapping.h>
+#include <linux/sizes.h>
 #include <asm/fncpy.h>
+#include <asm/suspend.h>
+#include <asm/setup.h>
 
 #include "common.h"
-
-#define AON_CTRL_RESET_CTRL		0x00
-#define AON_CTRL_PM_CTRL		0x04
-#define AON_CTRL_PM_CPU_WAIT_COUNT	0x10
-#define AON_CTRL_PM_INITIATE		0x88
-#define AON_CTRL_HOST_MISC_CMDS		0x8c
-#define AON_CTRL_SYSTEM_DATA_RAM_OFS	0x200
-
-/* PM_CTRL bitfield */
-enum {
-	PM_FAST_PWRDOWN	= 1 << 6,
-	PM_WARM_BOOT	= 1 << 5,
-	PM_DEEP_STANDBY	= 1 << 4,
-	PM_CPU_PWR	= 1 << 3,
-	PM_USE_CPU_RDY	= 1 << 2,
-	PM_PLL_PWRDOWN	= 1 << 1,
-	PM_PWR_DOWN	= 1 << 0,
-};
-
-#define PM_COLD_CONFIG	(PM_DEEP_STANDBY | PM_PLL_PWRDOWN | PM_USE_CPU_RDY)
+#include "pm.h"
+#include "aon_defs.h"
+#include "xpt_dma.h"
 
 #define BRCMSTB_DDR_PHY_PLL_STATUS	0x04
 
+#define SHIMPHY_DDR_PAD_CNTRL		0x8c
+#define SHIMPHY_PAD_PLL_SEQUENCE	BIT(8)
+#define SHIMPHY_PAD_GATE_PLL_S3		BIT(9)
+
+#define MAX_NUM_MEMC			3
+
+/* Capped for performance reasons */
+#define MAX_HASH_SIZE			SZ_256M
+
+struct brcmstb_memc {
+	void __iomem *ddr_phy_base;
+	void __iomem *ddr_shimphy_base;
+};
+
 struct brcmstb_pm_control {
 	void __iomem *aon_ctrl_base;
-	void __iomem *ddr_phy_0_base;
+	void __iomem *aon_sram;
+	size_t aon_sram_len;
+	struct brcmstb_memc memcs[MAX_NUM_MEMC];
+
+	void __iomem *boot_sram;
+	size_t boot_sram_len;
+
+	bool support_warm_boot;
+	int num_memc;
+
+	struct brcmstb_s3_params *s3_params;
+	dma_addr_t s3_params_pa;
 };
+
+enum bsp_initiate_command {
+	BSP_CLOCK_STOP		= 0x00,
+	BSP_GEN_RANDOM_KEY	= 0x4A,
+	BSP_RESTORE_RANDOM_KEY	= 0x55,
+	BSP_GEN_FIXED_KEY	= 0x63,
+};
+
+#define PM_INITIATE		0x01
+#define PM_INITIATE_SUCCESS	0x00
+#define PM_INITIATE_FAIL	0xfe
 
 static struct brcmstb_pm_control ctrl;
 static suspend_state_t suspend_state;
@@ -69,35 +93,23 @@ extern asmlinkage int brcmstb_pm_do_s2(void __iomem *aon_ctrl_base,
 static int (*brcmstb_pm_do_s2_sram)(void __iomem *aon_ctrl_base,
 		void __iomem *ddr_phy_pll_status);
 
-static inline void __iomem * aon_ram_addr(int idx)
-{
-	return ctrl.aon_ctrl_base + AON_CTRL_SYSTEM_DATA_RAM_OFS + (idx << 2);
-}
-
 static int brcmstb_init_sram(struct device_node *dn)
 {
 	void __iomem *sram;
 	struct resource res;
 	int ret;
-	unsigned int size = ALIGN(brcmstb_pm_do_s2_sz, FNCPY_ALIGN);
 
 	ret = of_address_to_resource(dn, 0, &res);
 	if (ret)
 		return ret;
 
-	if (resource_size(&res) < size) {
-		pr_err("standby code will not fit in SRAM\n");
-		return -ENOMEM;
-	}
-
 	/* Cached, executable remapping of SRAM */
-	sram = __arm_ioremap_exec(res.start, size, true);
+	sram = __arm_ioremap_exec(res.start, resource_size(&res), true);
 	if (!sram)
 		return -ENOMEM;
 
-	brcmstb_pm_do_s2_sram = fncpy(sram, &brcmstb_pm_do_s2, size);
-	if (!brcmstb_pm_do_s2_sram)
-		return -EINVAL;
+	ctrl.boot_sram = sram;
+	ctrl.boot_sram_len = resource_size(&res);
 
 	return 0;
 }
@@ -114,10 +126,38 @@ static struct of_device_id sram_dt_ids[] = {
 	{}
 };
 
-static void brcmstb_pm_handshake(void)
+static int do_bsp_initiate_command(enum bsp_initiate_command cmd)
+{
+	void __iomem *base = ctrl.aon_ctrl_base;
+	int ret;
+	int timeo = 1000 * 1000; /* 1 second */
+
+	__raw_writel(0, base + AON_CTRL_PM_INITIATE);
+	(void)__raw_readl(base + AON_CTRL_PM_INITIATE);
+
+	/* Go! */
+	__raw_writel((cmd << 1) | PM_INITIATE, base + AON_CTRL_PM_INITIATE);
+
+	for (;;) {
+		ret = __raw_readl(base + AON_CTRL_PM_INITIATE);
+		if (!ret & PM_INITIATE)
+			break;
+		if (timeo <= 0) {
+			pr_err("error: timeout waiting for BSP (%x)\n", ret);
+			break;
+		}
+		timeo -= 50;
+		udelay(50);
+	}
+
+	return (ret & 0xff) != PM_INITIATE_SUCCESS;
+}
+
+static int brcmstb_pm_handshake(void)
 {
 	void __iomem *base = ctrl.aon_ctrl_base;
 	u32 tmp;
+	int ret;
 
 	/* BSP power handshake, v1 */
 	tmp = __raw_readl(base + AON_CTRL_HOST_MISC_CMDS);
@@ -125,50 +165,388 @@ static void brcmstb_pm_handshake(void)
 	__raw_writel(tmp, base + AON_CTRL_HOST_MISC_CMDS);
 	(void)__raw_readl(base + AON_CTRL_HOST_MISC_CMDS);
 
-	tmp = __raw_readl(base + AON_CTRL_PM_INITIATE);
-	tmp &= ~1UL;
-	__raw_writel(tmp, base + AON_CTRL_PM_INITIATE);
-	(void)__raw_readl(base + AON_CTRL_PM_INITIATE);
+	ret = do_bsp_initiate_command(BSP_CLOCK_STOP);
+	if (ret)
+		pr_err("BSP handshake failed\n");
 
-	tmp |= 1UL;
-	__raw_writel(tmp, base + AON_CTRL_PM_INITIATE);
-	(void)__raw_readl(base + AON_CTRL_PM_INITIATE);
-
-	mdelay(10);
+	return ret;
 }
 
-/* Support S3 cold boot out of "poweroff" */
-static void brcmstb_pm_poweroff(void)
+/*
+ * Run a Power Management State Machine (PMSM) shutdown command and put the CPU
+ * into a low-power mode
+ */
+static void brcmstb_do_pmsm_power_down(unsigned long base_cmd)
 {
 	void __iomem *base = ctrl.aon_ctrl_base;
 
-	brcmstb_pm_handshake();
-
-	/* Clear magic S3 warm-boot value */
-	__raw_writel(0, aon_ram_addr(0));
-	(void)__raw_readl(aon_ram_addr(0));
-
 	/* pm_start_pwrdn transition 0->1 */
-	__raw_writel(PM_COLD_CONFIG, base + AON_CTRL_PM_CTRL);
+	__raw_writel(base_cmd, base + AON_CTRL_PM_CTRL);
 	(void)__raw_readl(base + AON_CTRL_PM_CTRL);
 
-	__raw_writel(PM_COLD_CONFIG | PM_PWR_DOWN, base + AON_CTRL_PM_CTRL);
+	__raw_writel(base_cmd | PM_PWR_DOWN, base + AON_CTRL_PM_CTRL);
 	(void)__raw_readl(base + AON_CTRL_PM_CTRL);
 
 	wfi();
+}
+
+/* Support S5 cold boot out of "poweroff" */
+static void brcmstb_pm_poweroff(void)
+{
+	brcmstb_pm_handshake();
+
+	/* Clear magic S3 warm-boot value */
+	__raw_writel(0, ctrl.aon_sram + AON_REG_MAGIC_FLAGS);
+	(void)__raw_readl(ctrl.aon_sram + AON_REG_MAGIC_FLAGS);
+
+	brcmstb_do_pmsm_power_down(PM_COLD_CONFIG);
+}
+
+static void *brcmstb_pm_copy_to_sram(void *fn, size_t len)
+{
+	unsigned int size = ALIGN(len, FNCPY_ALIGN);
+
+	if (ctrl.boot_sram_len < size) {
+		pr_err("standby code will not fit in SRAM\n");
+		return NULL;
+	}
+
+	return fncpy(ctrl.boot_sram, fn, size);
+}
+
+static int brcmstb_pm_s2(void)
+{
+	brcmstb_pm_do_s2_sram = brcmstb_pm_copy_to_sram(&brcmstb_pm_do_s2,
+			brcmstb_pm_do_s2_sz);
+	if (!brcmstb_pm_do_s2_sram)
+		return -EINVAL;
+
+	return brcmstb_pm_do_s2_sram(ctrl.aon_ctrl_base,
+			ctrl.memcs[0].ddr_phy_base +
+			BRCMSTB_DDR_PHY_PLL_STATUS);
+}
+
+static int brcmstb_pm_s3_control_hash(struct brcmstb_s3_params *params,
+		phys_addr_t params_pa)
+{
+	size_t hash_len = sizeof(*params) - BOOTLOADER_SCRATCH_SIZE;
+	struct dma_region region[] = {
+		{
+			.addr	= params_pa + BOOTLOADER_SCRATCH_SIZE,
+			.len	= hash_len,
+		},
+	};
+	uint32_t hash[BRCMSTB_HASH_LEN / 4];
+	int i, ret;
+
+	/* Co-opt bootloader scratch area temporarily */
+	ret = memdma_prepare_descs((struct mcpb_dma_desc *)params->scratch,
+				   params_pa, region, ARRAY_SIZE(region), true);
+	if (ret)
+		return ret;
+
+	ret = memdma_run(params_pa, 0, false);
+	if (ret)
+		return ret;
+
+	get_hash(hash, false);
+
+	/* Store hash in AON */
+	for (i = 0; i < BRCMSTB_HASH_LEN / 4; i++)
+		__raw_writel(hash[i], ctrl.aon_sram + AON_REG_S3_HASH + i * 4);
+	__raw_writel(hash_len, ctrl.aon_sram + AON_REG_CONTROL_HASH_LEN);
+
+	return 0;
+}
+
+static inline int region_collision(struct dma_region *reg1,
+				   struct dma_region *reg2)
+{
+	return (reg1->addr + reg1->len > reg2->addr) &&
+	       (reg2->addr + reg2->len > reg1->addr);
+}
+
+/**
+ * Check if @regions[0] collides with @except, and modify regions[0] and
+ * regions[1] (if needed) to ensure that they they exclude any area in @except
+ *
+ * Returns the number of @regions used
+ *
+ * e.g., if @regions[0] and @except do not overlap, return 1 and do nothing
+ *       if @except is entirely contained within @regions[0], split @regions[0]
+ *          into @regions[0] and @regions[1], and return 2
+ */
+static int region_handle_collisions(struct dma_region *regions,
+				    struct dma_region *except)
+{
+	struct dma_region *reg = &regions[0];
+	dma_addr_t start = reg->addr;
+	dma_addr_t end = reg->addr + reg->len;
+
+	if (!region_collision(reg, except))
+		/* No collision */
+		return 1;
+
+	if (start < except->addr && end > except->addr + except->len) {
+		/* Split in 2 */
+		regions[1].addr = except->addr + except->len;
+		regions[1].len = end - regions[1].addr;
+		reg->len = except->addr - start;
+		return 2;
+	} else if (start < except->addr) {
+		/* Overlap at right edge; truncate end of 'reg' */
+		reg->len = except->addr - start;
+		return 1;
+	} else if (end > except->addr + except->len) {
+		/* Overlap at left edge; truncate beginning of 'reg' */
+		reg->addr = except->addr + except->len;
+		reg->len = end - reg->addr;
+		return 1;
+	} else {
+		/*
+		 * 'reg' is entirely contained within 'except'?
+		 * This should not happen, but trim to zero-length just in case
+		 */
+		reg->len = 0;
+		return 0;
+	}
+}
+
+/* Initialize the DMA region list and return the number of regions */
+static int configure_main_hash(struct dma_region *regions, int max,
+			       struct dma_region *exclude)
+{
+	int idx = 0, bank_nr;
+	size_t total = 0;
+
+	/*
+	 * Hash up to 64MB from each memory bank, with a total limit of
+	 * MAX_HASH_SIZE. Account for collisions with the 'exclude' region.
+	 */
+	for_each_bank(bank_nr, &meminfo) {
+		const struct membank *bank = &meminfo.bank[bank_nr];
+		struct dma_region *reg = &regions[idx];
+		int i, count;
+
+		reg->addr = bank->start;
+		/* Cap 64MB per bank, and MAX_HASH_SIZE total */
+		reg->len = min_t(size_t, bank->size, SZ_64M);
+		if (reg->len > MAX_HASH_SIZE - total)
+			reg->len = MAX_HASH_SIZE - total;
+
+		/*
+		 * Check for collisions with the excluded region.
+		 * 'reg' may be split into 0, 1, or 2 segments, so account
+		 * accordingly
+		 */
+		count = region_handle_collisions(reg, exclude);
+		/* Add region length(s) to total */
+		for (i = 0; i < count; i++)
+			total += reg[i].len;
+
+		idx += count;
+		/* Pad by 1, in case the next region would split in 2 */
+		if (idx + 1 >= max)
+			break;
+
+		/* Apply total cap */
+		if (total >= MAX_HASH_SIZE)
+			break;
+	}
+
+	return idx;
+}
+
+/*
+ * Run a DMA hash on the given regions, splitting evenly into two channels if
+ * possible
+ *
+ * If 2 channels were run, return the byte offset of the second (from descs_pa)
+ * If 1 channel was run, return 0
+ * Otherwise (on errors) return negative
+ */
+static int run_dual_hash(struct dma_region *regions, int numregions,
+		struct mcpb_dma_desc *descs, phys_addr_t descs_pa,
+		uint32_t *hash)
+{
+	phys_addr_t pa1, pa2;
+	struct mcpb_dma_desc *desc1, *desc2;
+	int regions1, regions2;
+	int ret;
+
+	/* Split regions into 2 partitions */
+	regions2 = numregions / 2;
+	regions1 = numregions - regions2;
+	desc1 = descs;
+	desc2 = desc1 + regions1;
+	pa1 = descs_pa;
+	pa2 = pa1 + regions1 * sizeof(*desc1);
+
+	/* Prepare both sets of descriptors */
+	ret = memdma_prepare_descs(desc1, pa1, &regions[0], regions1, true);
+	if (ret)
+		return ret;
+	ret = memdma_prepare_descs(desc2, pa2, &regions[regions1], regions2, false);
+	if (ret)
+		return ret;
+
+	/* Go! */
+	ret = memdma_run(pa1, pa2, !!regions2);
+	if (ret)
+		return ret;
+
+	get_hash(hash, !!regions2);
+
+	if (regions2)
+		return regions1 * sizeof(*desc1);
+	else
+		return 0;
+}
+
+static int brcmstb_pm_s3_main_memory_hash(struct brcmstb_s3_params *params,
+		phys_addr_t params_pa, struct dma_region *except)
+{
+	struct dma_region regions[40];
+	phys_addr_t descs_pa;
+	struct mcpb_dma_desc *descs;
+	int nregs, ret;
+
+	nregs = configure_main_hash(regions, ARRAY_SIZE(regions), except);
+	if (nregs < 0)
+		return nregs;
+
+	/* Get base pointers */
+	descs_pa = params_pa + offsetof(struct brcmstb_s3_params, descriptors);
+	descs = (struct mcpb_dma_desc *)params->descriptors;
+
+	/* Split, run hash */
+	ret = run_dual_hash(regions, nregs, descs, descs_pa, params->hash);
+	if (ret < 0)
+		return ret;
+	params->desc_offset_2 = ret;
+
+	return 0;
+}
+
+/*
+ * This function is called on a new stack, so don't allow inlining (which will
+ * generate stack references on the old stack)
+ */
+static noinline int brcmstb_pm_s3_finish(void)
+{
+	struct brcmstb_s3_params *params = ctrl.s3_params;
+	phys_addr_t params_pa = ctrl.s3_params_pa;
+	phys_addr_t reentry = virt_to_phys(&cpu_resume);
+	u32 flags = 0;
+	enum bsp_initiate_command cmd;
+	int i, ret;
+	/* exempt S3 parameters from hashing */
+	struct dma_region except = {
+		.addr = params_pa,
+		.len = sizeof(*params),
+	};
+
+	flush_cache_all();
+
+	/* Clear parameter structure */
+	memset(params, 0, sizeof(*params));
+
+	flags |= S3_FLAG_LOAD_RANDKEY; /* TODO: make this selectable */
+
+	/* Load random / fixed key */
+	if (flags & S3_FLAG_LOAD_RANDKEY)
+		cmd = BSP_GEN_RANDOM_KEY;
+	else
+		cmd = BSP_GEN_FIXED_KEY;
+	if (do_bsp_initiate_command(cmd)) {
+		pr_info("key loading failed\n");
+		return -EIO;
+	}
+
+	/* Hash main memory */
+	ret = brcmstb_pm_s3_main_memory_hash(params, params_pa, &except);
+	if (ret)
+		return ret;
+
+	params->magic = BRCMSTB_S3_MAGIC;
+	params->reentry = reentry;
+
+	/* No more writes to DRAM */
+	flush_cache_all();
+
+	/* Hash S3 saved parameters */
+	ret = brcmstb_pm_s3_control_hash(params, params_pa);
+	if (ret)
+		return ret;
+
+	flags |= BRCMSTB_S3_MAGIC_SHORT;
+
+	__raw_writel(flags, ctrl.aon_sram + AON_REG_MAGIC_FLAGS);
+	__raw_writel(lower_32_bits(params_pa),
+		     ctrl.aon_sram + AON_REG_CONTROL_LOW);
+	__raw_writel(upper_32_bits(params_pa),
+		     ctrl.aon_sram + AON_REG_CONTROL_HIGH);
+
+	/* gate PLL | S3 */
+	for (i = 0; i < ctrl.num_memc; i++) {
+		u32 tmp;
+		tmp = __raw_readl(ctrl.memcs[i].ddr_shimphy_base +
+				SHIMPHY_DDR_PAD_CNTRL);
+		tmp |= SHIMPHY_PAD_GATE_PLL_S3 | SHIMPHY_PAD_PLL_SEQUENCE;
+		__raw_writel(tmp, ctrl.memcs[i].ddr_shimphy_base +
+				SHIMPHY_DDR_PAD_CNTRL);
+	}
+
+	brcmstb_do_pmsm_power_down(PM_WARM_CONFIG);
+
+	/* Must have been interrupted from wfi()? */
+	return -EINTR;
+}
+
+#define SWAP_STACK(new_sp, saved_sp) \
+	__asm__ ( \
+		 "mov	%[save], sp\n" \
+		 "mov	sp, %[new]\n" \
+		 : [save] "=&r" (saved_sp) \
+		 : [new] "r" (new_sp) \
+		)
+
+static int brcmstb_pm_do_s3(unsigned long sp)
+{
+	unsigned long save_sp;
+	int ret;
+
+	/* Move to a new stack */
+	SWAP_STACK(sp, save_sp);
+
+	/* should not return */
+	ret = brcmstb_pm_s3_finish();
+
+	SWAP_STACK(save_sp, sp);
+
+	pr_err("Could not enter S3\n");
+
+	return ret;
+}
+
+static int brcmstb_pm_s3(void)
+{
+	void __iomem *sp = ctrl.boot_sram + ctrl.boot_sram_len - 8;
+
+	return cpu_suspend((unsigned long)sp, brcmstb_pm_do_s3);
 }
 
 static int brcmstb_pm_standby(bool deep_standby)
 {
 	int ret;
 
-	/* FIXME: no HW support yet */
-	WARN_ON(deep_standby);
+	if (brcmstb_pm_handshake())
+		return -EIO;
 
-	brcmstb_pm_handshake();
-
-	ret = brcmstb_pm_do_s2_sram(ctrl.aon_ctrl_base,
-			ctrl.ddr_phy_0_base + BRCMSTB_DDR_PHY_PLL_STATUS);
+	if (deep_standby)
+		ret = brcmstb_pm_s3();
+	else
+		ret = brcmstb_pm_s2();
 	if (ret)
 		pr_err("%s: standby failed\n", __func__);
 
@@ -205,7 +583,7 @@ static int brcmstb_pm_enter(suspend_state_t unused)
 
 static void brcmstb_pm_finish(void)
 {
-	/* TODO: perform cleanup for S3? */
+	brcmstb_irq0_init();
 }
 
 static void brcmstb_pm_end(void)
@@ -215,8 +593,14 @@ static void brcmstb_pm_end(void)
 
 static int brcmstb_pm_valid(suspend_state_t state)
 {
-	/* FIXME: Only support S2 standby */
-	return state == PM_SUSPEND_STANDBY;
+	switch (state) {
+	case PM_SUSPEND_STANDBY:
+		return true;
+	case PM_SUSPEND_MEM:
+		return ctrl.support_warm_boot;
+	default:
+		return false;
+	}
 }
 
 static const struct platform_suspend_ops brcmstb_pm_ops = {
@@ -233,35 +617,79 @@ static struct of_device_id aon_ctrl_dt_ids[] = {
 	{}
 };
 
+struct ddr_phy_ofdata {
+	bool supports_warm_boot;
+};
+
+static struct ddr_phy_ofdata ddr_phy_225_1 = { .supports_warm_boot = false, };
+static struct ddr_phy_ofdata ddr_phy_240_1 = { .supports_warm_boot = true, };
+
 static struct of_device_id ddr_phy_dt_ids[] = {
-	{ .compatible = "brcm,brcmstb-ddr-phy-v225.1" },
-	/* TODO: add warm boot support */
-	{ .compatible = "brcm,brcmstb-ddr-phy-v240.1" },
+	{
+		.compatible = "brcm,brcmstb-ddr-phy-v225.1",
+		.data = &ddr_phy_225_1,
+	},
+	{
+		.compatible = "brcm,brcmstb-ddr-phy-v240.1",
+		.data = &ddr_phy_240_1,
+	},
 	{}
 };
 
-static void __iomem * brcmstb_ioremap_match(struct of_device_id *matches)
+static struct of_device_id ddr_shimphy_dt_ids[] = {
+	{ .compatible = "brcm,brcmstb-ddr-shimphy-v1.0" },
+	{}
+};
+
+static void __iomem *brcmstb_ioremap_node(struct device_node *dn, int index,
+		size_t *retlen)
 {
-	struct device_node *dn;
 	struct resource res, *res2;
 	int ret;
 	void __iomem *base;
+	size_t len;
 
-	dn = of_find_matching_node(NULL, matches);
-	if (!dn)
-		return ERR_PTR(-EINVAL);
+	if (retlen)
+		*retlen = 0;
 
-	ret = of_address_to_resource(dn, 0, &res);
+	ret = of_address_to_resource(dn, index, &res);
 	if (ret < 0)
 		return ERR_PTR(ret);
 
-	res2 = request_mem_region(res.start, resource_size(&res), dn->full_name);
+	len = resource_size(&res);
+
+	res2 = request_mem_region(res.start, len, dn->full_name);
 	if (!res2)
 		return ERR_PTR(-EIO);
 
 	base = ioremap(res2->start, resource_size(res2));
-	if (!base)
+	if (!base) {
+		release_mem_region(res.start, len);
 		return ERR_PTR(-ENOMEM);
+	}
+
+	if (retlen)
+		*retlen = len;
+
+	return base;
+}
+
+static void __iomem *brcmstb_ioremap_match(struct of_device_id *matches,
+					    int index, size_t *retlen,
+					    const void **ofdata)
+{
+	struct device_node *dn;
+	const struct of_device_id *match;
+	void __iomem *base;
+
+	dn = of_find_matching_node_and_match(NULL, matches, &match);
+	if (!dn)
+		return ERR_PTR(-EINVAL);
+
+	base = brcmstb_ioremap_node(dn, index, retlen);
+
+	if (ofdata)
+		*ofdata = match->data;
 
 	return base;
 }
@@ -270,22 +698,53 @@ int brcmstb_pm_init(void)
 {
 	struct device_node *dn;
 	void __iomem *base;
-	int ret;
+	int ret, i;
+	const struct ddr_phy_ofdata *ddr_phy_data;
 
-	base = brcmstb_ioremap_match(aon_ctrl_dt_ids);
+	/* AON ctrl registers */
+	base = brcmstb_ioremap_match(aon_ctrl_dt_ids, 0, NULL, NULL);
 	if (IS_ERR_OR_NULL(base)) {
 		pr_err("error mapping AON_CTRL\n");
 		return PTR_ERR(base);
 	}
 	ctrl.aon_ctrl_base = base;
 
-	base = brcmstb_ioremap_match(ddr_phy_dt_ids);
+	/* AON SRAM registers */
+	base = brcmstb_ioremap_match(aon_ctrl_dt_ids, 1, &ctrl.aon_sram_len,
+				     NULL);
+	if (IS_ERR_OR_NULL(base)) {
+		/* Assume standard offset */
+		ctrl.aon_sram = ctrl.aon_ctrl_base +
+				     AON_CTRL_SYSTEM_DATA_RAM_OFS;
+	} else {
+		ctrl.aon_sram = base;
+	}
+
+	/* DDR PHY registers */
+	base = brcmstb_ioremap_match(ddr_phy_dt_ids, 0, NULL,
+				     (const void **)&ddr_phy_data);
 	if (IS_ERR_OR_NULL(base)) {
 		pr_err("error mapping DDR PHY\n");
 		return PTR_ERR(base);
 	}
+	ctrl.support_warm_boot = ddr_phy_data->supports_warm_boot;
 	/* Only need DDR PHY 0 for now? */
-	ctrl.ddr_phy_0_base = base;
+	ctrl.memcs[0].ddr_phy_base = base;
+
+	/* DDR SHIM-PHY registers */
+	for_each_matching_node(dn, ddr_shimphy_dt_ids) {
+		i = ctrl.num_memc;
+		base = brcmstb_ioremap_node(dn, 0, NULL);
+		if (IS_ERR_OR_NULL(base)) {
+			if (!ctrl.support_warm_boot)
+				break;
+
+			pr_err("error mapping DDR SHIMPHY %d\n", i);
+			return PTR_ERR(base);
+		}
+		ctrl.memcs[i].ddr_shimphy_base = base;
+		ctrl.num_memc++;
+	}
 
 	dn = of_find_matching_node(NULL, sram_dt_ids);
 	if (!dn) {
@@ -298,6 +757,16 @@ int brcmstb_pm_init(void)
 		pr_err("error setting up SRAM for PM\n");
 		return ret;
 	}
+
+	ctrl.s3_params = dma_alloc_coherent(NULL,
+			sizeof(struct brcmstb_s3_params),
+			&ctrl.s3_params_pa, GFP_KERNEL);
+	if (!ctrl.s3_params)
+		return -ENOMEM;
+
+	ret = brcmstb_regsave_init();
+	if (ret)
+		return ret;
 
 	pm_power_off = brcmstb_pm_poweroff;
 	suspend_set_ops(&brcmstb_pm_ops);

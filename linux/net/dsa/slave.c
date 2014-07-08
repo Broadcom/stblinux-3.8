@@ -21,7 +21,7 @@ static int dsa_slave_phy_read(struct mii_bus *bus, int addr, int reg)
 {
 	struct dsa_switch *ds = bus->priv;
 
-	if (ds->phys_port_mask & (1 << addr))
+	if (ds->phys_mii_mask & (1 << addr))
 		return ds->drv->phy_read(ds, addr, reg);
 
 	return 0xffff;
@@ -31,7 +31,7 @@ static int dsa_slave_phy_write(struct mii_bus *bus, int addr, int reg, u16 val)
 {
 	struct dsa_switch *ds = bus->priv;
 
-	if (ds->phys_port_mask & (1 << addr))
+	if (ds->phys_mii_mask & (1 << addr))
 		return ds->drv->phy_write(ds, addr, reg, val);
 
 	return 0;
@@ -284,6 +284,27 @@ static int dsa_slave_get_sset_count(struct net_device *dev, int sset)
 	return -EOPNOTSUPP;
 }
 
+static void dsa_slave_get_wol(struct net_device *dev, struct ethtool_wolinfo *w)
+{
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct dsa_switch *ds = p->parent;
+
+	if (ds->drv->get_wol)
+		ds->drv->get_wol(ds, p->port, w);
+}
+
+static int dsa_slave_set_wol(struct net_device *dev, struct ethtool_wolinfo *w)
+{
+	struct dsa_slave_priv *p = netdev_priv(dev);
+	struct dsa_switch *ds = p->parent;
+	int ret = -EOPNOTSUPP;
+
+	if (ds->drv->set_wol)
+		ret = ds->drv->set_wol(ds, p->port, w);
+
+	return ret;
+}
+
 static const struct ethtool_ops dsa_slave_ethtool_ops = {
 	.get_settings		= dsa_slave_get_settings,
 	.set_settings		= dsa_slave_set_settings,
@@ -293,6 +314,8 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
 	.get_strings		= dsa_slave_get_strings,
 	.get_ethtool_stats	= dsa_slave_get_ethtool_stats,
 	.get_sset_count		= dsa_slave_get_sset_count,
+	.set_wol		= dsa_slave_set_wol,
+	.get_wol		= dsa_slave_get_wol,
 };
 
 #ifdef CONFIG_NET_DSA_TAG_BRCM
@@ -412,15 +435,38 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
 	struct dsa_switch *ds = p->parent;
 	struct dsa_chip_data *cd = ds->pd;
 	struct device_node *phy_dn;
+	u32 phy_addr;
 
 	p->phy_interface = of_get_phy_mode(cd->port_dn[p->port]);
 
 	phy_dn = of_parse_phandle(cd->port_dn[p->port], "phy-handle", 0);
-	if (phy_dn)
-		p->phy = of_phy_connect(slave_dev, phy_dn,
-				dsa_slave_adjust_link, 0,
-				p->phy_interface);
-	else {
+	if (phy_dn) {
+		/* Allow the switch driver to intercept PHY registers accesses
+		 * to address 0 and 0x1e to workaround the lack of MDIO bus
+		 * isolation on 7445D0/D1, see HW7445-1526. This is only
+		 * a problem with Broadcom switches that have a hard-coded
+		 * pseudo-PHY address 30d.
+		 */
+		if (of_device_is_compatible(phy_dn, "brcm,bcm53101") ||
+			of_device_is_compatible(phy_dn, "brcm,bcm53125")) {
+
+			if (of_property_read_u32(phy_dn, "reg", &phy_addr))
+				phy_addr = 0;
+
+			if (phy_addr >= PHY_MAX_ADDR)
+				phy_addr = 0;
+
+			p->phy = ds->slave_mii_bus->phy_map[phy_addr];
+			if (p->phy)
+				p->phy = phy_connect(slave_dev,
+						dev_name(&p->phy->dev),
+						dsa_slave_adjust_link, 0,
+						p->phy_interface);
+		} else
+			p->phy = of_phy_connect(slave_dev, phy_dn,
+					dsa_slave_adjust_link, 0,
+					p->phy_interface);
+	} else {
 		p->phy = of_phy_connect_fixed_link(slave_dev,
 				dsa_slave_adjust_link,
 				p->phy_interface);
@@ -437,6 +483,37 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
 	else
 		pr_info("attached PHY at address %d [%s]\n",
 			p->phy->addr, p->phy->drv->name);
+}
+
+int dsa_slave_suspend(struct net_device *slave_dev)
+{
+	struct dsa_slave_priv *p = netdev_priv(slave_dev);
+
+	netif_device_detach(slave_dev);
+
+	if (p->phy) {
+		phy_stop(p->phy);
+		p->old_pause = -1;
+		p->old_link = -1;
+		p->old_duplex = -1;
+		phy_suspend(p->phy);
+	}
+
+	return 0;
+}
+
+int dsa_slave_resume(struct net_device *slave_dev)
+{
+	struct dsa_slave_priv *p = netdev_priv(slave_dev);
+
+	netif_device_attach(slave_dev);
+
+	if (p->phy) {
+		phy_resume(p->phy);
+		phy_start(p->phy);
+	}
+
+	return 0;
 }
 
 struct net_device *
@@ -484,8 +561,8 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 		break;
 	}
 
-	parent->of_node = ds->pd->port_dn[port];
 	SET_NETDEV_DEV(slave_dev, parent);
+	slave_dev->dev.of_node = ds->pd->port_dn[port];
 	slave_dev->vlan_features = master->vlan_features;
 
 	p = netdev_priv(slave_dev);

@@ -12,6 +12,7 @@ config ARCH_BRCMSTB
 	select ARCH_HAS_OPP
 	select PM_OPP if PM
 	select GENERIC_IRQ_CHIP
+	select MFD_SYSCON if PM
 	help
 	  This enables support for Broadcom ARM-based set-top box chipsets.
 
@@ -57,7 +58,6 @@ config BCM7366A0
 	select BRCM_HAS_NAND_MAJOR_7
 	select BRCM_HAS_NAND_MINOR_0
 	select BRCM_HAS_BSPI_V4
-	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
 	select BRCMSTB_USE_MEGA_BARRIER
 
@@ -123,6 +123,7 @@ config BCM7445D0
 	select BRCM_HAS_NAND_MINOR_1
 	select BRCM_HAS_BSPI_V4
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_XPT_HASH if PM
 
 endchoice
 
@@ -358,4 +359,8 @@ config BRCM_MSPI_64B_WORDS
 # Apply the mega-barrier prior to DMA operations to workaround
 # issue noted in HW7445-1301 and derivatives.
 config BRCMSTB_USE_MEGA_BARRIER
+	bool
+
+# Perform memory hashing before entering S3, using XPT DMA
+config BRCMSTB_XPT_HASH
 	bool

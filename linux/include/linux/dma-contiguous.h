@@ -53,7 +53,12 @@
 
 #ifdef __KERNEL__
 
-struct cma;
+struct cma {
+	unsigned long	base_pfn;
+	unsigned long	count;
+	unsigned long	*bitmap;
+};
+
 struct page;
 struct device;
 
