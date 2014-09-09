@@ -64,7 +64,6 @@ void usage(void)
 	printf("\n");
 	printf("examples:\n");
 	printf("  status       show current power status\n");
-	printf("  usb 0        power down USB controllers\n");
 	printf("  sata 1       power up SATA controller\n");
 	printf("  tp1 0        power down TP1 (second CPU thread)\n");
 	printf("  tp2 0        power down TP2 (third CPU thread)\n");
@@ -120,7 +119,6 @@ int main(int argc, char **argv)
 
 	if(! strcmp(cmd, "status"))
 	{
-		printf("usb:          %d\n", state.usb_status);
 		printf("sata:         %d\n", state.sata_status);
 		printf("tp1:          %d\n", state.tp1_status);
 		printf("tp2:          %d\n", state.tp2_status);
@@ -170,9 +168,8 @@ int main(int argc, char **argv)
 
 	if(! strcmp(cmd, "usb"))
 	{
-		state.usb_status = val;
-		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
-			fatal("can't set PM state (USB)");
+		printf("usb is no longer supported.\n");
+		printf("The kernel now enables USB autosuspend by default.\n");
 		return(0);
 	}
 

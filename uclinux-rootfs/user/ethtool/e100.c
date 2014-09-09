@@ -1,6 +1,6 @@
 /* Copyright (c) 2002 Intel Corporation */
 #include <stdio.h>
-#include "ethtool-util.h"
+#include "internal.h"
 
 #define D102_REV_ID		12
 
@@ -46,7 +46,7 @@ e100_dump_regs(struct ethtool_drvinfo *info, struct ethtool_regs *regs)
 	u32 reg;
 	u16 scb_status, scb_cmd;
 
-	if(version != 1)
+	if (version != 1)
 		return -1;
 
 	reg = regs_buff[0];

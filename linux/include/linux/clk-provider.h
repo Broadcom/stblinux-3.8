@@ -243,6 +243,15 @@ struct clk_div_table {
  * 	invalid
  * CLK_DIVIDER_POWER_OF_TWO - clock divisor is 2 raised to the value read from
  * 	the hardware register
+ * CLK_DIVIDER_ALLOW_ZERO - Allow zero divisors.  For dividers which have
+ * 	CLK_DIVIDER_ONE_BASED set, it is possible to end up with a zero divisor.
+ * 	Some hardware implementations gracefully handle this case and allow a
+ * 	zero divisor by not modifying their input clock
+ * 	(divide by one / bypass).
+ * CLK_DIVIDER_HIWORD_MASK - The divider settings are only in lower 16-bit
+ * 	of this register, and mask of divider bits are in higher 16-bit of this
+ * 	register.  While setting the divider bits, higher 16-bit should also be
+ * 	updated to indicate changing divider bits.
  */
 struct clk_divider {
 	struct clk_hw	hw;
@@ -256,6 +265,8 @@ struct clk_divider {
 
 #define CLK_DIVIDER_ONE_BASED		BIT(0)
 #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
+#define CLK_DIVIDER_ALLOW_ZERO		BIT(2)
+#define CLK_DIVIDER_HIWORD_MASK		BIT(3)
 
 extern const struct clk_ops clk_divider_ops;
 struct clk *clk_register_divider(struct device *dev, const char *name,
@@ -381,6 +392,8 @@ struct clk_onecell_data {
 struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
 const char *of_clk_get_parent_name(struct device_node *np, int index);
 void of_clk_init(const struct of_device_id *matches);
+void of_divider_clk_setup(struct device_node *node);
+void of_fixed_factor_clk_setup(struct device_node *node);
 
 #endif /* CONFIG_COMMON_CLK */
 #endif /* CLK_PROVIDER_H */

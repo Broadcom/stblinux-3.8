@@ -18,6 +18,7 @@
 #include <linux/spinlock.h>
 #include <linux/mutex.h>
 #include <linux/mii.h>
+#include <linux/ethtool.h>
 
 #include <net/dsa.h>
 
@@ -41,6 +42,10 @@ struct bcm_sf2_hw_params {
 
 struct bcm_sf2_port_status {
 	unsigned int link;
+
+	bool enabled;
+
+	struct ethtool_eee eee;
 };
 
 struct bcm_sf2_priv {
@@ -68,6 +73,8 @@ struct bcm_sf2_priv {
 
 	/* Mask of ports enabled for Wake-on-LAN */
 	u32				wol_ports_mask;
+	struct clk			*clk;
+	struct clk			*clk_mdiv;
 };
 
 static inline struct bcm_sf2_priv *ds_to_priv(struct dsa_switch *ds)

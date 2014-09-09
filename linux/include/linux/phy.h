@@ -533,6 +533,33 @@ static inline bool phy_is_internal(struct phy_device *phydev)
 	return phydev->is_internal;
 }
 
+/**
+ * phy_read_mmd_indirect - reads data from the MMD registers
+ * @bus: the target MII bus
+ * @prtad: MMD Address
+ * @devad: MMD DEVAD
+ * @addr: PHY address on the MII bus
+ *
+ * Description: it reads data from the MMD registers (clause 22 to access to
+ * clause 45) of the specified phy address.
+ */
+int phy_read_mmd_indirect(struct mii_bus *bus, int prtad, int devad,
+				 int addr);
+
+/**
+ * phy_write_mmd_indirect - writes data to the MMD registers
+ * @bus: the target MII bus
+ * @prtad: MMD Address
+ * @devad: MMD DEVAD
+ * @addr: PHY address on the MII bus
+ * @data: data to write in the MMD register
+ *
+ * Description: Write data from the MMD registers of the specified
+ * phy address.
+ */
+void phy_write_mmd_indirect(struct mii_bus *bus, int prtad, int devad,
+				   int addr, u32 data);
+
 struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
 		bool is_c45, struct phy_c45_device_ids *c45_ids);
 struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);

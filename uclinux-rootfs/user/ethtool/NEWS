@@ -1,3 +1,180 @@
+Version 3.15 - July 20, 2014
+
+	* Feature: Add register dump support for Altera Triple Speed Ethernet
+	  (-d option)
+
+Version 3.14 - April 21, 2014
+
+	* Fix: Report Backplane as supported port (no option)
+	* Feature: Allow building a smaller executable without pretty-
+	  printing of register/EEPROM dumps (./configure --disable-pretty-dump)
+	* Fix: Typo in channel parameter format in an error message (-L option)
+
+Version 3.13 - January 27, 2014
+
+	* Doc: Update GPL text to include current address of the FSF
+	* Fix: Spelling fixes
+	* Doc: Fix advertising flag values in manual page for 20G link modes,
+	  and add missing 1G, 10G and 40G link modes
+
+Version 3.12.1 - November 8, 2013
+
+	* Fix: Memory corruption when applying external calibration to
+	  SFF-8472 module diagnostics (-m option)
+	* Feature: Add Intel 82599 and x540 DCB registers to dump
+	  (-d option)
+
+Version 3.12 - November 7, 2013
+
+	* Fix: Remove alternate method to check for VLAN tag offload on Linux
+	  < 2.6.37 (-k/-K options)
+	* Fix: Hide state of VLAN tag offload and LRO if the kernel is too old
+	  for us to reliably detect them (-k option)
+	* Feature: Add register dump support for Solarflare SFC9100 family
+	  (-d option)
+
+Version 3.11 - September 12, 2013
+
+	* Feature: Update Realtek chip list for register dump to match
+	  r8169 driver in Linux 3.11 (-d option)
+	* Feature: Add ixgbevf support for register dump (-d option)
+	* Feature: Filter ixgbe register dump according to the specific chip
+	  (-d option)
+
+Version 3.10 - July 1, 2013
+
+	* Feature: Beautify private flags print (--show-priv-flags option)
+
+Version 3.9 - April 30, 2013
+
+	* Feature: Display support for 10000BASE-KR link mode (no options)
+	* Feature: Add support for new versions of ixgbe register dump
+	  (-d dump)
+
+Version 3.8 - February 28, 2013
+
+	* Feature: Allow setting destination MAC address in L3/L4 flow spec
+	  rules (-N/-U option)
+	* Fix: Show full 64 bits of user-data (-n/-u option)
+	* Fix: Add version check for et131x regs (-d option)
+	* Doc: Improve description of -f, -t, -s, -N/-U, -W options in man page
+	* Fix: Restore 20000baseKR2 cap display (no options)
+
+Version 3.7 - December 13, 2012
+
+	* Fix: Gracefully handle failure of register pretty-printer (-d option)
+	* Feature: Add support for et131x registers (-d option)
+	* Feature: Basic optical diagnostics for SFF-8472 modules (-m option)
+
+Version 3.6 - October 5, 2012
+
+	* Feature: Allow setting MDI-X state (-s option)
+	* Fix: Preserve pause advertising bits when setting speed and
+	  duplex with autoneg on (-s option)
+	* Fix: Don't call ioctl to set EEE parameters if they are the same
+	  as the current parameters (--set-eee option)
+
+Version 3.5 - August 2, 2012
+
+	* Feature: Display support for 1000BASE-KX and 10GBASE-KX4 link modes
+	* Feature: Energy-Efficient Ethernet (EEE) configuration
+	  (--show-eee and --set-eee options)
+	* Fix: Don't trust drivers to null-terminate strings
+	* Feature: Display support for 40G link modes
+	* Package: Update RPM summary, description and URL
+	* Package: Exclude redundant documentation from RPM
+
+Version 3.4.2 - July 16, 2012
+
+	* Fix: Fix regression in RX NFC rule insertion for drivers that do
+	  not select rule locations (-N/-U option)
+	* Fix: Remove bogus error message when changing offload settings
+	  on Linux < 2.6.39 (-K option)
+	* Fix: Use alternate method to check for VLAN tag offload on Linux
+	  < 2.6.37 (-k option)
+
+Version 3.4.1 - June 13, 2012
+
+	* Fix: Work around failure of ETHTOOL_GSSET_INFO for unprivileged
+	  users (-k option)
+	* Fix: Report any unexpected error code from ETHTOOL_GSSET_INFO
+	  (-k and -K options)
+	* Doc: Fix the date of the man page to match the last update
+
+Version 3.4 - June 8, 2012
+
+	* Cleanup: Merge RX NFC options
+	* Doc: Improve description of RX NFC options
+	* Doc: Add ntuple to the -K option in the man page
+	* Feature: Show time stamping capabilities (-T option)
+	* Feature: Dump plug-in module EEPROM (-m option)
+	* Feature: Show and change all generic net device features
+	  (-k and -K options)
+
+Version 3.2 - January 12, 2012
+
+	* Feature: Add support for querying and setting private flags
+	  (--show-priv-flags, --set-priv-flags options)
+	* Feature: Omit zero values in Solarflare register tables (-d option)
+	* Feature: Allow driver to select RX NFC rule location (-U option)
+	* Fix: Correct register dump offsets for Intel 82575 chipsets
+	  (-d option)
+
+Version 3.1 - November 16, 2011
+
+	* Fix: Show all non-zero registers for tg3 (-d option)
+	* Feature: Add support for external loopback test (-t option)
+	* Fix: Show correct flow control registers for Intel 82599 (-d option)
+	* Feature: Add support for reporting and configuring numbers of
+	  channels/queues (-l and -L options)
+	* Feature: Report pause frame autonegotiation result (-a option)
+	* Doc: Change device name metavariable from 'ethX' to 'devname'
+	* Doc: Fix various layout problems
+	* Cleanup: Reorganise and add test cases for argument parsing
+	* Fix: Strictly check for extraneous or missing arguments; in
+	  particular, fail if the device name is missing
+
+Version 3.0 - August 4, 2011
+
+	* Feature: Report supported pause frame modes
+	* Feature: Support firmware dump (-w and -W options)
+	* Feature: Report advertised and supported 20G link modes
+	* Feature: Add an 'l4data' option for ip4 filters (-U option)
+	* Fix: Correct swapped h_source and h_dest fields for ether filters
+	  (-U option)
+	* Fix: Set ip_ver field correctly for ip4 filters (-U option)
+	* Fix: Correct parameter validation for -e and -E options; in
+	  particular, treat the 'magic' value as unsigned
+
+Version 2.6.39 - June 1, 2011
+
+	* Feature: Report some driver features (-i option)
+	* Doc: Remove misleading 'Auto' advertising mask from manual page
+	* Doc: Improve table formatting on manual page, using tbl
+	* Doc: Remove initial blank page in printed manual page
+	* Doc: Fix line-wrapping of options
+	* Feature: Add support for ESP as a separate protocol from AH
+	  (-n, -N, -u and -U options)
+	* Cleanup: Remove support for showing RX n-tuple settings
+	  (-u option), which was never implemented correctly in the kernel
+	* Feature: Add support for RX network flow classifier (NFC)
+	  (-u and -U options)
+	* Feature: Add support for e1000 M88 PHY registers (-d option)
+	* Cleanup: Change bug-address to netdev
+
+Version 2.6.38 - March 15, 2011
+
+	* Doc: Fix spelling and spacing in online help
+	* Doc: Update date, version and web site reference in manual page
+	* Doc: Fix spelling, capitalisation, consistency and style in
+	  manual page
+	* Doc: Generalise some references to network devices rather than
+	  Ethernet devices
+	* Fix: Don't silently ignore speed/duplex when autoneg is on
+	* Fix: Report an error (rather than full usage information) if
+	  given an unrecognised option
+	* Feature: Add --version option
+
 Version 2.6.37 - January 5, 2011
 
 	* Fix: Build fix for distributions with kernel headers from

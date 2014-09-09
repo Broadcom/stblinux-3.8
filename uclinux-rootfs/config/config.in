@@ -282,7 +282,6 @@ if [ "$CONFIG_USER_DHCPCD_DHCPCD" = "y" ]; then
 	bool '  dhcpcd link-local support'	CONFIG_USER_DHCPCD_LLIP
 fi
 bool 'dhcpcd-new (1.3.22-p14)'	CONFIG_USER_DHCPCD_NEW_DHCPCD
-bool 'dhcpd'			CONFIG_USER_DHCPD_DHCPD
 bool 'dhcpd(ISC)' 		CONFIG_USER_DHCP_ISC_SERVER_DHCPD
 bool 'dhclient(ISC)' 		CONFIG_USER_DHCP_ISC_CLIENT_DHCP
 bool 'dhcpcv6'			CONFIG_USER_DHCPCV6_DHCPCV6

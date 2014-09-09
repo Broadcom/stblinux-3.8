@@ -31,6 +31,7 @@
 #include <linux/bitops.h>
 #include <linux/dma-mapping.h>
 #include <linux/sizes.h>
+#include <linux/kconfig.h>
 #include <asm/fncpy.h>
 #include <asm/suspend.h>
 #include <asm/setup.h>
@@ -82,6 +83,11 @@ enum bsp_initiate_command {
 #define PM_INITIATE		0x01
 #define PM_INITIATE_SUCCESS	0x00
 #define PM_INITIATE_FAIL	0xfe
+
+/* Several chips have an old PM_INITIATE interface that doesn't ACK commands */
+#define PM_INITIATE_NO_ACK	(IS_ENABLED(CONFIG_BCM7366A0) || \
+				 IS_ENABLED(CONFIG_BCM7445C0) || \
+				 IS_ENABLED(CONFIG_BCM7439A0))
 
 static struct brcmstb_pm_control ctrl;
 static suspend_state_t suspend_state;
@@ -138,9 +144,19 @@ static int do_bsp_initiate_command(enum bsp_initiate_command cmd)
 	/* Go! */
 	__raw_writel((cmd << 1) | PM_INITIATE, base + AON_CTRL_PM_INITIATE);
 
+	/*
+	 * If firmware doesn't support the 'ack', then just assume it's done
+	 * after 10ms. Note that this only works for command 0, BSP_CLOCK_STOP
+	 */
+	if (PM_INITIATE_NO_ACK) {
+		(void)__raw_readl(base + AON_CTRL_PM_INITIATE);
+		mdelay(10);
+		return 0;
+	}
+
 	for (;;) {
 		ret = __raw_readl(base + AON_CTRL_PM_INITIATE);
-		if (!ret & PM_INITIATE)
+		if (!(ret & PM_INITIATE))
 			break;
 		if (timeo <= 0) {
 			pr_err("error: timeout waiting for BSP (%x)\n", ret);
@@ -198,6 +214,10 @@ static void brcmstb_pm_poweroff(void)
 	/* Clear magic S3 warm-boot value */
 	__raw_writel(0, ctrl.aon_sram + AON_REG_MAGIC_FLAGS);
 	(void)__raw_readl(ctrl.aon_sram + AON_REG_MAGIC_FLAGS);
+
+	/* Skip wait-for-interrupt signal; just use a countdown */
+	__raw_writel(0x10, ctrl.aon_ctrl_base + AON_CTRL_PM_CPU_WAIT_COUNT);
+	(void)__raw_readl(ctrl.aon_ctrl_base + AON_CTRL_PM_CPU_WAIT_COUNT);
 
 	brcmstb_do_pmsm_power_down(PM_COLD_CONFIG);
 }
@@ -633,6 +653,11 @@ static struct of_device_id ddr_phy_dt_ids[] = {
 		.compatible = "brcm,brcmstb-ddr-phy-v240.1",
 		.data = &ddr_phy_240_1,
 	},
+	{
+		/* Same as v240.1, for the registers we care about */
+		.compatible = "brcm,brcmstb-ddr-phy-v240.2",
+		.data = &ddr_phy_240_1,
+	},
 	{}
 };
 
@@ -734,6 +759,10 @@ int brcmstb_pm_init(void)
 	/* DDR SHIM-PHY registers */
 	for_each_matching_node(dn, ddr_shimphy_dt_ids) {
 		i = ctrl.num_memc;
+		if (i >= MAX_NUM_MEMC) {
+			pr_warn("too many MEMCs (max %d)\n", MAX_NUM_MEMC);
+			break;
+		}
 		base = brcmstb_ioremap_node(dn, 0, NULL);
 		if (IS_ERR_OR_NULL(base)) {
 			if (!ctrl.support_warm_boot)

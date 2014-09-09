@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(ethtool, 2.6.37, [Ben Hutchings <bhutchings@solarflare.com>])
+AC_INIT(ethtool, 3.15, netdev@vger.kernel.org)
 AC_PREREQ(2.52)
 AC_CONFIG_SRCDIR([ethtool.c])
 AM_INIT_AUTOMAKE([gnu])
@@ -10,6 +10,7 @@ AM_MAINTAINER_MODE
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
+AM_PROG_CC_C_O
 
 dnl Checks for libraries.
 
@@ -29,5 +30,16 @@ dnl Checks for library functions.
 AC_HEADER_STDC
 AC_CHECK_FUNCS(socket strtol)
 
-AC_CONFIG_FILES([Makefile ethtool.spec])
+dnl Check for options
+AC_ARG_ENABLE(pretty-dump,
+	      [  --enable-pretty-dump	  enable registers, EEPROM and SFP pretty dumps (enabled by default)],
+	      ,
+	      enable_pretty_dump=yes)
+if test x$enable_pretty_dump = xyes; then
+    AC_DEFINE(ETHTOOL_ENABLE_PRETTY_DUMP, 1,
+	      [Define this to enable register, EEPROM and SFP pretty dumps.])
+fi
+AM_CONDITIONAL([ETHTOOL_ENABLE_PRETTY_DUMP], [test x$enable_pretty_dump = xyes])
+
+AC_CONFIG_FILES([Makefile ethtool.spec ethtool.8])
 AC_OUTPUT

@@ -70,6 +70,7 @@ config BCM7366B0
 	select BRCM_HAS_BSPI_V4
 	select BRCM_HAS_MOCA_20_GEN23
 	select BRCM_MSPI_64B_WORDS
+	select BRCMSTB_XPT_HASH if PM
 
 config BCM7439A0
 	bool "7439 Ax"

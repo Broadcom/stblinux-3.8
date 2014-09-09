@@ -95,13 +95,6 @@ int brcm_usb_probe(struct platform_device *pdev, char *hcd_name,
 		return ret;
 	}
 
-#ifdef CONFIG_PM
-	/* disable autosuspend by default to preserve
-	 * original behavior
-	 */
-	usb_disable_autosuspend(hcd->self.root_hub);
-#endif
-
 	return ret;
 }
 EXPORT_SYMBOL(brcm_usb_probe);
@@ -181,6 +174,7 @@ static int brcm_usb_instance_probe(struct platform_device *pdev)
 	node = of_find_compatible_node(dn, NULL, "xhci-platform");
 	of_node_put(node);
 	priv->has_xhci = node != NULL;
+	brcm_usb_common_ctrl_xhci_soft_reset((uintptr_t)priv->ctrl_regs, false);
 	brcm_usb_common_ctrl_init((uintptr_t)priv->ctrl_regs, priv->ioc,
 				priv->ipp, priv->has_xhci);
 	return of_platform_populate(dn, NULL, NULL, NULL);
@@ -190,6 +184,7 @@ static int brcm_usb_instance_probe(struct platform_device *pdev)
 static int brcm_usb_instance_resume(struct device *dev)
 {
 	struct brcm_usb_instance *priv = dev_get_drvdata(dev);
+	brcm_usb_common_ctrl_xhci_soft_reset((uintptr_t)priv->ctrl_regs, false);
 	brcm_usb_common_ctrl_init((uintptr_t)priv->ctrl_regs, priv->ioc,
 				priv->ipp, priv->has_xhci);
 	return 0;

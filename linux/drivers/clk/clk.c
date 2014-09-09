@@ -1034,6 +1034,9 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	struct clk *top, *fail_clk;
 	int ret = 0;
 
+	if (!clk)
+		return 0;
+
 	/* prevent racing with updates to the clock topology */
 	mutex_lock(&prepare_lock);
 
@@ -1269,7 +1272,10 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
 {
 	int ret = 0;
 
-	if (!clk || !clk->ops)
+	if (!clk)
+		return 0;
+
+	if (!clk->ops)
 		return -EINVAL;
 
 	if (!clk->ops->set_parent)
@@ -1370,7 +1376,7 @@ int __clk_init(struct device *dev, struct clk *clk)
 	 * If clk->parents is not NULL we skip this entire block.  This allows
 	 * for clock drivers to statically initialize clk->parents.
 	 */
-	if (clk->num_parents > 1 && !clk->parents) {
+	if ((clk->num_parents > 1 || clk->flags & CLK_IS_SW) && !clk->parents) {
 		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
 				GFP_KERNEL);
 		/*

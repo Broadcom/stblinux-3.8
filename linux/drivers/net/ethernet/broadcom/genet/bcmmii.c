@@ -23,8 +23,6 @@
 */
 
 #include "bcmgenet.h"
-#include "bcmgenet_map.h"
-#include "bcmmii.h"
 
 #include <linux/types.h>
 #include <linux/delay.h>
@@ -34,7 +32,6 @@
 #include <linux/bitops.h>
 #include <linux/netdevice.h>
 #include <linux/platform_device.h>
-#include <linux/brcmstb/brcmstb.h>
 #include <linux/phy.h>
 #include <linux/phy_fixed.h>
 #include <linux/brcmphy.h>
@@ -50,21 +47,6 @@ static int bcmgenet_mii_read(struct mii_bus *bus, int phy_id, int location)
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	u32 reg;
 
-	if (phy_id == BRCM_PHY_ID_NONE) {
-		switch (location) {
-		case MII_BMCR:
-			return (priv->phy_speed == SPEED_1000) ?
-				BMCR_FULLDPLX | BMCR_SPEED1000 :
-				BMCR_FULLDPLX | BMCR_SPEED100;
-		case MII_BMSR:
-			return BMSR_LSTATUS;
-		default:
-			return 0;
-		}
-	}
-
-	mutex_lock(&priv->mdio_mutex);
-
 	bcmgenet_umac_writel(priv, (MDIO_RD | (phy_id << MDIO_PMD_SHIFT) |
 			(location << MDIO_REG_SHIFT)), UMAC_MDIO_CMD);
 	/* Start MDIO transaction*/
@@ -76,7 +58,6 @@ static int bcmgenet_mii_read(struct mii_bus *bus, int phy_id, int location)
 				& MDIO_START_BUSY),
 			HZ/100);
 	ret = bcmgenet_umac_readl(priv, UMAC_MDIO_CMD);
-	mutex_unlock(&priv->mdio_mutex);
 
 	/* Don't check error codes from switches, as some of them are
 	 * known to return MDIO_READ_FAIL on good transactions
@@ -96,9 +77,6 @@ static int bcmgenet_mii_write(struct mii_bus *bus, int phy_id,
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	u32 reg;
 
-	if (phy_id == BRCM_PHY_ID_NONE)
-		return 0;
-	mutex_lock(&priv->mdio_mutex);
 	bcmgenet_umac_writel(priv, (MDIO_WR | (phy_id << MDIO_PMD_SHIFT) |
 			(location << MDIO_REG_SHIFT) | (0xffff & val)),
 			UMAC_MDIO_CMD);
@@ -109,7 +87,6 @@ static int bcmgenet_mii_write(struct mii_bus *bus, int phy_id,
 			!(bcmgenet_umac_readl(priv, UMAC_MDIO_CMD) &
 				MDIO_START_BUSY),
 			HZ/100);
-	mutex_unlock(&priv->mdio_mutex);
 
 	return 0;
 }
@@ -121,8 +98,7 @@ static void bcmgenet_mii_setup(struct net_device *dev)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	struct phy_device *phydev = priv->phydev;
-	unsigned int val, cmd_bits = 0;
-	u32 reg;
+	u32 reg, cmd_bits = 0;
 	unsigned int status_changed = 0;
 
 	if (priv->old_link != phydev->link) {
@@ -166,31 +142,23 @@ static void bcmgenet_mii_setup(struct net_device *dev)
 		}
 
 		/* pause capability */
-		if ((phy_is_internal(priv->phydev) ||
-			priv->phydev->interface == PHY_INTERFACE_MODE_MII ||
-			priv->phydev->interface == PHY_INTERFACE_MODE_REVMII)
-			&& !phydev->pause) {
-			cmd_bits |= CMD_RX_PAUSE_IGNORE;
-			cmd_bits |= CMD_TX_PAUSE_IGNORE;
-		} else if (priv->ext_phy) { /* RGMII only */
-			val = bcmgenet_mii_read(priv->mii_bus,
-				priv->phy_addr, MII_BRCM_AUX_STAT_SUM);
-			if (!(val & MII_BRCM_AUX_GPHY_RX_PAUSE))
-				cmd_bits |= CMD_RX_PAUSE_IGNORE;
-			if (!(val & MII_BRCM_AUX_GPHY_TX_PAUSE))
-				cmd_bits |= CMD_TX_PAUSE_IGNORE;
-		}
+		if (!phydev->pause)
+			cmd_bits |= CMD_RX_PAUSE_IGNORE | CMD_TX_PAUSE_IGNORE;
+	}
 
+	if (!status_changed)
+		return;
+
+	if (phydev->link) {
 		reg = bcmgenet_umac_readl(priv, UMAC_CMD);
 		reg &= ~((CMD_SPEED_MASK << CMD_SPEED_SHIFT) |
-			       CMD_HD_EN |
-			       CMD_RX_PAUSE_IGNORE | CMD_TX_PAUSE_IGNORE);
+			 CMD_HD_EN | CMD_RX_PAUSE_IGNORE |
+			 CMD_TX_PAUSE_IGNORE);
 		reg |= cmd_bits;
 		bcmgenet_umac_writel(priv, reg, UMAC_CMD);
 	}
 
-	if (status_changed)
-		phy_print_status(phydev);
+	phy_print_status(phydev);
 }
 
 void bcmgenet_mii_reset(struct net_device *dev)
@@ -199,15 +167,10 @@ void bcmgenet_mii_reset(struct net_device *dev)
 
 	bcmgenet_mii_write(priv->mii_bus, priv->phy_addr, MII_BMCR, BMCR_RESET);
 	udelay(1);
-	/* enable 64 clock MDIO */
-	bcmgenet_mii_write(priv->mii_bus, priv->phy_addr, 0x1d, 0x1000);
-	bcmgenet_mii_read(priv->mii_bus, priv->phy_addr, 0x1d);
 
 	/* call the PHY driver specific init routine */
-	if (priv->phydev) {
-		phy_init_hw(priv->phydev);
-		phy_start_aneg(priv->phydev);
-	}
+	phy_init_hw(priv->phydev);
+	phy_start_aneg(priv->phydev);
 }
 
 /* 7366a0 EXT GPHY block comes with the CFG_IDDQ_BIAS and CFG_EXT_PWR_DOWN
@@ -385,7 +348,6 @@ static void bcmgenet_internal_phy_setup(struct net_device *dev)
 	reg = bcmgenet_ext_readl(priv, EXT_EXT_PWR_MGMT);
 	reg |= EXT_PWR_DN_EN_LD;
 	bcmgenet_ext_writel(priv, reg, EXT_EXT_PWR_MGMT);
-	bcmgenet_mii_reset(dev);
 }
 
 static void bcmgenet_moca_phy_setup(struct bcmgenet_priv *priv)
@@ -412,10 +374,10 @@ int bcmgenet_mii_config(struct net_device *dev)
 	switch (priv->phy_interface) {
 	case PHY_INTERFACE_MODE_NA:
 		phy_name = "internal PHY";
-		/* Irrespective of the actually configured PHY speed (100 or 1000)
-		 * GENETv4 only has an internal GPHY so we will just end up
-		 * masking the Gigabit features from what we support, not switching
-		 * to the EPHY
+		/* Irrespective of the actually configured PHY speed (100 or
+		 * 1000) GENETv4 only has an internal GPHY so we will just end
+		 * up masking the Gigabit features from what we support, not
+		 * switching to the EPHY
 		 */
 		if (GENET_IS_V4(priv)) {
 			priv->phy_supported = PHY_GBIT_FEATURES;
@@ -482,11 +444,12 @@ int bcmgenet_mii_config(struct net_device *dev)
 		 */
 		break;
 	default:
-		netdev_err(dev, "unknown phy_interface: %d\n", priv->phy_interface);
+		dev_err(&priv->pdev->dev, "unknown phy_interface: %d\n",
+			priv->phy_interface);
 		return -EINVAL;
 	}
 
-	netdev_info(dev, "configuring instance for %s\n", phy_name);
+	dev_info(&priv->pdev->dev, "configuring instance for %s\n", phy_name);
 
 	return 0;
 }
@@ -494,6 +457,7 @@ int bcmgenet_mii_config(struct net_device *dev)
 static int bcmgenet_mii_new_dt_init(struct bcmgenet_priv *priv)
 {
 	struct device_node *dn = priv->pdev->dev.of_node;
+	struct device *kdev = &priv->pdev->dev;
 	struct device_node *mdio_dn;
 	const char *phy_mode_str = NULL;
 	const __be32 *fixed_link;
@@ -503,13 +467,13 @@ static int bcmgenet_mii_new_dt_init(struct bcmgenet_priv *priv)
 
 	mdio_dn = of_get_next_child(dn, NULL);
 	if (!mdio_dn) {
-		netdev_err(priv->dev, "unable to find MDIO bus node\n");
+		dev_err(kdev, "unable to find MDIO bus node\n");
 		return -ENODEV;
 	}
 
 	ret = of_mdiobus_register(priv->mii_bus, mdio_dn);
 	if (ret) {
-		netdev_err(priv->dev, "failed to register MDIO bus\n");
+		dev_err(kdev, "failed to register MDIO bus\n");
 		return ret;
 	}
 
@@ -537,7 +501,7 @@ static int bcmgenet_mii_new_dt_init(struct bcmgenet_priv *priv)
 	if (phy_mode < 0) {
 		ret = of_property_read_string(dn, "phy-mode", &phy_mode_str);
 		if (ret < 0) {
-			netdev_err(priv->dev, "invalid PHY mode property\n");
+			dev_err(kdev, "invalid PHY mode property\n");
 			goto out;
 		}
 
@@ -547,8 +511,7 @@ static int bcmgenet_mii_new_dt_init(struct bcmgenet_priv *priv)
 		else if (!strcasecmp(phy_mode_str, "moca"))
 			priv->phy_type = BRCM_PHY_TYPE_MOCA;
 		else {
-			netdev_err(priv->dev, "invalid PHY mode: %s\n",
-					phy_mode_str);
+			dev_err(kdev, "invalid PHY mode: %s\n", phy_mode_str);
 			ret = -EINVAL;
 			goto out;
 		}
@@ -606,6 +569,7 @@ static int bcmgenet_mii_old_dt_init(struct bcmgenet_priv *priv)
 int bcmgenet_mii_init(struct net_device *dev)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
+	struct device *kdev = &priv->pdev->dev;
 	int ret;
 
 	ret = bcmgenet_mii_alloc(priv);
@@ -613,7 +577,7 @@ int bcmgenet_mii_init(struct net_device *dev)
 		return ret;
 
 	if (priv->old_dt_binding) {
-		netdev_warn(dev, "using old DT binding, update BOLT!\n");
+		dev_warn(kdev, "using old DT binding, update BOLT!\n");
 		ret = bcmgenet_mii_old_dt_init(priv);
 	} else
 		ret = bcmgenet_mii_new_dt_init(priv);

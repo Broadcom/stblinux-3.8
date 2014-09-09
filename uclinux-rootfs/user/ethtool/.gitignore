@@ -10,3 +10,4 @@ ethtool.spec
 ethtool-config.h
 stamp-h1
 changes
+autom4te.cache/

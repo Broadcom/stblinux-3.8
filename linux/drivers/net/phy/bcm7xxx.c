@@ -12,7 +12,13 @@
 #include <linux/module.h>
 #include <linux/phy.h>
 #include <linux/delay.h>
+#include <linux/mdio.h>
 #include <linux/brcmphy.h>
+#include <linux/clk.h>
+
+struct bcm7xxx_phy_priv {
+	struct clk	*clk;
+};
 
 #if defined(CONFIG_BCM7445A0) || defined(CONFIG_BCM7445B0)
 static int bcm7445a0b0_config_init(struct phy_device *phydev)
@@ -54,6 +60,53 @@ static inline int bcm7445a0b0_config_init(struct phy_device *phydev)
 }
 #endif /* CONFIG_BCM7445A0 || CONFIG_BCM7445B0 */
 
+static int bcm7xxx_apd_enable(struct phy_device *phydev)
+{
+	int val;
+
+	/* Enable powering down of the DLL during auto-power down */
+	val = bcm54xx_shadow_read(phydev, BCM54XX_SHD_SCR3);
+	if (val < 0)
+		return val;
+
+	val |= BCM54XX_SHD_SCR3_DLLAPD_DIS;
+	bcm54xx_shadow_write(phydev, BCM54XX_SHD_SCR3, val);
+
+	/* Enable auto-power down */
+	val = bcm54xx_shadow_read(phydev, BCM54XX_SHD_APD);
+	if (val < 0)
+		return val;
+
+	val |= BCM54XX_SHD_APD_EN;
+	return bcm54xx_shadow_write(phydev, BCM54XX_SHD_APD, val);
+}
+
+static int bcm7xxx_eee_enable(struct phy_device *phydev)
+{
+	int val;
+
+	val = phy_read_mmd_indirect(phydev->bus, CL45VEN_EEE_CONTROL,
+				    MDIO_MMD_AN, phydev->addr);
+	if (val < 0)
+		return val;
+
+	/* Enable general EEE feature at the PHY level */
+	val |= LPI_FEATURE_EN | LPI_FEATURE_EN_DIG1000X;
+
+	phy_write_mmd_indirect(phydev->bus, CL45VEN_EEE_CONTROL,
+			       MDIO_MMD_AN, phydev->addr, val);
+
+	/* Advertise supported modes */
+	val = phy_read_mmd_indirect(phydev->bus, MDIO_AN_EEE_ADV,
+				    MDIO_MMD_AN, phydev->addr);
+
+	val |= (MDIO_AN_EEE_ADV_100TX | MDIO_AN_EEE_ADV_1000T);
+	phy_write_mmd_indirect(phydev->bus, MDIO_AN_EEE_ADV,
+			       MDIO_MMD_AN, phydev->addr, val);
+
+	return 0;
+}
+
 #if defined(CONFIG_BCM7439A0) || defined(CONFIG_BCM7366A0) || \
 	defined(CONFIG_BCM7445C0)
 
@@ -83,6 +136,8 @@ static void phy_write_misc(struct phy_device *phydev,
 
 static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 {
+	int ret;
+
 	/* Increase VCO range to prevent unlocking problem of PLL at low
 	 * temp
 	 */
@@ -122,12 +177,22 @@ static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 	/* write AFTE_TX_CONFIG */
 	phy_write_misc(phydev, 0x39, 0x0000, 0x0800);
 
-	return 0;
+	ret = bcm7xxx_eee_enable(phydev);
+	if (ret)
+		return ret;
+
+	return bcm7xxx_apd_enable(phydev);
 }
 #else
 static inline int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 {
-	return 0;
+	int ret;
+
+	ret = bcm7xxx_eee_enable(phydev);
+	if (ret)
+		return ret;
+
+	return bcm7xxx_apd_enable(phydev);
 }
 #endif /* CONFIG_BCM7366A0 || CONFIG_BCM7439A0 || CONFIG_BCM7445C0 */
 
@@ -140,6 +205,21 @@ static int bcm7xxx_28nm_config_init(struct phy_device *phydev)
 		return ret;
 
 	return bcm7xxx_28nm_afe_config_init(phydev);
+}
+
+static int bcm7xxx_28nm_resume(struct phy_device *phydev)
+{
+	int ret;
+
+	/* Re-apply workarounds coming out of suspend/resume */
+	ret = bcm7xxx_28nm_config_init(phydev);
+	if (ret)
+		return ret;
+
+	/* Fixup the MII_ADVERTISE register which does not contain any half
+	 * duplex modes after reset/resume
+	 */
+	return genphy_config_aneg(phydev);
 }
 
 static int phy_set_clr_bits(struct phy_device *dev, int location,
@@ -163,6 +243,10 @@ static int phy_set_clr_bits(struct phy_device *dev, int location,
 
 static int bcm7xxx_config_init(struct phy_device *phydev)
 {
+	/* Enable 64 clock MDIO */
+	phy_write(phydev, 0x1d, 0x1000);
+	phy_read(phydev, 0x1d);
+
 	/* Workaround only required for 100Mbits/sec */
 	if (!(phydev->dev_flags & PHY_BRCM_100MBPS_WAR))
 		return 0;
@@ -192,7 +276,7 @@ static int bcm7xxx_config_init(struct phy_device *phydev)
 }
 
 /* Workaround for putting the PHY in IDDQ mode, required
- * for all BCM7XXX PHYs
+ * for all BCM7XXX 40nm 65nm PHYs
  */
 static int bcm7xxx_suspend(struct phy_device *phydev)
 {
@@ -226,56 +310,63 @@ static int bcm7xxx_dummy_config_init(struct phy_device *phydev)
 	return 0;
 }
 
-static struct phy_driver bcm7xxx_driver[] = {
+static int bcm7xxx_28nm_probe(struct phy_device *phydev)
 {
-	.phy_id		= PHY_ID_BCM7445,
-	.phy_id_mask	= 0xfffffff0,
-	.name		= "Broadcom BCM7445",
-	.features	= PHY_GBIT_FEATURES |
-			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,
-	.flags		= PHY_IS_INTERNAL,
-	.config_init	= bcm7xxx_28nm_config_init,
-	.config_aneg	= genphy_config_aneg,
-	.read_status	= genphy_read_status,
-	.resume		= bcm7xxx_28nm_config_init,
-	.driver		= { .owner = THIS_MODULE },
-}, {
-	.phy_id		= PHY_ID_BCM7439,
-	.phy_id_mask	= 0xfffffff0,
-	.name		= "Broadcom BCM7439",
-	.features	= PHY_GBIT_FEATURES |
-			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,
-	.flags		= PHY_IS_INTERNAL,
-	.config_init	= bcm7xxx_28nm_afe_config_init,
-	.config_aneg	= genphy_config_aneg,
-	.read_status	= genphy_read_status,
-	.resume		= bcm7xxx_28nm_afe_config_init,
-	.driver		= { .owner = THIS_MODULE },
-}, {
-	.phy_id		= PHY_ID_BCM7366,
-	.phy_id_mask	= 0xfffffff0,
-	.name		= "Broadcom BCM7366",
-	.features	= PHY_GBIT_FEATURES |
-			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,
-	.flags		= PHY_IS_INTERNAL,
-	.config_init	= bcm7xxx_28nm_afe_config_init,
-	.config_aneg	= genphy_config_aneg,
-	.read_status	= genphy_read_status,
-	.resume		= bcm7xxx_28nm_afe_config_init,
-	.driver		= { .owner = THIS_MODULE },
-}, {
-	.name		= "Broadcom BCM7XXX 28nm",
-	.phy_id		= PHY_ID_BCM7XXX_28,
-	.phy_id_mask	= PHY_BCM_OUI_MASK,
-	.features	= PHY_GBIT_FEATURES |
-			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,
-	.flags		= PHY_IS_INTERNAL,
-	.config_init	= bcm7xxx_28nm_config_init,
-	.config_aneg	= genphy_config_aneg,
-	.read_status	= genphy_read_status,
-	.resume		= bcm7xxx_28nm_config_init,
-	.driver		= { .owner = THIS_MODULE },
-}, {
+	struct bcm7xxx_phy_priv *priv;
+
+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+	if (!priv)
+		return -ENOMEM;
+
+	phydev->priv = priv;
+
+	priv->clk = clk_get(&phydev->dev, "sw_gphy");
+	if (IS_ERR(priv->clk)) {
+		dev_err(&phydev->dev, "failed to request GPHY clock\n");
+		priv->clk = NULL;
+	}
+
+	clk_prepare_enable(priv->clk);
+
+	return 0;
+}
+
+static void bcm7xxx_28nm_remove(struct phy_device *phydev)
+{
+	struct bcm7xxx_phy_priv *priv = phydev->priv;
+
+	clk_disable_unprepare(priv->clk);
+	clk_put(priv->clk);
+	kfree(priv);
+	phydev->priv = NULL;
+}
+
+#define BCM7XXX_28NM_GPHY(_oui, _name) 					\
+{									\
+	.phy_id		= (_oui),					\
+	.phy_id_mask	= 0xfffffff0,					\
+	.name		= _name,					\
+	.features	= PHY_GBIT_FEATURES |				\
+			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,	\
+	.flags		= PHY_IS_INTERNAL,				\
+	.config_init	= bcm7xxx_28nm_config_init,			\
+	.config_aneg	= genphy_config_aneg,				\
+	.probe		= bcm7xxx_28nm_probe,				\
+	.read_status	= genphy_read_status,				\
+	.remove		= bcm7xxx_28nm_remove,				\
+	.resume		= bcm7xxx_28nm_resume,				\
+	.driver		= { .owner = THIS_MODULE },			\
+}
+
+static struct phy_driver bcm7xxx_driver[] = {
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM7250, "Broadcom BCM7250"),
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM7364, "Broadcom BCM7364"),
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM7366, "Broadcom BCM7366"),
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM74371, "Broadcom BCM74371"),
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM7439, "Broadcom BCM7439"),
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM7445, "Broadcom BCM7445"),
+	BCM7XXX_28NM_GPHY(PHY_ID_BCM7455, "Broadcom BCM7455"),
+{
 	.phy_id		= PHY_BCM_OUI_4,
 	.phy_id_mask	= 0xffff0000,
 	.name		= "Broadcom BCM7XXX 40nm",
@@ -285,6 +376,7 @@ static struct phy_driver bcm7xxx_driver[] = {
 	.config_init	= bcm7xxx_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
+	.suspend	= bcm7xxx_suspend,
 	.resume		= bcm7xxx_config_init,
 	.driver		= { .owner = THIS_MODULE },
 }, {
@@ -303,7 +395,13 @@ static struct phy_driver bcm7xxx_driver[] = {
 } };
 
 static struct mdio_device_id __maybe_unused bcm7xxx_tbl[] = {
-	{ PHY_ID_BCM7XXX_28, 0xfffffc00 },
+	{ PHY_ID_BCM7250, 0xfffffff0, },
+	{ PHY_ID_BCM7364, 0xfffffff0, },
+	{ PHY_ID_BCM7366, 0xfffffff0, },
+	{ PHY_ID_BCM74371, 0xfffffff0, },
+	{ PHY_ID_BCM7439, 0xfffffff0, },
+	{ PHY_ID_BCM7445, 0xfffffff0, },
+	{ PHY_ID_BCM7455, 0xfffffff0, },
 	{ PHY_BCM_OUI_4, 0xffff0000 },
 	{ PHY_BCM_OUI_5, 0xffffff00 },
 	{ }

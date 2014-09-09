@@ -29,16 +29,7 @@
 #include <linux/clkdev.h>
 #include <linux/clk-provider.h>
 #include <linux/brcmstb/brcmstb.h>
-
-struct bcm_clk {
-	struct clk_hw hw;
-	char name[16];
-	char parent_name[16];
-	u32 flags;
-	struct clk_ops ops;
-	void __iomem	*clk_ctrl;
-	void __iomem	*clk_cfg;
-};
+#include <linux/clk/clk-brcmstb.h>
 
 struct bcm_clk_gate {
 	struct clk_hw hw;
@@ -55,173 +46,8 @@ struct bcm_clk_sw {
 	struct clk_ops ops;
 };
 
-#define to_brcmstb_clk(p) container_of(p, struct bcm_clk, hw)
 #define to_brcmstb_clk_gate(p) container_of(p, struct bcm_clk_gate, hw)
 #define to_brcmstb_clk_sw(p) container_of(p, struct bcm_clk_sw, hw)
-
-static int
-brcmstb_clk_pll_enable(struct clk_hw *hwclk)
-{
-	return 0;
-}
-
-static void
-brcmstb_clk_pll_disable(struct clk_hw *hwclk)
-{
-}
-
-static int
-brcmstb_clk_set_rate(struct clk_hw *hwclk, unsigned long rate,
-		     unsigned long parent_rate)
-{
-	return 0;
-}
-
-static long
-brcmstb_clk_round_rate(struct clk_hw *hwclk, unsigned long rate,
-		    unsigned long *prate)
-{
-	return 0;
-}
-
-static unsigned long
-brcmstb_clk_recalc_rate(struct clk_hw *hwclk, unsigned long rate)
-
-{
-	return 0;
-}
-
-static struct clk * __init
-brcmstb_clk_register(struct device *dev, struct bcm_clk *brcmstb_clk,
-		     struct clk_ops *ops, const char *name,
-		     const char *parent_name, u32 flags)
-{
-	struct clk *clk;
-	struct clk_init_data init;
-
-	init.name = name;
-	init.ops = ops;
-	init.flags = flags;
-	init.parent_names = &parent_name;
-	init.num_parents = (parent_name ? 1 : 0);
-	brcmstb_clk->hw.init = &init;
-
-	clk = clk_register(dev, &brcmstb_clk->hw);
-
-	if (WARN_ON(IS_ERR(clk)))
-		goto err_clk_register;
-
-	return clk;
-
-err_clk_register:
-	return ERR_PTR(-EINVAL);
-}
-
-static void
-brcmstb_clk_init(struct bcm_clk *brcmstb_clk_table, int lim)
-{
-	struct clk *clk;
-	struct bcm_clk *brcmstb_clk;
-	int clk_idx, ret;
-	char *parent_name;
-
-	for (clk_idx = 0; clk_idx < lim; clk_idx++) {
-		brcmstb_clk = &brcmstb_clk_table[clk_idx];
-
-		if (!brcmstb_clk->ops.enable)
-			brcmstb_clk->ops.enable =
-				&brcmstb_clk_pll_enable;
-
-		if (!brcmstb_clk->ops.disable)
-			brcmstb_clk->ops.disable =
-				&brcmstb_clk_pll_disable;
-
-		if (!brcmstb_clk->ops.set_rate)
-			brcmstb_clk->ops.set_rate =
-				&brcmstb_clk_set_rate;
-
-		if (!brcmstb_clk->ops.round_rate)
-			brcmstb_clk->ops.round_rate =
-				&brcmstb_clk_round_rate;
-
-		if (!brcmstb_clk->ops.recalc_rate)
-			brcmstb_clk->ops.recalc_rate =
-				&brcmstb_clk_recalc_rate;
-
-		parent_name = brcmstb_clk_table[clk_idx].parent_name;
-		clk = brcmstb_clk_register(NULL, brcmstb_clk,
-					   &brcmstb_clk->ops,
-					   brcmstb_clk->name,
-					   parent_name,
-					   (parent_name == NULL ?
-					    CLK_IS_ROOT | CLK_IGNORE_UNUSED :
-					    CLK_IGNORE_UNUSED));
-
-		if (IS_ERR(clk))
-			pr_err("%s clk_register failed\n",
-				brcmstb_clk->name);
-
-		ret = clk_register_clkdev(clk, brcmstb_clk->name, NULL);
-
-		if (ret)
-			pr_err("%s clk device registration failed\n",
-			       brcmstb_clk->name);
-	}
-}
-
-/*
- * MOCA clock
- */
-enum brcmstb_moca_clk {
-	BRCM_CLK_MOCA,
-	BRCM_CLK_MOCA_CPU,
-	BRCM_CLK_MOCA_PHY
-};
-
-static int bmoca_clk_prepare(struct clk_hw *hw);
-
-static struct bcm_clk brcmstb_moca_clk_table[] = {
-	[BRCM_CLK_MOCA] = {
-		.name = "moca",
-		.ops.prepare = bmoca_clk_prepare,
-	},
-	[BRCM_CLK_MOCA_CPU] = {
-		.name		= "moca-cpu",
-		.parent_name    = "moca",
-	},
-	[BRCM_CLK_MOCA_PHY] = {
-		.name = "moca-phy",
-		.parent_name = "moca",
-	},
-};
-
-static int
-bmoca_clk_prepare(struct clk_hw *hw)
-{
-#if (defined(CONFIG_BCM7445A0) || defined(CONFIG_BCM7445B0))
-	/* Configure MoCA PLL to 3600MHz */
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_RESET, RESETA, 1);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_DIV, PDIV, 3);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_DIV, NDIV_INT, 200);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_CHANNEL_CTRL_CH_0, MDIV_CH0, 9);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_CHANNEL_CTRL_CH_1, MDIV_CH1, 12);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_CHANNEL_CTRL_CH_2, MDIV_CH2, 36);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_CHANNEL_CTRL_CH_3, MDIV_CH3, 9);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_CHANNEL_CTRL_CH_4, MDIV_CH4, 8);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_CHANNEL_CTRL_CH_5, MDIV_CH5, 36);
-	BDEV_WR_F_RB(CLKGEN_PLL_MOCA_PLL_RESET, RESETA, 0);
-#endif
-	return 0;
-}
-
-static void __init bmoca_clk_init(void)
-{
-	/*
-	 * MoCA clk init
-	 */
-	brcmstb_clk_init(brcmstb_moca_clk_table,
-			 ARRAY_SIZE(brcmstb_moca_clk_table));
-}
 
 static DEFINE_SPINLOCK(lock);
 
@@ -427,9 +253,18 @@ static int brcmstb_clk_gate_is_enabled(struct clk_hw *hw)
 	return reg ? 1 : 0;
 }
 
-const struct clk_ops brcmstb_clk_gate_ops = {
+static const struct clk_ops brcmstb_clk_gate_ops = {
 	.enable = brcmstb_clk_gate_enable,
 	.disable = brcmstb_clk_gate_disable,
+	.is_enabled = brcmstb_clk_gate_is_enabled,
+};
+
+static const struct clk_ops brcmstb_clk_gate_inhib_dis_ops = {
+	.enable = brcmstb_clk_gate_enable,
+	.is_enabled = brcmstb_clk_gate_is_enabled,
+};
+
+static const struct clk_ops brcmstb_clk_gate_ro_ops = {
 	.is_enabled = brcmstb_clk_gate_is_enabled,
 };
 
@@ -445,10 +280,11 @@ const struct clk_ops brcmstb_clk_gate_ops = {
  * @delay: usec delay in turning on, off.
  * @lock: shared register lock for this clock
  */
-struct clk __init *brcm_clk_gate_register(
+static struct clk __init *brcm_clk_gate_register(
 	struct device *dev, const char *name, const char *parent_name,
 	unsigned long flags, void __iomem *reg, u8 bit_idx,
-	u8 clk_gate_flags, u32 delay[2], spinlock_t *lock)
+	u8 clk_gate_flags, u32 delay[2], spinlock_t *lock,
+	bool read_only, bool inhibit_disable)
 {
 	struct bcm_clk_gate *gate;
 	struct clk *clk;
@@ -462,7 +298,8 @@ struct clk __init *brcm_clk_gate_register(
 	}
 
 	init.name = name;
-	init.ops = &brcmstb_clk_gate_ops;
+	init.ops = inhibit_disable ? &brcmstb_clk_gate_inhib_dis_ops
+		: read_only ? &brcmstb_clk_gate_ro_ops : &brcmstb_clk_gate_ops;
 	init.parent_names = (parent_name ? &parent_name : NULL);
 	init.num_parents = (parent_name ? 1 : 0);
 	init.flags = flags | (parent_name ? 0 : CLK_IS_ROOT);
@@ -485,7 +322,7 @@ struct clk __init *brcm_clk_gate_register(
 	return clk;
 }
 
-const struct clk_ops brcmstb_clk_sw_ops = {};
+static const struct clk_ops brcmstb_clk_sw_ops = {};
 
 /**
  * brcmstb_clk_sw_register - register a bcm gate clock with the clock framework.
@@ -496,7 +333,7 @@ const struct clk_ops brcmstb_clk_sw_ops = {};
  * @flags: framework-specific flags for this clock
  * @lock: shared register lock for this clock
  */
-struct clk __init *brcmstb_clk_sw_register(
+static struct clk __init *brcmstb_clk_sw_register(
 	struct device *dev, const char *name, const char **parent_names,
 	int num_parents, unsigned long flags, spinlock_t *lock)
 {
@@ -538,6 +375,8 @@ static void __init of_brcmstb_clk_gate_setup(struct device_node *node)
 	u32 bit_idx = 0;
 	u32 delay[2] = {0, 0};
 	int ret;
+	bool read_only = false;
+	bool inhibit_disable = false;
 
 	of_property_read_string(node, "clock-output-names", &clk_name);
 	parent_name = of_clk_get_parent_name(node, 0);
@@ -557,9 +396,15 @@ static void __init of_brcmstb_clk_gate_setup(struct device_node *node)
 	if (of_property_read_bool(node, "set-bit-to-disable"))
 		clk_gate_flags |= CLK_GATE_SET_TO_DISABLE;
 
+	if (of_property_read_bool(node, "brcm,read-only"))
+		read_only = true;
+
+	if (of_property_read_bool(node, "brcm,inhibit-disable"))
+		inhibit_disable = true;
+
 	clk = brcm_clk_gate_register(NULL, clk_name, parent_name, 0, reg,
 				     (u8) bit_idx, clk_gate_flags, delay,
-				     &lock);
+				     &lock, read_only, inhibit_disable);
 	if (!IS_ERR(clk)) {
 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
 		ret = clk_register_clkdev(clk, clk_name, NULL);
@@ -602,9 +447,31 @@ static void __init of_brcmstb_clk_sw_setup(struct device_node *node)
 	}
 }
 
+static bool bcm_full_clk;
+
+static int __init _bcm_full_clk(char *str)
+{
+	bcm_full_clk = true;
+	return 0;
+}
+
+early_param("bcm_full_clk", _bcm_full_clk);
+
 static const struct of_device_id brcmstb_clk_match[] __initconst = {
 	{ .compatible = "fixed-clock",
 	  .data = of_fixed_clk_setup, },
+	{ .compatible = "brcm,brcmstb-cpu-clk-div",
+	  .data = cpu_clk_div_setup, },
+	{}
+};
+
+static const struct of_device_id brcmstb_clk_match_full[] __initconst = {
+	{ .compatible = "fixed-clock",
+	  .data = of_fixed_clk_setup, },
+	{ .compatible = "fixed-factor-clock",
+	  .data = of_fixed_factor_clk_setup, },
+	{ .compatible = "divider-clock",
+	  .data = of_divider_clk_setup, },
 	{ .compatible = "brcm,brcmstb-gate-clk",
 	  .data = of_brcmstb_clk_gate_setup, },
 	{ .compatible = "brcm,brcmstb-sw-clk",
@@ -617,8 +484,5 @@ static const struct of_device_id brcmstb_clk_match[] __initconst = {
 void __init brcmstb_clocks_init(void)
 {
 	/* DT-based clock config */
-	of_clk_init(brcmstb_clk_match);
-
-	/* Static clock config */
-	bmoca_clk_init();
+	of_clk_init(bcm_full_clk ? brcmstb_clk_match_full : brcmstb_clk_match);
 }

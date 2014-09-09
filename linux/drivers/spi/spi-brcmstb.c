@@ -29,6 +29,7 @@
 #include <linux/io.h>
 #include <linux/delay.h>
 #include <linux/of.h>
+#include <linux/clk.h>
 
 #include <linux/brcmstb/brcmstb.h>
 
@@ -216,6 +217,7 @@ struct bcm_flex_mode {
 struct bcmspi_priv {
 	struct platform_device	*pdev;
 	struct spi_master	*master;
+	struct clk		*clk;
 	spinlock_t		lock;
 	struct bcmspi_parms	last_parms;
 	struct position		pos;
@@ -1455,6 +1457,19 @@ static int bcmspi_probe(struct platform_device *pdev)
 	} else
 		priv->bspi_hw_raf = NULL;
 
+	/* Clock */
+	priv->clk = devm_clk_get(&pdev->dev, NULL);
+	if (IS_ERR(priv->clk)) {
+		dev_err(&pdev->dev, "unable to get clock\n");
+		/* Ignore, if we don't have any clocks to get */
+		priv->clk = NULL;
+	}
+	ret = clk_prepare_enable(priv->clk);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to prepare clock\n");
+		goto err2;
+	}
+
 	bcmspi_hw_init(priv);
 	priv->curr_cs = -1;
 
@@ -1502,6 +1517,7 @@ static int bcmspi_probe(struct platform_device *pdev)
 
 err1:
 	bcmspi_hw_uninit(priv);
+	clk_disable_unprepare(priv->clk);
 err2:
 	spi_master_put(master);
 	return ret;
@@ -1526,15 +1542,18 @@ static int bcmspi_remove(struct platform_device *pdev)
 	tasklet_kill(&priv->tasklet);
 	platform_set_drvdata(pdev, NULL);
 	bcmspi_hw_uninit(priv);
+	clk_disable_unprepare(priv->clk);
 	spi_unregister_master(priv->master);
 
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int bcmspi_suspend(struct device *dev)
 {
 	struct bcmspi_priv *priv = dev_get_drvdata(dev);
 	priv->s3_intr2_mask = BDEV_RD(BCHP_HIF_SPI_INTR2_CPU_MASK_STATUS);
+	clk_disable(priv->clk);
 	return 0;
 };
 
@@ -1548,13 +1567,11 @@ static int bcmspi_resume(struct device *dev)
 	priv->curr_cs = -1;
 	bcmspi_set_chip_select(priv, curr_cs);
 
-	return 0;
+	return clk_enable(priv->clk);
 }
+#endif /* CONFIG_PM_SLEEP */
 
-static const struct dev_pm_ops bcmspi_pm_ops = {
-	.suspend		= bcmspi_suspend,
-	.resume			= bcmspi_resume,
-};
+static SIMPLE_DEV_PM_OPS(bcmspi_pm_ops, bcmspi_suspend, bcmspi_resume);
 
 static const struct of_device_id spi_brcmstb_of_match[] = {
 	{ .compatible = "brcm,spi-brcmstb" },

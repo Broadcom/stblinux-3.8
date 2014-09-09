@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Tue Jan 21 16:04:05 2014
- *                 Full Compile MD5 Checksum e1f095afa685eb5b4f122eaf1dedd468
+ * Date:           Generated on              Wed Jul  2 03:12:34 2014
+ *                 Full Compile MD5 Checksum 7dc2787604a7d66ecd88cf44bdf8b9f2
  *                   (minus title and desc)  
- *                 MD5 Checksum              70443a5d2bc7efa01ea37d6c5ead2e95
+ *                 MD5 Checksum              fac21eb3a5c0bbaa870b50b1cab81ef9
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -496,6 +496,7 @@
 #define BCHP_CLKGEN_SECTOP_INST_OBSERVE_CLOCK    0x004e0708 /* Sectop inst observe clock */
 #define BCHP_CLKGEN_SMARTCARD_MUX_SELECT         0x004e070c /* Mux selects for Smartcard clocks */
 #define BCHP_CLKGEN_SPARE                        0x004e0710 /* Spares */
+#define BCHP_CLKGEN_CKTAP_CTRL                   0x004e0714 /* cktap control */
 #define BCHP_CLKGEN_STB_CHAN_TOP_INST_CLOCK_ENABLE 0x004e0718 /* Stb chan top inst clock enable */
 #define BCHP_CLKGEN_STB_CHAN_TOP_INST_CLOCK_ENABLE_STATUS 0x004e071c /* Clock Enable Status */
 #define BCHP_CLKGEN_STB_CHAN_TOP_INST_OBSERVE_CLOCK 0x004e0720 /* Stb chan top inst observe clock */
@@ -1402,12 +1403,12 @@
 /* CLKGEN :: PLL_LC_PLL_GAIN :: LOOP_GAIN_PROPORTIONAL_IN_PHASE [06:03] */
 #define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_PROPORTIONAL_IN_PHASE_MASK 0x00000078
 #define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_PROPORTIONAL_IN_PHASE_SHIFT 3
-#define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_PROPORTIONAL_IN_PHASE_DEFAULT 0x00000006
+#define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_PROPORTIONAL_IN_PHASE_DEFAULT 0x00000005
 
 /* CLKGEN :: PLL_LC_PLL_GAIN :: LOOP_GAIN_INTEGRATOR_IN_PHASE [02:00] */
 #define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_INTEGRATOR_IN_PHASE_MASK 0x00000007
 #define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_INTEGRATOR_IN_PHASE_SHIFT 0
-#define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_INTEGRATOR_IN_PHASE_DEFAULT 0x00000002
+#define BCHP_CLKGEN_PLL_LC_PLL_GAIN_LOOP_GAIN_INTEGRATOR_IN_PHASE_DEFAULT 0x00000003
 
 /***************************************************************************
  *PLL_LC_PLL_HOLD_CH_ALL - Hold PLL all channels
@@ -1517,7 +1518,7 @@
 /* CLKGEN :: PLL_LC_PLL_MISC :: BOOST_BIAS_CIRCUIT [00:00] */
 #define BCHP_CLKGEN_PLL_LC_PLL_MISC_BOOST_BIAS_CIRCUIT_MASK        0x00000001
 #define BCHP_CLKGEN_PLL_LC_PLL_MISC_BOOST_BIAS_CIRCUIT_SHIFT       0
-#define BCHP_CLKGEN_PLL_LC_PLL_MISC_BOOST_BIAS_CIRCUIT_DEFAULT     0x00000000
+#define BCHP_CLKGEN_PLL_LC_PLL_MISC_BOOST_BIAS_CIRCUIT_DEFAULT     0x00000001
 
 /***************************************************************************
  *PLL_LC_PLL_MISC2 - Mscellaneous control bus continued.
@@ -2315,7 +2316,7 @@
 /* CLKGEN :: PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0 :: MDIV_CH0 [08:01] */
 #define BCHP_CLKGEN_PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0_MDIV_CH0_MASK  0x000001fe
 #define BCHP_CLKGEN_PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0_MDIV_CH0_SHIFT 1
-#define BCHP_CLKGEN_PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0_MDIV_CH0_DEFAULT 0x00000006
+#define BCHP_CLKGEN_PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0_MDIV_CH0_DEFAULT 0x00000007
 
 /* CLKGEN :: PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0 :: CLOCK_DIS_CH0 [00:00] */
 #define BCHP_CLKGEN_PLL_RAAGA_PLL_CHANNEL_CTRL_CH_0_CLOCK_DIS_CH0_MASK 0x00000001
@@ -9746,6 +9747,18 @@
 #define BCHP_CLKGEN_SPARE_SPARE_RESET_HIGH_MASK                    0x00000fff
 #define BCHP_CLKGEN_SPARE_SPARE_RESET_HIGH_SHIFT                   0
 #define BCHP_CLKGEN_SPARE_SPARE_RESET_HIGH_DEFAULT                 0x00000000
+
+/***************************************************************************
+ *CKTAP_CTRL - cktap control
+ ***************************************************************************/
+/* CLKGEN :: CKTAP_CTRL :: reserved0 [31:01] */
+#define BCHP_CLKGEN_CKTAP_CTRL_reserved0_MASK                      0xfffffffe
+#define BCHP_CLKGEN_CKTAP_CTRL_reserved0_SHIFT                     1
+
+/* CLKGEN :: CKTAP_CTRL :: CKTAP_SW_OVERWRITE [00:00] */
+#define BCHP_CLKGEN_CKTAP_CTRL_CKTAP_SW_OVERWRITE_MASK             0x00000001
+#define BCHP_CLKGEN_CKTAP_CTRL_CKTAP_SW_OVERWRITE_SHIFT            0
+#define BCHP_CLKGEN_CKTAP_CTRL_CKTAP_SW_OVERWRITE_DEFAULT          0x00000001
 
 /***************************************************************************
  *STB_CHAN_TOP_INST_CLOCK_ENABLE - Stb chan top inst clock enable

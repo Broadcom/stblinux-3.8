@@ -47,6 +47,8 @@ static struct pdev_map child_pdevs = {
 	.ahci_pdev = NULL
 };
 
+static int child_pdevs_count;
+
 static int pdev_map(struct device *ahci_dev,
 		    struct platform_device *ahci_pdev,
 		    struct platform_device *brcm_pdev)
@@ -69,6 +71,8 @@ static int pdev_map(struct device *ahci_dev,
 	spin_lock(&child_pdevs_lock);
 
 	list_add_tail(&curr->node, &head->node);
+
+	child_pdevs_count++;
 
 	spin_unlock(&child_pdevs_lock);
 
@@ -105,6 +109,7 @@ static int pdev_unmap(struct device *dev)
 		list_del(&entry->node);
 		kfree(entry);
 		status = 0;
+		child_pdevs_count--;
 	}
 
 	spin_unlock(&child_pdevs_lock);
@@ -395,7 +400,7 @@ static int brcm_ahci_probe(struct platform_device *pdev)
 	struct ahci_platform_data ahci_pdata;
 	static u64 brcm_ahci_dmamask = DMA_BIT_MASK(32);
 
-	ahci_pdev = platform_device_alloc("strict-ahci", 0);
+	ahci_pdev = platform_device_alloc("strict-ahci", child_pdevs_count);
 	if (ahci_pdev == NULL) {
 		pr_err("Cannot allocate AHCI platform device!\n");
 		status = -ENOMEM;

@@ -686,6 +686,7 @@ struct bcm_sysport_priv {
 	u16			rev;
 	u32			wolopts;
 	unsigned int		wol_irq_disabled:1;
+	struct clk		*clk;
 
 	/* MIB related fields */
 	struct bcm_sysport_mib	mib;

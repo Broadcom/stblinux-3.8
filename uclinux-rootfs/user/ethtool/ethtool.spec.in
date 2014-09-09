@@ -3,21 +3,19 @@ Version		: @VERSION@
 Release		: 1
 Group		: Utilities
 
-Summary		: A tool for setting ethernet parameters
+Summary		: Settings tool for Ethernet and other network devices
 
 License		: GPL
-URL		: http://sourceforge.net/projects/gkernel/
+URL		: https://ftp.kernel.org/pub/software/network/ethtool/
 
 Buildroot	: %{_tmppath}/%{name}-%{version}
 Source		: %{name}-%{version}.tar.gz
 
 
 %description
-Ethtool is a small utility to get and set values from your your ethernet 
-controllers.  Not all ethernet drivers support ethtool, but it is getting 
-better.  If your ethernet driver doesn't support it, ask the maintainer to 
-write support - it's not hard!
-
+This utility allows querying and changing settings such as speed,
+port, auto-negotiation, PCI locations and checksum offload on many
+network devices, especially Ethernet devices.
 
 %prep
 %setup -q
@@ -36,7 +34,7 @@ make install DESTDIR=${RPM_BUILD_ROOT}
 %defattr(-,root,root)
 /usr/sbin/ethtool
 %{_mandir}/man8/ethtool.8*
-%doc AUTHORS COPYING INSTALL NEWS README ChangeLog
+%doc AUTHORS COPYING NEWS README
 
 
 %changelog

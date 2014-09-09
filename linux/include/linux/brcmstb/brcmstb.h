@@ -310,6 +310,12 @@
 #include <linux/brcmstb/7366b0/bchp_sun_top_ctrl.h>
 #include <linux/brcmstb/7366b0/bchp_usb_ctrl.h>
 #include <linux/brcmstb/7366b0/bchp_wktmr.h>
+#include <linux/brcmstb/7366b0/bchp_xpt_bus_if.h>
+#include <linux/brcmstb/7366b0/bchp_xpt_fe.h>
+#include <linux/brcmstb/7366b0/bchp_xpt_memdma_mcpb.h>
+#include <linux/brcmstb/7366b0/bchp_xpt_memdma_mcpb_ch0.h>
+#include <linux/brcmstb/7366b0/bchp_xpt_security_ns.h>
+#include <linux/brcmstb/7366b0/bchp_xpt_security_ns_intr2_0.h>
 
 #elif defined(CONFIG_BCM7439A0)
 #include <linux/brcmstb/7439a0/bchp_aon_ctrl.h>

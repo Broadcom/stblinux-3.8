@@ -105,12 +105,14 @@ static int brcm_tag_rcv(struct sk_buff *skb, struct net_device *dev,
 			struct packet_type *pt, struct net_device *orig_dev)
 {
 	struct dsa_switch_tree *dst = dev->dsa_ptr;
-	struct dsa_switch *ds = dst->ds[0];
+	struct dsa_switch *ds;
 	int source_port;
 	u8 *brcm_tag;
 
 	if (unlikely(dst == NULL))
 		goto out_drop;
+
+	ds = dst->ds[0];
 
 	skb = skb_unshare(skb, GFP_ATOMIC);
 	if (skb == NULL)

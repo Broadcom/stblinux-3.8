@@ -6,3 +6,6 @@ config VERSATILE_FPGA_IRQ_NR
        int
        default 4
        depends on VERSATILE_FPGA_IRQ
+
+config BCM7120_L2_IRQ
+	bool

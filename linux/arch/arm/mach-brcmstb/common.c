@@ -23,6 +23,7 @@
 #include <linux/console.h>
 #include <linux/clk/clk-brcmstb.h>
 #include <linux/irqchip/brcmstb-l2.h>
+#include <linux/irqchip/bcm7120-l2.h>
 #include <linux/dma-contiguous.h>
 #include <linux/export.h>
 #include <asm/hardware/gic.h>
@@ -65,6 +66,7 @@ static const char *brcmstb_match[] __initdata = {
 static const struct of_device_id brcmstb_dt_irq_match[] __initconst = {
 	{ .compatible = "arm,cortex-a15-gic", .data = gic_of_init },
 	{ .compatible = "brcm,l2-intc", .data = brcmstb_l2_intc_of_init },
+	{ .compatible = "brcm,bcm7120-l2-intc", .data = bcm7120_l2_intc_of_init },
 	{ }
 };
 

@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Tue Jan 21 16:04:08 2014
- *                 Full Compile MD5 Checksum e1f095afa685eb5b4f122eaf1dedd468
+ * Date:           Generated on              Wed Jul  2 03:12:35 2014
+ *                 Full Compile MD5 Checksum 7dc2787604a7d66ecd88cf44bdf8b9f2
  *                   (minus title and desc)  
- *                 MD5 Checksum              70443a5d2bc7efa01ea37d6c5ead2e95
+ *                 MD5 Checksum              fac21eb3a5c0bbaa870b50b1cab81ef9
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -1670,6 +1670,7 @@
 /* AON_CTRL :: ANA_CBUF0_CONTROL :: spare_ctrl [31:24] */
 #define BCHP_AON_CTRL_ANA_CBUF0_CONTROL_spare_ctrl_MASK            0xff000000
 #define BCHP_AON_CTRL_ANA_CBUF0_CONTROL_spare_ctrl_SHIFT           24
+#define BCHP_AON_CTRL_ANA_CBUF0_CONTROL_spare_ctrl_DEFAULT         0x00000000
 
 /* AON_CTRL :: ANA_CBUF0_CONTROL :: clk2_cml_drv1 [23:21] */
 #define BCHP_AON_CTRL_ANA_CBUF0_CONTROL_clk2_cml_drv1_MASK         0x00e00000
@@ -1722,6 +1723,7 @@
 /* AON_CTRL :: ANA_CBUF1_CONTROL :: spare_ctrl [31:24] */
 #define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_spare_ctrl_MASK            0xff000000
 #define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_spare_ctrl_SHIFT           24
+#define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_spare_ctrl_DEFAULT         0x00000000
 
 /* AON_CTRL :: ANA_CBUF1_CONTROL :: clk2_cml_drv1 [23:21] */
 #define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_clk2_cml_drv1_MASK         0x00e00000
@@ -1761,7 +1763,7 @@
 /* AON_CTRL :: ANA_CBUF1_CONTROL :: clk1_cml_enb [05:04] */
 #define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_clk1_cml_enb_MASK          0x00000030
 #define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_clk1_cml_enb_SHIFT         4
-#define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_clk1_cml_enb_DEFAULT       0x00000000
+#define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_clk1_cml_enb_DEFAULT       0x00000002
 
 /* AON_CTRL :: ANA_CBUF1_CONTROL :: ldo_ctrl [03:00] */
 #define BCHP_AON_CTRL_ANA_CBUF1_CONTROL_ldo_ctrl_MASK              0x0000000f

@@ -123,6 +123,17 @@ static int fixed_mdio_read(struct mii_bus *bus, int phy_id, int reg_num)
 	if (reg_num >= MII_REGS_NUM)
 		return -1;
 
+	/* We do not support Clause 45 register in Clause 22 compatibility mode
+	 * reject those
+	 */
+	switch (reg_num) {
+	case MII_MMD_CTRL:
+	case MII_MMD_DATA:
+		return -1;
+	default:
+		break;
+	}
+
 	list_for_each_entry(fp, &fmb->phys, node) {
 		if (fp->id == phy_id) {
 			/* Issue callback if user registered it. */

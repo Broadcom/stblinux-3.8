@@ -6,6 +6,7 @@
  * Kernel 2.4 update Copyright 2001 Jeff Garzik <jgarzik@mandrakesoft.com>
  * Wake-on-LAN,natsemi,misc support by Tim Hockin <thockin@sun.com>
  * Portions Copyright 2002 Intel
+ * Portions Copyright (C) Sun Microsystems 2008
  * do_test support by Eli Kupermann <eli.kupermann@intel.com>
  * ETHTOOL_PHYS_ID support by Chris Leech <christopher.leech@intel.com>
  * e1000 support by Scott Feldman <scott.feldman@intel.com>
@@ -14,27 +15,23 @@
  * amd8111e support by Reeja John <reeja.john@amd.com>
  * long arguments by Andi Kleen.
  * SMSC LAN911x support by Steve Glendinning <steve.glendinning@smsc.com>
+ * Rx Network Flow Control configuration support <santwona.behera@sun.com>
  * Various features by Ben Hutchings <bhutchings@solarflare.com>;
  *	Copyright 2009, 2010 Solarflare Communications
+ * MDI-X set support by Jesse Brandeburg <jesse.brandeburg@intel.com>
+ *	Copyright 2012 Intel Corporation
  *
  * TODO:
  *   * show settings for all devices
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "ethtool-config.h"
-#endif
-
-#include <sys/types.h>
+#include "internal.h"
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <stdio.h>
-#include <string.h>
+#include <stddef.h>
 #include <errno.h>
-#include <net/if.h>
 #include <sys/utsname.h>
 #include <limits.h>
 #include <ctype.h>
@@ -44,18 +41,57 @@
 #include <arpa/inet.h>
 
 #include <linux/sockios.h>
-#include "ethtool-util.h"
 
-
-#ifndef SIOCETHTOOL
-#define SIOCETHTOOL     0x8946
-#endif
 #ifndef MAX_ADDR_LEN
 #define MAX_ADDR_LEN	32
 #endif
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-#endif
+
+#define ALL_ADVERTISED_MODES			\
+	(ADVERTISED_10baseT_Half |		\
+	 ADVERTISED_10baseT_Full |		\
+	 ADVERTISED_100baseT_Half |		\
+	 ADVERTISED_100baseT_Full |		\
+	 ADVERTISED_1000baseT_Half |		\
+	 ADVERTISED_1000baseT_Full |		\
+	 ADVERTISED_2500baseX_Full |		\
+	 ADVERTISED_10000baseKX4_Full |		\
+	 ADVERTISED_10000baseKR_Full |		\
+	 ADVERTISED_10000baseR_FEC |		\
+	 ADVERTISED_20000baseMLD2_Full |	\
+	 ADVERTISED_20000baseKR2_Full |		\
+	 ADVERTISED_40000baseKR4_Full |		\
+	 ADVERTISED_40000baseCR4_Full |		\
+	 ADVERTISED_40000baseSR4_Full |		\
+	 ADVERTISED_40000baseLR4_Full)
+
+#define ALL_ADVERTISED_FLAGS			\
+	(ADVERTISED_10baseT_Half |		\
+	 ADVERTISED_10baseT_Full |		\
+	 ADVERTISED_100baseT_Half |		\
+	 ADVERTISED_100baseT_Full |		\
+	 ADVERTISED_1000baseT_Half |		\
+	 ADVERTISED_1000baseT_Full |		\
+	 ADVERTISED_Autoneg |			\
+	 ADVERTISED_TP |			\
+	 ADVERTISED_AUI |			\
+	 ADVERTISED_MII |			\
+	 ADVERTISED_FIBRE |			\
+	 ADVERTISED_BNC |			\
+	 ADVERTISED_10000baseT_Full |		\
+	 ADVERTISED_Pause |			\
+	 ADVERTISED_Asym_Pause |		\
+	 ADVERTISED_2500baseX_Full |		\
+	 ADVERTISED_Backplane |			\
+	 ADVERTISED_1000baseKX_Full |		\
+	 ADVERTISED_10000baseKX4_Full |		\
+	 ADVERTISED_10000baseKR_Full |		\
+	 ADVERTISED_10000baseR_FEC |		\
+	 ADVERTISED_20000baseMLD2_Full |	\
+	 ADVERTISED_20000baseKR2_Full |		\
+	 ADVERTISED_40000baseKR4_Full |		\
+	 ADVERTISED_40000baseCR4_Full |		\
+	 ADVERTISED_40000baseSR4_Full |		\
+	 ADVERTISED_40000baseLR4_Full)
 
 #ifndef HAVE_NETIF_MSG
 enum {
@@ -77,346 +113,23 @@ enum {
 };
 #endif
 
-static int parse_wolopts(char *optstr, u32 *data);
-static char *unparse_wolopts(int wolopts);
-static void get_mac_addr(char *src, unsigned char *dest);
-static int do_gdrv(int fd, struct ifreq *ifr);
-static int do_gset(int fd, struct ifreq *ifr);
-static int do_sset(int fd, struct ifreq *ifr);
-static int do_gregs(int fd, struct ifreq *ifr);
-static int do_nway_rst(int fd, struct ifreq *ifr);
-static int do_geeprom(int fd, struct ifreq *ifr);
-static int do_seeprom(int fd, struct ifreq *ifr);
-static int do_test(int fd, struct ifreq *ifr);
-static int do_phys_id(int fd, struct ifreq *ifr);
-static int do_gpause(int fd, struct ifreq *ifr);
-static int do_spause(int fd, struct ifreq *ifr);
-static int do_gring(int fd, struct ifreq *ifr);
-static int do_sring(int fd, struct ifreq *ifr);
-static int do_gcoalesce(int fd, struct ifreq *ifr);
-static int do_scoalesce(int fd, struct ifreq *ifr);
-static int do_goffload(int fd, struct ifreq *ifr);
-static int do_soffload(int fd, struct ifreq *ifr);
-static int do_gstats(int fd, struct ifreq *ifr);
-static int rxflow_str_to_type(const char *str);
-static int parse_rxfhashopts(char *optstr, u32 *data);
-static char *unparse_rxfhashopts(u64 opts);
-static void parse_rxntupleopts(int argc, char **argp, int first_arg);
-static int dump_rxfhash(int fhash, u64 val);
-static int do_srxclass(int fd, struct ifreq *ifr);
-static int do_grxclass(int fd, struct ifreq *ifr);
-static int do_grxfhindir(int fd, struct ifreq *ifr);
-static int do_srxfhindir(int fd, struct ifreq *ifr);
-static int do_srxntuple(int fd, struct ifreq *ifr);
-static int do_grxntuple(int fd, struct ifreq *ifr);
-static int do_flash(int fd, struct ifreq *ifr);
-static int do_permaddr(int fd, struct ifreq *ifr);
+#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 
-static int send_ioctl(int fd, struct ifreq *ifr);
+static void exit_bad_args(void) __attribute__((noreturn));
 
-static enum {
-	MODE_HELP = -1,
-	MODE_GSET=0,
-	MODE_SSET,
-	MODE_GDRV,
-	MODE_GREGS,
-	MODE_NWAY_RST,
-	MODE_GEEPROM,
-	MODE_SEEPROM,
-	MODE_TEST,
-	MODE_PHYS_ID,
-	MODE_GPAUSE,
-	MODE_SPAUSE,
-	MODE_GCOALESCE,
-	MODE_SCOALESCE,
-	MODE_GRING,
-	MODE_SRING,
-	MODE_GOFFLOAD,
-	MODE_SOFFLOAD,
-	MODE_GSTATS,
-	MODE_GNFC,
-	MODE_SNFC,
-	MODE_GRXFHINDIR,
-	MODE_SRXFHINDIR,
-	MODE_SNTUPLE,
-	MODE_GNTUPLE,
-	MODE_FLASHDEV,
-	MODE_PERMADDR,
-} mode = MODE_GSET;
-
-static struct option {
-    char *srt, *lng;
-    int Mode;
-    char *help;
-    char *opthelp;
-} args[] = {
-    { "-s", "--change", MODE_SSET, "Change generic options",
-		"		[ speed %d ]\n"
-		"		[ duplex half|full ]\n"
-		"		[ port tp|aui|bnc|mii|fibre ]\n"
-		"		[ autoneg on|off ]\n"
-		"		[ advertise %x ]\n"
-		"		[ phyad %d ]\n"
-		"		[ xcvr internal|external ]\n"
-		"		[ wol p|u|m|b|a|g|s|d... ]\n"
-		"		[ sopass %x:%x:%x:%x:%x:%x ]\n"
-		"		[ msglvl %d | msglvl type on|off ... ]\n" },
-    { "-a", "--show-pause", MODE_GPAUSE, "Show pause options" },
-    { "-A", "--pause", MODE_SPAUSE, "Set pause options",
-      "		[ autoneg on|off ]\n"
-      "		[ rx on|off ]\n"
-      "		[ tx on|off ]\n" },
-    { "-c", "--show-coalesce", MODE_GCOALESCE, "Show coalesce options" },
-    { "-C", "--coalesce", MODE_SCOALESCE, "Set coalesce options",
-		"		[adaptive-rx on|off]\n"
-		"		[adaptive-tx on|off]\n"
-		"		[rx-usecs N]\n"
-		"		[rx-frames N]\n"
-		"		[rx-usecs-irq N]\n"
-		"		[rx-frames-irq N]\n"
-		"		[tx-usecs N]\n"
-		"		[tx-frames N]\n"
-		"		[tx-usecs-irq N]\n"
-		"		[tx-frames-irq N]\n"
-		"		[stats-block-usecs N]\n"
-		"		[pkt-rate-low N]\n"
-		"		[rx-usecs-low N]\n"
-		"		[rx-frames-low N]\n"
-		"		[tx-usecs-low N]\n"
-		"		[tx-frames-low N]\n"
-		"		[pkt-rate-high N]\n"
-		"		[rx-usecs-high N]\n"
-		"		[rx-frames-high N]\n"
-		"		[tx-usecs-high N]\n"
-		"		[tx-frames-high N]\n"
-	        "		[sample-interval N]\n" },
-    { "-g", "--show-ring", MODE_GRING, "Query RX/TX ring parameters" },
-    { "-G", "--set-ring", MODE_SRING, "Set RX/TX ring parameters",
-		"		[ rx N ]\n"
-		"		[ rx-mini N ]\n"
-		"		[ rx-jumbo N ]\n"
-	        "		[ tx N ]\n" },
-    { "-k", "--show-offload", MODE_GOFFLOAD, "Get protocol offload information" },
-    { "-K", "--offload", MODE_SOFFLOAD, "Set protocol offload",
-		"		[ rx on|off ]\n"
-		"		[ tx on|off ]\n"
-		"		[ sg on|off ]\n"
-	        "		[ tso on|off ]\n"
-	        "		[ ufo on|off ]\n"
-		"		[ gso on|off ]\n"
-		"		[ gro on|off ]\n"
-		"		[ lro on|off ]\n"
-		"		[ rxvlan on|off ]\n"
-		"		[ txvlan on|off ]\n"
-		"		[ ntuple on|off ]\n"
-		"		[ rxhash on|off ]\n"
-    },
-    { "-i", "--driver", MODE_GDRV, "Show driver information" },
-    { "-d", "--register-dump", MODE_GREGS, "Do a register dump",
-		"		[ raw on|off ]\n"
-		"		[ file FILENAME ]\n" },
-    { "-e", "--eeprom-dump", MODE_GEEPROM, "Do a EEPROM dump",
-		"		[ raw on|off ]\n"
-		"		[ offset N ]\n"
-		"		[ length N ]\n" },
-    { "-E", "--change-eeprom", MODE_SEEPROM, "Change bytes in device EEPROM",
-		"		[ magic N ]\n"
-		"		[ offset N ]\n"
-		"		[ length N ]\n"
-		"		[ value N ]\n" },
-    { "-r", "--negotiate", MODE_NWAY_RST, "Restart N-WAY negotation" },
-    { "-p", "--identify", MODE_PHYS_ID, "Show visible port identification (e.g. blinking)",
-                "               [ TIME-IN-SECONDS ]\n" },
-    { "-t", "--test", MODE_TEST, "Execute adapter self test",
-                "               [ online | offline ]\n" },
-    { "-S", "--statistics", MODE_GSTATS, "Show adapter statistics" },
-    { "-n", "--show-nfc", MODE_GNFC, "Show Rx network flow classification"
-		"options",
-		"		[ rx-flow-hash tcp4|udp4|ah4|sctp4|"
-		"tcp6|udp6|ah6|sctp6 ]\n" },
-    { "-f", "--flash", MODE_FLASHDEV, "FILENAME " "Flash firmware image "
-    		"from the specified file to a region on the device",
-		"               [ REGION-NUMBER-TO-FLASH ]\n" },
-    { "-N", "--config-nfc", MODE_SNFC, "Configure Rx network flow "
-		"classification options",
-		"		[ rx-flow-hash tcp4|udp4|ah4|sctp4|"
-		"tcp6|udp6|ah6|sctp6 m|v|t|s|d|f|n|r... ]\n" },
-    { "-x", "--show-rxfh-indir", MODE_GRXFHINDIR, "Show Rx flow hash "
-		"indirection" },
-    { "-X", "--set-rxfh-indir", MODE_SRXFHINDIR, "Set Rx flow hash indirection",
-		"		equal N | weight W0 W1 ...\n" },
-    { "-U", "--config-ntuple", MODE_SNTUPLE, "Configure Rx ntuple filters "
-		"and actions",
-		"		{ flow-type tcp4|udp4|sctp4\n"
-		"		  [ src-ip ADDR [src-ip-mask MASK] ]\n"
-		"		  [ dst-ip ADDR [dst-ip-mask MASK] ]\n"
-		"		  [ src-port PORT [src-port-mask MASK] ]\n"
-		"		  [ dst-port PORT [dst-port-mask MASK] ]\n"
-		"		| flow-type ether\n"
-		"		  [ src MAC-ADDR [src-mask MASK] ]\n"
-		"		  [ dst MAC-ADDR [dst-mask MASK] ]\n"
-		"		  [ proto N [proto-mask MASK] ] }\n"
-		"		[ vlan VLAN-TAG [vlan-mask MASK] ]\n"
-		"		[ user-def DATA [user-def-mask MASK] ]\n"
-		"		action N\n" },
-    { "-u", "--show-ntuple", MODE_GNTUPLE,
-		"Get Rx ntuple filters and actions\n" },
-    { "-P", "--show-permaddr", MODE_PERMADDR,
-		"Show permanent hardware address" },
-    { "-h", "--help", MODE_HELP, "Show this help" },
-    {}
-};
-
-
-static void show_usage(int badarg) __attribute__((noreturn));
-
-static void show_usage(int badarg)
+static void exit_bad_args(void)
 {
-	int i;
-	if (badarg != 0) {
-		fprintf(stderr,
-			"ethtool: bad command line argument(s)\n"
-			"For more information run ethtool -h\n"
-		);
-	}
-	else {
-		/* ethtool -h */
-		fprintf(stdout, PACKAGE " version " VERSION "\n");
-		fprintf(stdout,
-		"Usage:\n"
-		"ethtool DEVNAME\tDisplay standard information about device\n");
-		for (i = 0; args[i].srt; i++) {
-			fprintf(stdout, "        ethtool %s|%s %s\t%s\n%s",
-				args[i].srt, args[i].lng,
-				strstr(args[i].srt, "-h") ? "\t" : "DEVNAME",
-				args[i].help,
-				args[i].opthelp ? args[i].opthelp : "");
-		}
-	}
-	exit(badarg);
+	fprintf(stderr,
+		"ethtool: bad command line argument(s)\n"
+		"For more information run ethtool -h\n");
+	exit(1);
 }
-
-static char *devname = NULL;
-
-static int goffload_changed = 0;
-static int off_csum_rx_wanted = -1;
-static int off_csum_tx_wanted = -1;
-static int off_sg_wanted = -1;
-static int off_tso_wanted = -1;
-static int off_ufo_wanted = -1;
-static int off_gso_wanted = -1;
-static u32 off_flags_wanted = 0;
-static u32 off_flags_mask = 0;
-static int off_gro_wanted = -1;
-
-static struct ethtool_pauseparam epause;
-static int gpause_changed = 0;
-static int pause_autoneg_wanted = -1;
-static int pause_rx_wanted = -1;
-static int pause_tx_wanted = -1;
-
-static struct ethtool_ringparam ering;
-static int gring_changed = 0;
-static s32 ring_rx_wanted = -1;
-static s32 ring_rx_mini_wanted = -1;
-static s32 ring_rx_jumbo_wanted = -1;
-static s32 ring_tx_wanted = -1;
-
-static struct ethtool_coalesce ecoal;
-static int gcoalesce_changed = 0;
-static s32 coal_stats_wanted = -1;
-static int coal_adaptive_rx_wanted = -1;
-static int coal_adaptive_tx_wanted = -1;
-static s32 coal_sample_rate_wanted = -1;
-static s32 coal_pkt_rate_low_wanted = -1;
-static s32 coal_pkt_rate_high_wanted = -1;
-static s32 coal_rx_usec_wanted = -1;
-static s32 coal_rx_frames_wanted = -1;
-static s32 coal_rx_usec_irq_wanted = -1;
-static s32 coal_rx_frames_irq_wanted = -1;
-static s32 coal_tx_usec_wanted = -1;
-static s32 coal_tx_frames_wanted = -1;
-static s32 coal_tx_usec_irq_wanted = -1;
-static s32 coal_tx_frames_irq_wanted = -1;
-static s32 coal_rx_usec_low_wanted = -1;
-static s32 coal_rx_frames_low_wanted = -1;
-static s32 coal_tx_usec_low_wanted = -1;
-static s32 coal_tx_frames_low_wanted = -1;
-static s32 coal_rx_usec_high_wanted = -1;
-static s32 coal_rx_frames_high_wanted = -1;
-static s32 coal_tx_usec_high_wanted = -1;
-static s32 coal_tx_frames_high_wanted = -1;
-
-static int speed_wanted = -1;
-static int duplex_wanted = -1;
-static int port_wanted = -1;
-static int autoneg_wanted = -1;
-static int phyad_wanted = -1;
-static int xcvr_wanted = -1;
-static int advertising_wanted = -1;
-static int gset_changed = 0; /* did anything in GSET change? */
-static u32  wol_wanted = 0;
-static int wol_change = 0;
-static u8 sopass_wanted[SOPASS_MAX];
-static int sopass_change = 0;
-static int gwol_changed = 0; /* did anything in GWOL change? */
-static int phys_id_time = 0;
-static int gregs_changed = 0;
-static int gregs_dump_raw = 0;
-static int gregs_dump_hex = 0;
-static char *gregs_dump_file = NULL;
-static int geeprom_changed = 0;
-static int geeprom_dump_raw = 0;
-static s32 geeprom_offset = 0;
-static s32 geeprom_length = -1;
-static int seeprom_changed = 0;
-static s32 seeprom_magic = 0;
-static s32 seeprom_length = -1;
-static s32 seeprom_offset = 0;
-static s32 seeprom_value = EOF;
-static int rx_fhash_get = 0;
-static int rx_fhash_set = 0;
-static u32 rx_fhash_val = 0;
-static int rx_fhash_changed = 0;
-static int rxfhindir_equal = 0;
-static char **rxfhindir_weight = NULL;
-static int sntuple_changed = 0;
-static struct ethtool_rx_ntuple_flow_spec ntuple_fs;
-static int ntuple_ip4src_seen = 0;
-static int ntuple_ip4src_mask_seen = 0;
-static int ntuple_ip4dst_seen = 0;
-static int ntuple_ip4dst_mask_seen = 0;
-static int ntuple_psrc_seen = 0;
-static int ntuple_psrc_mask_seen = 0;
-static int ntuple_pdst_seen = 0;
-static int ntuple_pdst_mask_seen = 0;
-static int ntuple_ether_dst_seen = 0;
-static int ntuple_ether_dst_mask_seen = 0;
-static int ntuple_ether_src_seen = 0;
-static int ntuple_ether_src_mask_seen = 0;
-static int ntuple_ether_proto_seen = 0;
-static int ntuple_ether_proto_mask_seen = 0;
-static int ntuple_vlan_tag_seen = 0;
-static int ntuple_vlan_tag_mask_seen = 0;
-static int ntuple_user_def_seen = 0;
-static int ntuple_user_def_mask_seen = 0;
-static char *flash_file = NULL;
-static int flash = -1;
-static int flash_region = -1;
-
-static int msglvl_changed;
-static u32 msglvl_wanted = 0;
-static u32 msglvl_mask = 0;
-
-static enum {
-	ONLINE=0,
-	OFFLINE,
-} test_type = OFFLINE;
 
 typedef enum {
 	CMDL_NONE,
 	CMDL_BOOL,
 	CMDL_S32,
+	CMDL_U8,
 	CMDL_U16,
 	CMDL_U32,
 	CMDL_U64,
@@ -443,167 +156,96 @@ struct cmdline_info {
 	void *seen_val;
 };
 
-static struct cmdline_info cmdline_gregs[] = {
-	{ "raw", CMDL_BOOL, &gregs_dump_raw, NULL },
-	{ "hex", CMDL_BOOL, &gregs_dump_hex, NULL },
-	{ "file", CMDL_STR, &gregs_dump_file, NULL },
+struct flag_info {
+	const char *name;
+	u32 value;
 };
 
-static struct cmdline_info cmdline_geeprom[] = {
-	{ "offset", CMDL_S32, &geeprom_offset, NULL },
-	{ "length", CMDL_S32, &geeprom_length, NULL },
-	{ "raw", CMDL_BOOL, &geeprom_dump_raw, NULL },
+static const struct flag_info flags_msglvl[] = {
+	{ "drv",	NETIF_MSG_DRV },
+	{ "probe",	NETIF_MSG_PROBE },
+	{ "link",	NETIF_MSG_LINK },
+	{ "timer",	NETIF_MSG_TIMER },
+	{ "ifdown",	NETIF_MSG_IFDOWN },
+	{ "ifup",	NETIF_MSG_IFUP },
+	{ "rx_err",	NETIF_MSG_RX_ERR },
+	{ "tx_err",	NETIF_MSG_TX_ERR },
+	{ "tx_queued",	NETIF_MSG_TX_QUEUED },
+	{ "intr",	NETIF_MSG_INTR },
+	{ "tx_done",	NETIF_MSG_TX_DONE },
+	{ "rx_status",	NETIF_MSG_RX_STATUS },
+	{ "pktdata",	NETIF_MSG_PKTDATA },
+	{ "hw",		NETIF_MSG_HW },
+	{ "wol",	NETIF_MSG_WOL },
 };
 
-static struct cmdline_info cmdline_seeprom[] = {
-	{ "magic", CMDL_S32, &seeprom_magic, NULL },
-	{ "offset", CMDL_S32, &seeprom_offset, NULL },
-	{ "length", CMDL_S32, &seeprom_length, NULL },
-	{ "value", CMDL_S32, &seeprom_value, NULL },
+struct off_flag_def {
+	const char *short_name;
+	const char *long_name;
+	const char *kernel_name;
+	u32 get_cmd, set_cmd;
+	u32 value;
+	/* For features exposed through ETHTOOL_GFLAGS, the oldest
+	 * kernel version for which we can trust the result.  Where
+	 * the flag was added at the same time the kernel started
+	 * supporting the feature, this is 0 (to allow for backports).
+	 * Where the feature was supported before the flag was added,
+	 * it is the version that introduced the flag.
+	 */
+	u32 min_kernel_ver;
+};
+static const struct off_flag_def off_flag_def[] = {
+	{ "rx",     "rx-checksumming",		    "rx-checksum",
+	  ETHTOOL_GRXCSUM, ETHTOOL_SRXCSUM, ETH_FLAG_RXCSUM,	0 },
+	{ "tx",     "tx-checksumming",		    "tx-checksum-*",
+	  ETHTOOL_GTXCSUM, ETHTOOL_STXCSUM, ETH_FLAG_TXCSUM,	0 },
+	{ "sg",     "scatter-gather",		    "tx-scatter-gather*",
+	  ETHTOOL_GSG,	   ETHTOOL_SSG,     ETH_FLAG_SG,	0 },
+	{ "tso",    "tcp-segmentation-offload",	    "tx-tcp*-segmentation",
+	  ETHTOOL_GTSO,	   ETHTOOL_STSO,    ETH_FLAG_TSO,	0 },
+	{ "ufo",    "udp-fragmentation-offload",    "tx-udp-fragmentation",
+	  ETHTOOL_GUFO,	   ETHTOOL_SUFO,    ETH_FLAG_UFO,	0 },
+	{ "gso",    "generic-segmentation-offload", "tx-generic-segmentation",
+	  ETHTOOL_GGSO,	   ETHTOOL_SGSO,    ETH_FLAG_GSO,	0 },
+	{ "gro",    "generic-receive-offload",	    "rx-gro",
+	  ETHTOOL_GGRO,	   ETHTOOL_SGRO,    ETH_FLAG_GRO,	0 },
+	{ "lro",    "large-receive-offload",	    "rx-lro",
+	  0,		   0,		    ETH_FLAG_LRO,
+	  KERNEL_VERSION(2,6,24) },
+	{ "rxvlan", "rx-vlan-offload",		    "rx-vlan-hw-parse",
+	  0,		   0,		    ETH_FLAG_RXVLAN,
+	  KERNEL_VERSION(2,6,37) },
+	{ "txvlan", "tx-vlan-offload",		    "tx-vlan-hw-insert",
+	  0,		   0,		    ETH_FLAG_TXVLAN,
+	  KERNEL_VERSION(2,6,37) },
+	{ "ntuple", "ntuple-filters",		    "rx-ntuple-filter",
+	  0,		   0,		    ETH_FLAG_NTUPLE,	0 },
+	{ "rxhash", "receive-hashing",		    "rx-hashing",
+	  0,		   0,		    ETH_FLAG_RXHASH,	0 },
 };
 
-static struct cmdline_info cmdline_offload[] = {
-	{ "rx", CMDL_BOOL, &off_csum_rx_wanted, NULL },
-	{ "tx", CMDL_BOOL, &off_csum_tx_wanted, NULL },
-	{ "sg", CMDL_BOOL, &off_sg_wanted, NULL },
-	{ "tso", CMDL_BOOL, &off_tso_wanted, NULL },
-	{ "ufo", CMDL_BOOL, &off_ufo_wanted, NULL },
-	{ "gso", CMDL_BOOL, &off_gso_wanted, NULL },
-	{ "lro", CMDL_FLAG, &off_flags_wanted, NULL,
-	  ETH_FLAG_LRO, &off_flags_mask },
-	{ "gro", CMDL_BOOL, &off_gro_wanted, NULL },
-	{ "rxvlan", CMDL_FLAG, &off_flags_wanted, NULL,
-	  ETH_FLAG_RXVLAN, &off_flags_mask },
-	{ "txvlan", CMDL_FLAG, &off_flags_wanted, NULL,
-	  ETH_FLAG_TXVLAN, &off_flags_mask },
-	{ "ntuple", CMDL_FLAG, &off_flags_wanted, NULL,
-	  ETH_FLAG_NTUPLE, &off_flags_mask },
-	{ "rxhash", CMDL_FLAG, &off_flags_wanted, NULL,
-	  ETH_FLAG_RXHASH, &off_flags_mask },
+struct feature_def {
+	char name[ETH_GSTRING_LEN];
+	int off_flag_index; /* index in off_flag_def; negative if none match */
 };
 
-static struct cmdline_info cmdline_pause[] = {
-	{ "autoneg", CMDL_BOOL, &pause_autoneg_wanted, &epause.autoneg },
-	{ "rx", CMDL_BOOL, &pause_rx_wanted, &epause.rx_pause },
-	{ "tx", CMDL_BOOL, &pause_tx_wanted, &epause.tx_pause },
+struct feature_defs {
+	size_t n_features;
+	/* Number of features each offload flag is associated with */
+	unsigned int off_flag_matched[ARRAY_SIZE(off_flag_def)];
+	/* Name and offload flag index for each feature */
+	struct feature_def def[0];
 };
 
-static struct cmdline_info cmdline_ring[] = {
-	{ "rx", CMDL_S32, &ring_rx_wanted, &ering.rx_pending },
-	{ "rx-mini", CMDL_S32, &ring_rx_mini_wanted, &ering.rx_mini_pending },
-	{ "rx-jumbo", CMDL_S32, &ring_rx_jumbo_wanted, &ering.rx_jumbo_pending },
-	{ "tx", CMDL_S32, &ring_tx_wanted, &ering.tx_pending },
-};
-
-static struct cmdline_info cmdline_coalesce[] = {
-	{ "adaptive-rx", CMDL_BOOL, &coal_adaptive_rx_wanted, &ecoal.use_adaptive_rx_coalesce },
-	{ "adaptive-tx", CMDL_BOOL, &coal_adaptive_tx_wanted, &ecoal.use_adaptive_tx_coalesce },
-	{ "sample-interval", CMDL_S32, &coal_sample_rate_wanted, &ecoal.rate_sample_interval },
-	{ "stats-block-usecs", CMDL_S32, &coal_stats_wanted, &ecoal.stats_block_coalesce_usecs },
-	{ "pkt-rate-low", CMDL_S32, &coal_pkt_rate_low_wanted, &ecoal.pkt_rate_low },
-	{ "pkt-rate-high", CMDL_S32, &coal_pkt_rate_high_wanted, &ecoal.pkt_rate_high },
-	{ "rx-usecs", CMDL_S32, &coal_rx_usec_wanted, &ecoal.rx_coalesce_usecs },
-	{ "rx-frames", CMDL_S32, &coal_rx_frames_wanted, &ecoal.rx_max_coalesced_frames },
-	{ "rx-usecs-irq", CMDL_S32, &coal_rx_usec_irq_wanted, &ecoal.rx_coalesce_usecs_irq },
-	{ "rx-frames-irq", CMDL_S32, &coal_rx_frames_irq_wanted, &ecoal.rx_max_coalesced_frames_irq },
-	{ "tx-usecs", CMDL_S32, &coal_tx_usec_wanted, &ecoal.tx_coalesce_usecs },
-	{ "tx-frames", CMDL_S32, &coal_tx_frames_wanted, &ecoal.tx_max_coalesced_frames },
-	{ "tx-usecs-irq", CMDL_S32, &coal_tx_usec_irq_wanted, &ecoal.tx_coalesce_usecs_irq },
-	{ "tx-frames-irq", CMDL_S32, &coal_tx_frames_irq_wanted, &ecoal.tx_max_coalesced_frames_irq },
-	{ "rx-usecs-low", CMDL_S32, &coal_rx_usec_low_wanted, &ecoal.rx_coalesce_usecs_low },
-	{ "rx-frames-low", CMDL_S32, &coal_rx_frames_low_wanted, &ecoal.rx_max_coalesced_frames_low },
-	{ "tx-usecs-low", CMDL_S32, &coal_tx_usec_low_wanted, &ecoal.tx_coalesce_usecs_low },
-	{ "tx-frames-low", CMDL_S32, &coal_tx_frames_low_wanted, &ecoal.tx_max_coalesced_frames_low },
-	{ "rx-usecs-high", CMDL_S32, &coal_rx_usec_high_wanted, &ecoal.rx_coalesce_usecs_high },
-	{ "rx-frames-high", CMDL_S32, &coal_rx_frames_high_wanted, &ecoal.rx_max_coalesced_frames_high },
-	{ "tx-usecs-high", CMDL_S32, &coal_tx_usec_high_wanted, &ecoal.tx_coalesce_usecs_high },
-	{ "tx-frames-high", CMDL_S32, &coal_tx_frames_high_wanted, &ecoal.tx_max_coalesced_frames_high },
-};
-
-static struct cmdline_info cmdline_ntuple_tcp_ip4[] = {
-	{ "src-ip", CMDL_IP4, &ntuple_fs.h_u.tcp_ip4_spec.ip4src, NULL,
-	  0, &ntuple_ip4src_seen },
-	{ "src-ip-mask", CMDL_IP4, &ntuple_fs.m_u.tcp_ip4_spec.ip4src, NULL,
-	  0, &ntuple_ip4src_mask_seen },
-	{ "dst-ip", CMDL_IP4, &ntuple_fs.h_u.tcp_ip4_spec.ip4dst, NULL,
-	  0, &ntuple_ip4dst_seen },
-	{ "dst-ip-mask", CMDL_IP4, &ntuple_fs.m_u.tcp_ip4_spec.ip4dst, NULL,
-	  0, &ntuple_ip4dst_mask_seen },
-	{ "src-port", CMDL_BE16, &ntuple_fs.h_u.tcp_ip4_spec.psrc, NULL,
-	  0, &ntuple_psrc_seen },
-	{ "src-port-mask", CMDL_BE16, &ntuple_fs.m_u.tcp_ip4_spec.psrc, NULL,
-	  0, &ntuple_psrc_mask_seen },
-	{ "dst-port", CMDL_BE16, &ntuple_fs.h_u.tcp_ip4_spec.pdst, NULL,
-	  0, &ntuple_pdst_seen },
-	{ "dst-port-mask", CMDL_BE16, &ntuple_fs.m_u.tcp_ip4_spec.pdst, NULL,
-	  0, &ntuple_pdst_mask_seen },
-	{ "vlan", CMDL_U16, &ntuple_fs.vlan_tag, NULL,
-	  0, &ntuple_vlan_tag_seen },
-	{ "vlan-mask", CMDL_U16, &ntuple_fs.vlan_tag_mask, NULL,
-	  0, &ntuple_vlan_tag_mask_seen },
-	{ "user-def", CMDL_U64, &ntuple_fs.data, NULL,
-	  0, &ntuple_user_def_seen },
-	{ "user-def-mask", CMDL_U64, &ntuple_fs.data_mask, NULL,
-	  0, &ntuple_user_def_mask_seen },
-	{ "action", CMDL_S32, &ntuple_fs.action, NULL },
-};
-
-static struct cmdline_info cmdline_ntuple_ether[] = {
-	{ "dst", CMDL_MAC, ntuple_fs.h_u.ether_spec.h_dest, NULL,
-	  0, &ntuple_ether_dst_seen },
-	{ "dst-mask", CMDL_MAC, ntuple_fs.m_u.ether_spec.h_dest, NULL,
-	  0, &ntuple_ether_dst_mask_seen },
-	{ "src", CMDL_MAC, ntuple_fs.h_u.ether_spec.h_source, NULL,
-	  0, &ntuple_ether_src_seen },
-	{ "src-mask", CMDL_MAC, ntuple_fs.m_u.ether_spec.h_source, NULL,
-	  0, &ntuple_ether_src_mask_seen },
-	{ "proto", CMDL_BE16, &ntuple_fs.h_u.ether_spec.h_proto, NULL,
-	  0, &ntuple_ether_proto_seen },
-	{ "proto-mask", CMDL_BE16, &ntuple_fs.m_u.ether_spec.h_proto, NULL,
-	  0, &ntuple_ether_proto_mask_seen },
-	{ "vlan", CMDL_U16, &ntuple_fs.vlan_tag, NULL,
-	  0, &ntuple_vlan_tag_seen },
-	{ "vlan-mask", CMDL_U16, &ntuple_fs.vlan_tag_mask, NULL,
-	  0, &ntuple_vlan_tag_mask_seen },
-	{ "user-def", CMDL_U64, &ntuple_fs.data, NULL,
-	  0, &ntuple_user_def_seen },
-	{ "user-def-mask", CMDL_U64, &ntuple_fs.data_mask, NULL,
-	  0, &ntuple_user_def_mask_seen },
-	{ "action", CMDL_S32, &ntuple_fs.action, NULL },
-};
-
-static struct cmdline_info cmdline_msglvl[] = {
-	{ "drv", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_DRV, &msglvl_mask },
-	{ "probe", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_PROBE, &msglvl_mask },
-	{ "link", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_LINK, &msglvl_mask },
-	{ "timer", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_TIMER, &msglvl_mask },
-	{ "ifdown", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_IFDOWN, &msglvl_mask },
-	{ "ifup", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_IFUP, &msglvl_mask },
-	{ "rx_err", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_RX_ERR, &msglvl_mask },
-	{ "tx_err", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_TX_ERR, &msglvl_mask },
-	{ "tx_queued", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_TX_QUEUED, &msglvl_mask },
-	{ "intr", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_INTR, &msglvl_mask },
-	{ "tx_done", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_TX_DONE, &msglvl_mask },
-	{ "rx_status", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_RX_STATUS, &msglvl_mask },
-	{ "pktdata", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_PKTDATA, &msglvl_mask },
-	{ "hw", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_HW, &msglvl_mask },
-	{ "wol", CMDL_FLAG, &msglvl_wanted, NULL,
-	  NETIF_MSG_WOL, &msglvl_mask },
-};
+#define FEATURE_BITS_TO_BLOCKS(n_bits)		DIV_ROUND_UP(n_bits, 32U)
+#define FEATURE_WORD(blocks, index, field)	((blocks)[(index) / 32U].field)
+#define FEATURE_FIELD_FLAG(index)		(1U << (index) % 32U)
+#define FEATURE_BIT_SET(blocks, index, field)			\
+	(FEATURE_WORD(blocks, index, field) |= FEATURE_FIELD_FLAG(index))
+#define FEATURE_BIT_CLEAR(blocks, index, field)			\
+	(FEATURE_WORD(blocks, index, filed) &= ~FEATURE_FIELD_FLAG(index))
+#define FEATURE_BIT_IS_SET(blocks, index, field)		\
+	(FEATURE_WORD(blocks, index, field) & FEATURE_FIELD_FLAG(index))
 
 static long long
 get_int_range(char *str, int base, long long min, long long max)
@@ -612,11 +254,11 @@ get_int_range(char *str, int base, long long min, long long max)
 	char *endp;
 
 	if (!str)
-		show_usage(1);
+		exit_bad_args();
 	errno = 0;
 	v = strtoll(str, &endp, base);
 	if (errno || *endp || v < min || v > max)
-		show_usage(1);
+		exit_bad_args();
 	return v;
 }
 
@@ -627,11 +269,11 @@ get_uint_range(char *str, int base, unsigned long long max)
 	char *endp;
 
 	if (!str)
-		show_usage(1);
+		exit_bad_args();
 	errno = 0;
 	v = strtoull(str, &endp, base);
 	if ( errno || *endp || v > max)
-		show_usage(1);
+		exit_bad_args();
 	return v;
 }
 
@@ -645,15 +287,33 @@ static u32 get_u32(char *str, int base)
 	return get_uint_range(str, base, 0xffffffff);
 }
 
-static void parse_generic_cmdline(int argc, char **argp,
-				  int first_arg, int *changed,
+static void get_mac_addr(char *src, unsigned char *dest)
+{
+	int count;
+	int i;
+	int buf[ETH_ALEN];
+
+	count = sscanf(src, "%2x:%2x:%2x:%2x:%2x:%2x",
+		&buf[0], &buf[1], &buf[2], &buf[3], &buf[4], &buf[5]);
+	if (count != ETH_ALEN)
+		exit_bad_args();
+
+	for (i = 0; i < count; i++) {
+		dest[i] = buf[i];
+	}
+}
+
+static void parse_generic_cmdline(struct cmd_context *ctx,
+				  int *changed,
 				  struct cmdline_info *info,
 				  unsigned int n_info)
 {
+	int argc = ctx->argc;
+	char **argp = ctx->argp;
 	int i, idx;
 	int found;
 
-	for (i = first_arg; i < argc; i++) {
+	for (i = 0; i < argc; i++) {
 		found = 0;
 		for (idx = 0; idx < n_info; idx++) {
 			if (!strcmp(info[idx].name, argp[i])) {
@@ -664,7 +324,7 @@ static void parse_generic_cmdline(int argc, char **argp,
 					*(int *)info[idx].seen_val = 1;
 				i += 1;
 				if (i >= argc)
-					show_usage(1);
+					exit_bad_args();
 				switch (info[idx].type) {
 				case CMDL_BOOL: {
 					int *p = info[idx].wanted_val;
@@ -673,7 +333,7 @@ static void parse_generic_cmdline(int argc, char **argp,
 					else if (!strcmp(argp[i], "off"))
 						*p = 0;
 					else
-						show_usage(1);
+						exit_bad_args();
 					break;
 				}
 				case CMDL_S32: {
@@ -681,6 +341,11 @@ static void parse_generic_cmdline(int argc, char **argp,
 					*p = get_int_range(argp[i], 0,
 							   -0x80000000LL,
 							   0x7fffffff);
+					break;
+				}
+				case CMDL_U8: {
+					u8 *p = info[idx].wanted_val;
+					*p = get_uint_range(argp[i], 0, 0xff);
 					break;
 				}
 				case CMDL_U16: {
@@ -712,7 +377,7 @@ static void parse_generic_cmdline(int argc, char **argp,
 					u32 *p = info[idx].wanted_val;
 					struct in_addr in;
 					if (!inet_aton(argp[i], &in))
-						show_usage(1);
+						exit_bad_args();
 					*p = in.s_addr;
 					break;
 				}
@@ -728,7 +393,7 @@ static void parse_generic_cmdline(int argc, char **argp,
 						p = info[idx].wanted_val;
 						*p |= info[idx].flag_val;
 					} else if (strcmp(argp[i], "off")) {
-						show_usage(1);
+						exit_bad_args();
 					}
 					break;
 				}
@@ -738,26 +403,38 @@ static void parse_generic_cmdline(int argc, char **argp,
 					break;
 				}
 				default:
-					show_usage(1);
+					exit_bad_args();
 				}
 				break;
 			}
 		}
 		if( !found)
-			show_usage(1);
+			exit_bad_args();
 	}
 }
 
+static void flag_to_cmdline_info(const char *name, u32 value,
+				 u32 *wanted, u32 *mask,
+				 struct cmdline_info *cli)
+{
+	memset(cli, 0, sizeof(*cli));
+	cli->name = name;
+	cli->type = CMDL_FLAG;
+	cli->flag_val = value;
+	cli->wanted_val = wanted;
+	cli->seen_val = mask;
+}
+
 static void
-print_flags(const struct cmdline_info *info, unsigned int n_info, u32 value)
+print_flags(const struct flag_info *info, unsigned int n_info, u32 value)
 {
 	const char *sep = "";
 
 	while (n_info) {
-		if (info->type == CMDL_FLAG && value & info->flag_val) {
+		if (value & info->value) {
 			printf("%s%s", sep, info->name);
 			sep = " ";
-			value &= ~info->flag_val;
+			value &= ~info->value;
 		}
 		++info;
 		--n_info;
@@ -776,7 +453,7 @@ static int rxflow_str_to_type(const char *str)
 		flow_type = TCP_V4_FLOW;
 	else if (!strcmp(str, "udp4"))
 		flow_type = UDP_V4_FLOW;
-	else if (!strcmp(str, "ah4"))
+	else if (!strcmp(str, "ah4") || !strcmp(str, "esp4"))
 		flow_type = AH_ESP_V4_FLOW;
 	else if (!strcmp(str, "sctp4"))
 		flow_type = SCTP_V4_FLOW;
@@ -784,7 +461,7 @@ static int rxflow_str_to_type(const char *str)
 		flow_type = TCP_V6_FLOW;
 	else if (!strcmp(str, "udp6"))
 		flow_type = UDP_V6_FLOW;
-	else if (!strcmp(str, "ah6"))
+	else if (!strcmp(str, "ah6") || !strcmp(str, "esp6"))
 		flow_type = AH_ESP_V6_FLOW;
 	else if (!strcmp(str, "sctp6"))
 		flow_type = SCTP_V6_FLOW;
@@ -794,380 +471,23 @@ static int rxflow_str_to_type(const char *str)
 	return flow_type;
 }
 
-static void parse_cmdline(int argc, char **argp)
+static int do_version(struct cmd_context *ctx)
 {
-	int i, k;
-
-	for (i = 1; i < argc; i++) {
-		switch (i) {
-		case 1:
-			for (k = 0; args[k].srt; k++)
-				if (!strcmp(argp[i], args[k].srt) ||
-				    !strcmp(argp[i], args[k].lng)) {
-					mode = args[k].Mode;
-					break;
-				}
-			if (mode == MODE_HELP ||
-			    (!args[k].srt && argp[i][0] == '-'))
-				show_usage(0);
-			else
-				devname = argp[i];
-			break;
-		case 2:
-			if ((mode == MODE_SSET) ||
-			    (mode == MODE_GDRV) ||
-			    (mode == MODE_GREGS)||
-			    (mode == MODE_NWAY_RST) ||
-			    (mode == MODE_TEST) ||
-			    (mode == MODE_GEEPROM) ||
-			    (mode == MODE_SEEPROM) ||
-			    (mode == MODE_GPAUSE) ||
-			    (mode == MODE_SPAUSE) ||
-			    (mode == MODE_GCOALESCE) ||
-			    (mode == MODE_SCOALESCE) ||
-			    (mode == MODE_GRING) ||
-			    (mode == MODE_SRING) ||
-			    (mode == MODE_GOFFLOAD) ||
-			    (mode == MODE_SOFFLOAD) ||
-			    (mode == MODE_GSTATS) ||
-			    (mode == MODE_GNFC) ||
-			    (mode == MODE_SNFC) ||
-			    (mode == MODE_GRXFHINDIR) ||
-			    (mode == MODE_SRXFHINDIR) ||
-			    (mode == MODE_SNTUPLE) ||
-			    (mode == MODE_GNTUPLE) ||
-			    (mode == MODE_PHYS_ID) ||
-			    (mode == MODE_FLASHDEV) ||
-			    (mode == MODE_PERMADDR)) {
-				devname = argp[i];
-				break;
-			}
-			/* fallthrough */
-		case 3:
-			if (mode == MODE_TEST) {
-				if (!strcmp(argp[i], "online")) {
-					test_type = ONLINE;
-				} else if (!strcmp(argp[i], "offline")) {
-					test_type = OFFLINE;
-				} else {
-					show_usage(1);
-				}
-				break;
-			} else if (mode == MODE_PHYS_ID) {
-				phys_id_time = get_int(argp[i],0);
-				break;
-			} else if (mode == MODE_FLASHDEV) {
-				flash_file = argp[i];
-				flash = 1;
-				break;
-			}
-			/* fallthrough */
-		default:
-			if (mode == MODE_GREGS) {
-				parse_generic_cmdline(argc, argp, i,
-					&gregs_changed,
-					cmdline_gregs,
-					ARRAY_SIZE(cmdline_gregs));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_GEEPROM) {
-				parse_generic_cmdline(argc, argp, i,
-					&geeprom_changed,
-					cmdline_geeprom,
-					ARRAY_SIZE(cmdline_geeprom));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_SEEPROM) {
-				parse_generic_cmdline(argc, argp, i,
-					&seeprom_changed,
-					cmdline_seeprom,
-					ARRAY_SIZE(cmdline_seeprom));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_SPAUSE) {
-				parse_generic_cmdline(argc, argp, i,
-					&gpause_changed,
-			      		cmdline_pause,
-			      		ARRAY_SIZE(cmdline_pause));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_SRING) {
-				parse_generic_cmdline(argc, argp, i,
-					&gring_changed,
-			      		cmdline_ring,
-			      		ARRAY_SIZE(cmdline_ring));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_SCOALESCE) {
-				parse_generic_cmdline(argc, argp, i,
-					&gcoalesce_changed,
-			      		cmdline_coalesce,
-			      		ARRAY_SIZE(cmdline_coalesce));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_SOFFLOAD) {
-				parse_generic_cmdline(argc, argp, i,
-					&goffload_changed,
-			      		cmdline_offload,
-			      		ARRAY_SIZE(cmdline_offload));
-				i = argc;
-				break;
-			}
-			if (mode == MODE_SNTUPLE) {
-				if (!strcmp(argp[i], "flow-type")) {
-					i += 1;
-					if (i >= argc) {
-						show_usage(1);
-						break;
-					}
-					parse_rxntupleopts(argc, argp, i);
-					i = argc;
-					break;
-				} else {
-					show_usage(1);
-				}
-				break;
-			}
-			if (mode == MODE_GNFC) {
-				if (!strcmp(argp[i], "rx-flow-hash")) {
-					i += 1;
-					if (i >= argc) {
-						show_usage(1);
-						break;
-					}
-					rx_fhash_get =
-						rxflow_str_to_type(argp[i]);
-					if (!rx_fhash_get)
-						show_usage(1);
-				} else
-					show_usage(1);
-				break;
-			}
-			if (mode == MODE_FLASHDEV) {
-				flash_region = strtol(argp[i], NULL, 0);
-				if ((flash_region < 0))
-					show_usage(1);
-				break;
-			}
-			if (mode == MODE_SNFC) {
-				if (!strcmp(argp[i], "rx-flow-hash")) {
-					i += 1;
-					if (i >= argc) {
-						show_usage(1);
-						break;
-					}
-					rx_fhash_set =
-						rxflow_str_to_type(argp[i]);
-					if (!rx_fhash_set) {
-						show_usage(1);
-						break;
-					}
-					i += 1;
-					if (i >= argc) {
-						show_usage(1);
-						break;
-					}
-					if (parse_rxfhashopts(argp[i],
-						&rx_fhash_val) < 0)
-						show_usage(1);
-					else
-						rx_fhash_changed = 1;
-				} else
-					show_usage(1);
-				break;
-			}
-			if (mode == MODE_SRXFHINDIR) {
-				if (!strcmp(argp[i], "equal")) {
-					if (argc != i + 2) {
-						show_usage(1);
-						break;
-					}
-					i += 1;
-					rxfhindir_equal =
-						get_int_range(argp[i], 0, 1,
-							      INT_MAX);
-					i += 1;
-				} else if (!strcmp(argp[i], "weight")) {
-					i += 1;
-					if (i >= argc) {
-						show_usage(1);
-						break;
-					}
-					rxfhindir_weight = argp + i;
-					i = argc;
-				} else {
-					show_usage(1);
-				}
-				break;
-			}
-			if (mode != MODE_SSET)
-				show_usage(1);
-			if (!strcmp(argp[i], "speed")) {
-				gset_changed = 1;
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				speed_wanted = get_int(argp[i],10);
-				break;
-			} else if (!strcmp(argp[i], "duplex")) {
-				gset_changed = 1;
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				if (!strcmp(argp[i], "half"))
-					duplex_wanted = DUPLEX_HALF;
-				else if (!strcmp(argp[i], "full"))
-					duplex_wanted = DUPLEX_FULL;
-				else
-					show_usage(1);
-				break;
-			} else if (!strcmp(argp[i], "port")) {
-				gset_changed = 1;
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				if (!strcmp(argp[i], "tp"))
-					port_wanted = PORT_TP;
-				else if (!strcmp(argp[i], "aui"))
-					port_wanted = PORT_AUI;
-				else if (!strcmp(argp[i], "bnc"))
-					port_wanted = PORT_BNC;
-				else if (!strcmp(argp[i], "mii"))
-					port_wanted = PORT_MII;
-				else if (!strcmp(argp[i], "fibre"))
-					port_wanted = PORT_FIBRE;
-				else
-					show_usage(1);
-				break;
-			} else if (!strcmp(argp[i], "autoneg")) {
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				if (!strcmp(argp[i], "on")) {
-					gset_changed = 1;
-					autoneg_wanted = AUTONEG_ENABLE;
-				} else if (!strcmp(argp[i], "off")) {
-					gset_changed = 1;
-					autoneg_wanted = AUTONEG_DISABLE;
-				} else {
-					show_usage(1);
-				}
-				break;
-			} else if (!strcmp(argp[i], "advertise")) {
-				gset_changed = 1;
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				advertising_wanted = get_int(argp[i], 16);
-				break;
-			} else if (!strcmp(argp[i], "phyad")) {
-				gset_changed = 1;
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				phyad_wanted = get_int(argp[i], 0);
-				break;
-			} else if (!strcmp(argp[i], "xcvr")) {
-				gset_changed = 1;
-				i += 1;
-				if (i >= argc)
-					show_usage(1);
-				if (!strcmp(argp[i], "internal"))
-					xcvr_wanted = XCVR_INTERNAL;
-				else if (!strcmp(argp[i], "external"))
-					xcvr_wanted = XCVR_EXTERNAL;
-				else
-					show_usage(1);
-				break;
-			} else if (!strcmp(argp[i], "wol")) {
-				gwol_changed = 1;
-				i++;
-				if (i >= argc)
-					show_usage(1);
-				if (parse_wolopts(argp[i], &wol_wanted) < 0)
-					show_usage(1);
-				wol_change = 1;
-				break;
-			} else if (!strcmp(argp[i], "sopass")) {
-				gwol_changed = 1;
-				i++;
-				if (i >= argc)
-					show_usage(1);
-				get_mac_addr(argp[i], sopass_wanted);
-				sopass_change = 1;
-				break;
-			} else if (!strcmp(argp[i], "msglvl")) {
-				i++;
-				if (i >= argc)
-					show_usage(1);
-				if (isdigit((unsigned char)argp[i][0])) {
-					msglvl_changed = 1;
-					msglvl_mask = ~0;
-					msglvl_wanted =
-						get_uint_range(argp[i], 0,
-							       0xffffffff);
-				} else {
-					parse_generic_cmdline(
-						argc, argp, i,
-						&msglvl_changed,
-						cmdline_msglvl,
-						ARRAY_SIZE(cmdline_msglvl));
-					i = argc;
-				}
-				break;
-			}
-			show_usage(1);
-		}
-	}
-
-	if ((autoneg_wanted == AUTONEG_ENABLE) && (advertising_wanted < 0)) {
-		if (speed_wanted == SPEED_10 && duplex_wanted == DUPLEX_HALF)
-			advertising_wanted = ADVERTISED_10baseT_Half;
-		else if (speed_wanted == SPEED_10 &&
-			 duplex_wanted == DUPLEX_FULL)
-			advertising_wanted = ADVERTISED_10baseT_Full;
-		else if (speed_wanted == SPEED_100 &&
-			 duplex_wanted == DUPLEX_HALF)
-			advertising_wanted = ADVERTISED_100baseT_Half;
-		else if (speed_wanted == SPEED_100 &&
-			 duplex_wanted == DUPLEX_FULL)
-			advertising_wanted = ADVERTISED_100baseT_Full;
-		else if (speed_wanted == SPEED_1000 &&
-			 duplex_wanted == DUPLEX_HALF)
-			advertising_wanted = ADVERTISED_1000baseT_Half;
-		else if (speed_wanted == SPEED_1000 &&
-			 duplex_wanted == DUPLEX_FULL)
-			advertising_wanted = ADVERTISED_1000baseT_Full;
-		else if (speed_wanted == SPEED_2500 &&
-			 duplex_wanted == DUPLEX_FULL)
-			advertising_wanted = ADVERTISED_2500baseX_Full;
-		else if (speed_wanted == SPEED_10000 &&
-			 duplex_wanted == DUPLEX_FULL)
-			advertising_wanted = ADVERTISED_10000baseT_Full;
-		else
-			/* auto negotiate without forcing,
-			 * all supported speed will be assigned in do_sset()
-			 */
-			advertising_wanted = 0;
-
-	}
-
-	if (devname == NULL)
-		show_usage(1);
-	if (strlen(devname) >= IFNAMSIZ)
-		show_usage(1);
+	fprintf(stdout,
+		PACKAGE " version " VERSION
+#ifndef ETHTOOL_ENABLE_PRETTY_DUMP
+		" (pretty dumps disabled)"
+#endif
+		"\n");
+	return 0;
 }
+
+static void dump_link_caps(const char *prefix, const char *an_prefix, u32 mask,
+			   int link_mode_only);
 
 static void dump_supported(struct ethtool_cmd *ep)
 {
-	u_int32_t mask = ep->supported;
-	int did1;
+	u32 mask = ep->supported;
 
 	fprintf(stdout, "	Supported ports: [ ");
 	if (mask & SUPPORTED_TP)
@@ -1180,129 +500,92 @@ static void dump_supported(struct ethtool_cmd *ep)
 		fprintf(stdout, "MII ");
 	if (mask & SUPPORTED_FIBRE)
 		fprintf(stdout, "FIBRE ");
+	if (mask & SUPPORTED_Backplane)
+		fprintf(stdout, "Backplane ");
 	fprintf(stdout, "]\n");
 
-	fprintf(stdout, "	Supported link modes:   ");
-	did1 = 0;
-	if (mask & SUPPORTED_10baseT_Half) {
-		did1++; fprintf(stdout, "10baseT/Half ");
-	}
-	if (mask & SUPPORTED_10baseT_Full) {
-		did1++; fprintf(stdout, "10baseT/Full ");
-	}
-	if (did1 && (mask & (SUPPORTED_100baseT_Half|SUPPORTED_100baseT_Full))) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	                        ");
-	}
-	if (mask & SUPPORTED_100baseT_Half) {
-		did1++; fprintf(stdout, "100baseT/Half ");
-	}
-	if (mask & SUPPORTED_100baseT_Full) {
-		did1++; fprintf(stdout, "100baseT/Full ");
-	}
-	if (did1 && (mask & (SUPPORTED_1000baseT_Half|SUPPORTED_1000baseT_Full))) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	                        ");
-	}
-	if (mask & SUPPORTED_1000baseT_Half) {
-		did1++; fprintf(stdout, "1000baseT/Half ");
-	}
-	if (mask & SUPPORTED_1000baseT_Full) {
-		did1++; fprintf(stdout, "1000baseT/Full ");
-	}
-	if (did1 && (mask & SUPPORTED_2500baseX_Full)) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	                        ");
-	}
-	if (mask & SUPPORTED_2500baseX_Full) {
-		did1++; fprintf(stdout, "2500baseX/Full ");
-	}
-	if (did1 && (mask & SUPPORTED_10000baseT_Full)) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	                        ");
-	}
-	if (mask & SUPPORTED_10000baseT_Full) {
-		did1++; fprintf(stdout, "10000baseT/Full ");
-	}
-	fprintf(stdout, "\n");
-
-	fprintf(stdout, "	Supports auto-negotiation: ");
-	if (mask & SUPPORTED_Autoneg)
-		fprintf(stdout, "Yes\n");
-	else
-		fprintf(stdout, "No\n");
+	dump_link_caps("Supported", "Supports", mask, 0);
 }
 
-static void dump_advertised(struct ethtool_cmd *ep,
-			    const char *prefix, u_int32_t mask)
+/* Print link capability flags (supported, advertised or lp_advertised).
+ * Assumes that the corresponding SUPPORTED and ADVERTISED flags are equal.
+ */
+static void
+dump_link_caps(const char *prefix, const char *an_prefix, u32 mask,
+	       int link_mode_only)
 {
-	int indent = strlen(prefix) + 14;
-	int did1;
+	static const struct {
+		int same_line; /* print on same line as previous */
+		u32 value;
+		const char *name;
+	} mode_defs[] = {
+		{ 0, ADVERTISED_10baseT_Half,       "10baseT/Half" },
+		{ 1, ADVERTISED_10baseT_Full,       "10baseT/Full" },
+		{ 0, ADVERTISED_100baseT_Half,      "100baseT/Half" },
+		{ 1, ADVERTISED_100baseT_Full,      "100baseT/Full" },
+		{ 0, ADVERTISED_1000baseT_Half,     "1000baseT/Half" },
+		{ 1, ADVERTISED_1000baseT_Full,     "1000baseT/Full" },
+		{ 0, ADVERTISED_1000baseKX_Full,    "1000baseKX/Full" },
+		{ 0, ADVERTISED_2500baseX_Full,     "2500baseX/Full" },
+		{ 0, ADVERTISED_10000baseT_Full,    "10000baseT/Full" },
+		{ 0, ADVERTISED_10000baseKX4_Full,  "10000baseKX4/Full" },
+		{ 0, ADVERTISED_10000baseKR_Full,   "10000baseKR/Full" },
+		{ 0, ADVERTISED_20000baseMLD2_Full, "20000baseMLD2/Full" },
+		{ 0, ADVERTISED_20000baseKR2_Full,  "20000baseKR2/Full" },
+		{ 0, ADVERTISED_40000baseKR4_Full,  "40000baseKR4/Full" },
+		{ 0, ADVERTISED_40000baseCR4_Full,  "40000baseCR4/Full" },
+		{ 0, ADVERTISED_40000baseSR4_Full,  "40000baseSR4/Full" },
+		{ 0, ADVERTISED_40000baseLR4_Full,  "40000baseLR4/Full" },
+	};
+	int indent;
+	int did1, new_line_pend, i;
 
-	fprintf(stdout, "	%s link modes:  ", prefix);
+	/* Indent just like the separate functions used to */
+	indent = strlen(prefix) + 14;
+	if (indent < 24)
+		indent = 24;
+
+	fprintf(stdout, "	%s link modes:%*s", prefix,
+		indent - (int)strlen(prefix) - 12, "");
 	did1 = 0;
-	if (mask & ADVERTISED_10baseT_Half) {
-		did1++; fprintf(stdout, "10baseT/Half ");
-	}
-	if (mask & ADVERTISED_10baseT_Full) {
-		did1++; fprintf(stdout, "10baseT/Full ");
-	}
-	if (did1 && (mask & (ADVERTISED_100baseT_Half|ADVERTISED_100baseT_Full))) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	%*s", indent, "");
-	}
-	if (mask & ADVERTISED_100baseT_Half) {
-		did1++; fprintf(stdout, "100baseT/Half ");
-	}
-	if (mask & ADVERTISED_100baseT_Full) {
-		did1++; fprintf(stdout, "100baseT/Full ");
-	}
-	if (did1 && (mask & (ADVERTISED_1000baseT_Half|ADVERTISED_1000baseT_Full))) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	%*s", indent, "");
-	}
-	if (mask & ADVERTISED_1000baseT_Half) {
-		did1++; fprintf(stdout, "1000baseT/Half ");
-	}
-	if (mask & ADVERTISED_1000baseT_Full) {
-		did1++; fprintf(stdout, "1000baseT/Full ");
-	}
-	if (did1 && (mask & ADVERTISED_2500baseX_Full)) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	%*s", indent, "");
-	}
-	if (mask & ADVERTISED_2500baseX_Full) {
-		did1++; fprintf(stdout, "2500baseX/Full ");
-	}
-	if (did1 && (mask & ADVERTISED_10000baseT_Full)) {
-		fprintf(stdout, "\n");
-		fprintf(stdout, "	%*s", indent, "");
-	}
-	if (mask & ADVERTISED_10000baseT_Full) {
-		did1++; fprintf(stdout, "10000baseT/Full ");
+	new_line_pend = 0;
+	for (i = 0; i < ARRAY_SIZE(mode_defs); i++) {
+		if (did1 && !mode_defs[i].same_line)
+			new_line_pend = 1;
+		if (mask & mode_defs[i].value) {
+			if (new_line_pend) {
+				fprintf(stdout, "\n");
+				fprintf(stdout, "	%*s", indent, "");
+				new_line_pend = 0;
+			}
+			did1++;
+			fprintf(stdout, "%s ", mode_defs[i].name);
+		}
 	}
 	if (did1 == 0)
 		 fprintf(stdout, "Not reported");
 	fprintf(stdout, "\n");
 
-	fprintf(stdout, "	%s pause frame use: ", prefix);
-	if (mask & ADVERTISED_Pause) {
-		fprintf(stdout, "Symmetric");
-		if (mask & ADVERTISED_Asym_Pause)
-			fprintf(stdout, " Receive-only");
-		fprintf(stdout, "\n");
-	} else {
-		if (mask & ADVERTISED_Asym_Pause)
-			fprintf(stdout, "Transmit-only\n");
+	if (!link_mode_only) {
+		fprintf(stdout, "	%s pause frame use: ", prefix);
+		if (mask & ADVERTISED_Pause) {
+			fprintf(stdout, "Symmetric");
+			if (mask & ADVERTISED_Asym_Pause)
+				fprintf(stdout, " Receive-only");
+			fprintf(stdout, "\n");
+		} else {
+			if (mask & ADVERTISED_Asym_Pause)
+				fprintf(stdout, "Transmit-only\n");
+			else
+				fprintf(stdout, "No\n");
+		}
+
+		fprintf(stdout, "	%s auto-negotiation: ", an_prefix);
+		if (mask & ADVERTISED_Autoneg)
+			fprintf(stdout, "Yes\n");
 		else
 			fprintf(stdout, "No\n");
 	}
-
-	fprintf(stdout, "	%s auto-negotiation: ", prefix);
-	if (mask & ADVERTISED_Autoneg)
-		fprintf(stdout, "Yes\n");
-	else
-		fprintf(stdout, "No\n");
 }
 
 static int dump_ecmd(struct ethtool_cmd *ep)
@@ -1310,10 +593,11 @@ static int dump_ecmd(struct ethtool_cmd *ep)
 	u32 speed;
 
 	dump_supported(ep);
-	dump_advertised(ep, "Advertised", ep->advertising);
+	dump_link_caps("Advertised", "Advertised", ep->advertising, 0);
 	if (ep->lp_advertising)
-		dump_advertised(ep, "Link partner advertised",
-				ep->lp_advertising);
+		dump_link_caps("Link partner advertised",
+			       "Link partner advertised", ep->lp_advertising,
+			       0);
 
 	fprintf(stdout, "	Speed: ");
 	speed = ethtool_cmd_speed(ep);
@@ -1386,16 +670,25 @@ static int dump_ecmd(struct ethtool_cmd *ep)
 
 	if (ep->port == PORT_TP) {
 		fprintf(stdout, "	MDI-X: ");
-		switch (ep->eth_tp_mdix) {
-		case ETH_TP_MDI:
-			fprintf(stdout, "off\n");
-			break;
-		case ETH_TP_MDI_X:
-			fprintf(stdout, "on\n");
-			break;
-		default:
-			fprintf(stdout, "Unknown\n");
-			break;
+		if (ep->eth_tp_mdix_ctrl == ETH_TP_MDI) {
+			fprintf(stdout, "off (forced)\n");
+		} else if (ep->eth_tp_mdix_ctrl == ETH_TP_MDI_X) {
+			fprintf(stdout, "on (forced)\n");
+		} else {
+			switch (ep->eth_tp_mdix) {
+			case ETH_TP_MDI:
+				fprintf(stdout, "off");
+				break;
+			case ETH_TP_MDI_X:
+				fprintf(stdout, "on");
+				break;
+			default:
+				fprintf(stdout, "Unknown");
+				break;
+			}
+			if (ep->eth_tp_mdix_ctrl == ETH_TP_MDI_AUTO)
+				fprintf(stdout, " (auto)");
+			fprintf(stdout, "\n");
 		}
 	}
 
@@ -1405,34 +698,24 @@ static int dump_ecmd(struct ethtool_cmd *ep)
 static int dump_drvinfo(struct ethtool_drvinfo *info)
 {
 	fprintf(stdout,
-		"driver: %s\n"
-		"version: %s\n"
-		"firmware-version: %s\n"
-		"bus-info: %s\n",
-		info->driver,
-		info->version,
-		info->fw_version,
-		info->bus_info);
-
-	return 0;
-}
-
-static int dump_wol(struct ethtool_wolinfo *wol)
-{
-	fprintf(stdout, "	Supports Wake-on: %s\n",
-		unparse_wolopts(wol->supported));
-	fprintf(stdout, "	Wake-on: %s\n",
-		unparse_wolopts(wol->wolopts));
-	if (wol->supported & WAKE_MAGICSECURE) {
-		int i;
-		int delim = 0;
-		fprintf(stdout, "        SecureOn password: ");
-		for (i = 0; i < SOPASS_MAX; i++) {
-			fprintf(stdout, "%s%02x", delim?":":"", wol->sopass[i]);
-			delim=1;
-		}
-		fprintf(stdout, "\n");
-	}
+		"driver: %.*s\n"
+		"version: %.*s\n"
+		"firmware-version: %.*s\n"
+		"bus-info: %.*s\n"
+		"supports-statistics: %s\n"
+		"supports-test: %s\n"
+		"supports-eeprom-access: %s\n"
+		"supports-register-dump: %s\n"
+		"supports-priv-flags: %s\n",
+		(int)sizeof(info->driver), info->driver,
+		(int)sizeof(info->version), info->version,
+		(int)sizeof(info->fw_version), info->fw_version,
+		(int)sizeof(info->bus_info), info->bus_info,
+		info->n_stats ? "yes" : "no",
+		info->testinfo_len ? "yes" : "no",
+		info->eedump_len ? "yes" : "no",
+		info->regdump_len ? "yes" : "no",
+		info->n_priv_flags ? "yes" : "no");
 
 	return 0;
 }
@@ -1503,20 +786,24 @@ static char *unparse_wolopts(int wolopts)
 	return buf;
 }
 
-static void get_mac_addr(char *src, unsigned char *dest)
+static int dump_wol(struct ethtool_wolinfo *wol)
 {
-	int count;
-	int i;
-	int buf[ETH_ALEN];
-
-	count = sscanf(src, "%2x:%2x:%2x:%2x:%2x:%2x",
-		&buf[0], &buf[1], &buf[2], &buf[3], &buf[4], &buf[5]);
-	if (count != ETH_ALEN)
-		show_usage(1);
-
-	for (i = 0; i < count; i++) {
-		dest[i] = buf[i];
+	fprintf(stdout, "	Supports Wake-on: %s\n",
+		unparse_wolopts(wol->supported));
+	fprintf(stdout, "	Wake-on: %s\n",
+		unparse_wolopts(wol->wolopts));
+	if (wol->supported & WAKE_MAGICSECURE) {
+		int i;
+		int delim = 0;
+		fprintf(stdout, "        SecureOn password: ");
+		for (i = 0; i < SOPASS_MAX; i++) {
+			fprintf(stdout, "%s%02x", delim?":":"", wol->sopass[i]);
+			delim=1;
+		}
+		fprintf(stdout, "\n");
 	}
+
+	return 0;
 }
 
 static int parse_rxfhashopts(char *optstr, u32 *data)
@@ -1591,71 +878,12 @@ static char *unparse_rxfhashopts(u64 opts)
 	return buf;
 }
 
-static void parse_rxntupleopts(int argc, char **argp, int i)
-{
-	ntuple_fs.flow_type = rxflow_str_to_type(argp[i]);
-
-	switch (ntuple_fs.flow_type) {
-	case TCP_V4_FLOW:
-	case UDP_V4_FLOW:
-	case SCTP_V4_FLOW:
-		parse_generic_cmdline(argc, argp, i + 1,
-				      &sntuple_changed,
-				      cmdline_ntuple_tcp_ip4,
-				      ARRAY_SIZE(cmdline_ntuple_tcp_ip4));
-		if (!ntuple_ip4src_seen)
-			ntuple_fs.m_u.tcp_ip4_spec.ip4src = 0xffffffff;
-		if (!ntuple_ip4dst_seen)
-			ntuple_fs.m_u.tcp_ip4_spec.ip4dst = 0xffffffff;
-		if (!ntuple_psrc_seen)
-			ntuple_fs.m_u.tcp_ip4_spec.psrc = 0xffff;
-		if (!ntuple_pdst_seen)
-			ntuple_fs.m_u.tcp_ip4_spec.pdst = 0xffff;
-		ntuple_fs.m_u.tcp_ip4_spec.tos = 0xff;
-		break;
-	case ETHER_FLOW:
-		parse_generic_cmdline(argc, argp, i + 1,
-				      &sntuple_changed,
-				      cmdline_ntuple_ether,
-				      ARRAY_SIZE(cmdline_ntuple_ether));
-		if (!ntuple_ether_dst_seen)
-			memset(ntuple_fs.m_u.ether_spec.h_dest, 0xff, ETH_ALEN);
-		if (!ntuple_ether_src_seen)
-			memset(ntuple_fs.m_u.ether_spec.h_source, 0xff,
-			       ETH_ALEN);
-		if (!ntuple_ether_proto_seen)
-			ntuple_fs.m_u.ether_spec.h_proto = 0xffff;
-		break;
-	default:
-		fprintf(stderr, "Unsupported flow type \"%s\"\n", argp[i]);
-		exit(106);
-		break;
-	}
-
-	if (!ntuple_vlan_tag_seen)
-		ntuple_fs.vlan_tag_mask = 0xffff;
-	if (!ntuple_user_def_seen)
-		ntuple_fs.data_mask = 0xffffffffffffffffULL;
-
-	if ((ntuple_ip4src_mask_seen && !ntuple_ip4src_seen) ||
-	    (ntuple_ip4dst_mask_seen && !ntuple_ip4dst_seen) ||
-	    (ntuple_psrc_mask_seen && !ntuple_psrc_seen) ||
-	    (ntuple_pdst_mask_seen && !ntuple_pdst_seen) ||
-	    (ntuple_ether_dst_mask_seen && !ntuple_ether_dst_seen) ||
-	    (ntuple_ether_src_mask_seen && !ntuple_ether_src_seen) ||
-	    (ntuple_ether_proto_mask_seen && !ntuple_ether_proto_seen) ||
-	    (ntuple_vlan_tag_mask_seen && !ntuple_vlan_tag_seen) ||
-	    (ntuple_user_def_mask_seen && !ntuple_user_def_seen)) {
-		fprintf(stderr, "Cannot specify mask without value\n");
-		exit(107);
-	}
-}
-
-static struct {
+static const struct {
 	const char *name;
 	int (*func)(struct ethtool_drvinfo *info, struct ethtool_regs *regs);
 
 } driver_list[] = {
+#ifdef ETHTOOL_ENABLE_PRETTY_DUMP
 	{ "8139cp", realtek_dump_regs },
 	{ "8139too", realtek_dump_regs },
 	{ "r8169", realtek_dump_regs },
@@ -1665,6 +893,7 @@ static struct {
 	{ "igb", igb_dump_regs },
 	{ "ixgb", ixgb_dump_regs },
 	{ "ixgbe", ixgbe_dump_regs },
+	{ "ixgbevf", ixgbevf_dump_regs },
 	{ "natsemi", natsemi_dump_regs },
 	{ "e100", e100_dump_regs },
 	{ "amd8111e", amd8111e_dump_regs },
@@ -1680,9 +909,28 @@ static struct {
         { "sfc", sfc_dump_regs },
 	{ "st_mac100", st_mac100_dump_regs },
 	{ "st_gmac", st_gmac_dump_regs },
+	{ "et131x", et131x_dump_regs },
+	{ "altera_tse", altera_tse_dump_regs },
+#endif
 };
 
-static int dump_regs(struct ethtool_drvinfo *info, struct ethtool_regs *regs)
+void dump_hex(FILE *file, const u8 *data, int len, int offset)
+{
+	int i;
+
+	fprintf(file, "Offset\t\tValues\n");
+	fprintf(file, "------\t\t------");
+	for (i = 0; i < len; i++) {
+		if (i % 16 == 0)
+			fprintf(file, "\n0x%04x:\t\t", i + offset);
+		fprintf(file, "%02x ", data[i]);
+	}
+	fprintf(file, "\n");
+}
+
+static int dump_regs(int gregs_dump_raw, int gregs_dump_hex,
+		     const char *gregs_dump_file,
+		     struct ethtool_drvinfo *info, struct ethtool_regs *regs)
 {
 	int i;
 
@@ -1710,57 +958,57 @@ static int dump_regs(struct ethtool_drvinfo *info, struct ethtool_regs *regs)
 	if (!gregs_dump_hex)
 		for (i = 0; i < ARRAY_SIZE(driver_list); i++)
 			if (!strncmp(driver_list[i].name, info->driver,
-				     ETHTOOL_BUSINFO_LEN))
-				return driver_list[i].func(info, regs);
+				     ETHTOOL_BUSINFO_LEN)) {
+				if (driver_list[i].func(info, regs) == 0)
+					return 0;
+				/* This version (or some other
+				 * variation in the dump format) is
+				 * not handled; fall back to hex
+				 */
+				break;
+			}
 
-	fprintf(stdout, "Offset\tValues\n");
-	fprintf(stdout, "--------\t-----");
-	for (i = 0; i < regs->len; i++) {
-		if (i%16 == 0)
-			fprintf(stdout, "\n%03x:\t", i);
-		fprintf(stdout, " %02x", regs->data[i]);
-	}
-	fprintf(stdout, "\n\n");
+	dump_hex(stdout, regs->data, regs->len, 0);
+
 	return 0;
 }
 
-static int dump_eeprom(struct ethtool_drvinfo *info, struct ethtool_eeprom *ee)
+static int dump_eeprom(int geeprom_dump_raw, struct ethtool_drvinfo *info,
+		       struct ethtool_eeprom *ee)
 {
-	int i;
-
 	if (geeprom_dump_raw) {
 		fwrite(ee->data, 1, ee->len, stdout);
 		return 0;
 	}
-
+#ifdef ETHTOOL_ENABLE_PRETTY_DUMP
 	if (!strncmp("natsemi", info->driver, ETHTOOL_BUSINFO_LEN)) {
 		return natsemi_dump_eeprom(info, ee);
 	} else if (!strncmp("tg3", info->driver, ETHTOOL_BUSINFO_LEN)) {
 		return tg3_dump_eeprom(info, ee);
 	}
+#endif
+	dump_hex(stdout, ee->data, ee->len, ee->offset);
 
-	fprintf(stdout, "Offset\t\tValues\n");
-	fprintf(stdout, "------\t\t------");
-	for (i = 0; i < ee->len; i++) {
-		if(!(i%16)) fprintf(stdout, "\n0x%04x\t\t", i + ee->offset);
-		fprintf(stdout, "%02x ", ee->data[i]);
-	}
-	fprintf(stdout, "\n");
 	return 0;
 }
 
-static int dump_test(struct ethtool_drvinfo *info, struct ethtool_test *test,
-		      struct ethtool_gstrings *strings)
+static int dump_test(struct ethtool_test *test,
+		     struct ethtool_gstrings *strings)
 {
 	int i, rc;
 
 	rc = test->flags & ETH_TEST_FL_FAILED;
 	fprintf(stdout, "The test result is %s\n", rc ? "FAIL" : "PASS");
 
-	if (info->testinfo_len)
+	if (test->flags & ETH_TEST_FL_EXTERNAL_LB)
+		fprintf(stdout, "External loopback test was %sexecuted\n",
+			(test->flags & ETH_TEST_FL_EXTERNAL_LB_DONE) ?
+			"" : "not ");
+
+	if (strings->len)
 		fprintf(stdout, "The test extra info:\n");
 
-	for (i = 0; i < info->testinfo_len; i++) {
+	for (i = 0; i < strings->len; i++) {
 		fprintf(stdout, "%s\t %d\n",
 			(char *)(strings->data + i * ETH_GSTRING_LEN),
 			(u32) test->data[i]);
@@ -1770,21 +1018,46 @@ static int dump_test(struct ethtool_drvinfo *info, struct ethtool_test *test,
 	return rc;
 }
 
-static int dump_pause(void)
+static int dump_pause(const struct ethtool_pauseparam *epause,
+		      u32 advertising, u32 lp_advertising)
 {
 	fprintf(stdout,
 		"Autonegotiate:	%s\n"
 		"RX:		%s\n"
 		"TX:		%s\n",
-		epause.autoneg ? "on" : "off",
-		epause.rx_pause ? "on" : "off",
-		epause.tx_pause ? "on" : "off");
+		epause->autoneg ? "on" : "off",
+		epause->rx_pause ? "on" : "off",
+		epause->tx_pause ? "on" : "off");
+
+	if (lp_advertising) {
+		int an_rx = 0, an_tx = 0;
+
+		/* Work out negotiated pause frame usage per
+		 * IEEE 802.3-2005 table 28B-3.
+		 */
+		if (advertising & lp_advertising & ADVERTISED_Pause) {
+			an_tx = 1;
+			an_rx = 1;
+		} else if (advertising & lp_advertising &
+			   ADVERTISED_Asym_Pause) {
+			if (advertising & ADVERTISED_Pause)
+				an_rx = 1;
+			else if (lp_advertising & ADVERTISED_Pause)
+				an_tx = 1;
+		}
+
+		fprintf(stdout,
+			"RX negotiated:	%s\n"
+			"TX negotiated:	%s\n",
+			an_rx ? "on" : "off",
+			an_tx ? "on" : "off");
+	}
 
 	fprintf(stdout, "\n");
 	return 0;
 }
 
-static int dump_ring(void)
+static int dump_ring(const struct ethtool_ringparam *ering)
 {
 	fprintf(stdout,
 		"Pre-set maximums:\n"
@@ -1792,10 +1065,10 @@ static int dump_ring(void)
 		"RX Mini:	%u\n"
 		"RX Jumbo:	%u\n"
 		"TX:		%u\n",
-		ering.rx_max_pending,
-		ering.rx_mini_max_pending,
-		ering.rx_jumbo_max_pending,
-		ering.tx_max_pending);
+		ering->rx_max_pending,
+		ering->rx_mini_max_pending,
+		ering->rx_jumbo_max_pending,
+		ering->tx_max_pending);
 
 	fprintf(stdout,
 		"Current hardware settings:\n"
@@ -1803,20 +1076,46 @@ static int dump_ring(void)
 		"RX Mini:	%u\n"
 		"RX Jumbo:	%u\n"
 		"TX:		%u\n",
-		ering.rx_pending,
-		ering.rx_mini_pending,
-		ering.rx_jumbo_pending,
-		ering.tx_pending);
+		ering->rx_pending,
+		ering->rx_mini_pending,
+		ering->rx_jumbo_pending,
+		ering->tx_pending);
 
 	fprintf(stdout, "\n");
 	return 0;
 }
 
-static int dump_coalesce(void)
+static int dump_channels(const struct ethtool_channels *echannels)
+{
+	fprintf(stdout,
+		"Pre-set maximums:\n"
+		"RX:		%u\n"
+		"TX:		%u\n"
+		"Other:		%u\n"
+		"Combined:	%u\n",
+		echannels->max_rx, echannels->max_tx,
+		echannels->max_other,
+		echannels->max_combined);
+
+	fprintf(stdout,
+		"Current hardware settings:\n"
+		"RX:		%u\n"
+		"TX:		%u\n"
+		"Other:		%u\n"
+		"Combined:	%u\n",
+		echannels->rx_count, echannels->tx_count,
+		echannels->other_count,
+		echannels->combined_count);
+
+	fprintf(stdout, "\n");
+	return 0;
+}
+
+static int dump_coalesce(const struct ethtool_coalesce *ecoal)
 {
 	fprintf(stdout, "Adaptive RX: %s  TX: %s\n",
-		ecoal.use_adaptive_rx_coalesce ? "on" : "off",
-		ecoal.use_adaptive_tx_coalesce ? "on" : "off");
+		ecoal->use_adaptive_rx_coalesce ? "on" : "off",
+		ecoal->use_adaptive_tx_coalesce ? "on" : "off");
 
 	fprintf(stdout,
 		"stats-block-usecs: %u\n"
@@ -1844,65 +1143,133 @@ static int dump_coalesce(void)
 		"tx-usecs-high: %u\n"
 		"tx-frame-high: %u\n"
 		"\n",
-		ecoal.stats_block_coalesce_usecs,
-		ecoal.rate_sample_interval,
-		ecoal.pkt_rate_low,
-		ecoal.pkt_rate_high,
+		ecoal->stats_block_coalesce_usecs,
+		ecoal->rate_sample_interval,
+		ecoal->pkt_rate_low,
+		ecoal->pkt_rate_high,
 
-		ecoal.rx_coalesce_usecs,
-		ecoal.rx_max_coalesced_frames,
-		ecoal.rx_coalesce_usecs_irq,
-		ecoal.rx_max_coalesced_frames_irq,
+		ecoal->rx_coalesce_usecs,
+		ecoal->rx_max_coalesced_frames,
+		ecoal->rx_coalesce_usecs_irq,
+		ecoal->rx_max_coalesced_frames_irq,
 
-		ecoal.tx_coalesce_usecs,
-		ecoal.tx_max_coalesced_frames,
-		ecoal.tx_coalesce_usecs_irq,
-		ecoal.tx_max_coalesced_frames_irq,
+		ecoal->tx_coalesce_usecs,
+		ecoal->tx_max_coalesced_frames,
+		ecoal->tx_coalesce_usecs_irq,
+		ecoal->tx_max_coalesced_frames_irq,
 
-		ecoal.rx_coalesce_usecs_low,
-		ecoal.rx_max_coalesced_frames_low,
-		ecoal.tx_coalesce_usecs_low,
-		ecoal.tx_max_coalesced_frames_low,
+		ecoal->rx_coalesce_usecs_low,
+		ecoal->rx_max_coalesced_frames_low,
+		ecoal->tx_coalesce_usecs_low,
+		ecoal->tx_max_coalesced_frames_low,
 
-		ecoal.rx_coalesce_usecs_high,
-		ecoal.rx_max_coalesced_frames_high,
-		ecoal.tx_coalesce_usecs_high,
-		ecoal.tx_max_coalesced_frames_high);
+		ecoal->rx_coalesce_usecs_high,
+		ecoal->rx_max_coalesced_frames_high,
+		ecoal->tx_coalesce_usecs_high,
+		ecoal->tx_max_coalesced_frames_high);
 
 	return 0;
 }
 
-static int dump_offload(int rx, int tx, int sg, int tso, int ufo, int gso,
-			int gro, int lro, int rxvlan, int txvlan, int ntuple,
-			int rxhash)
-{
-	fprintf(stdout,
-		"rx-checksumming: %s\n"
-		"tx-checksumming: %s\n"
-		"scatter-gather: %s\n"
-		"tcp-segmentation-offload: %s\n"
-		"udp-fragmentation-offload: %s\n"
-		"generic-segmentation-offload: %s\n"
-		"generic-receive-offload: %s\n"
-		"large-receive-offload: %s\n"
-		"rx-vlan-offload: %s\n"
-		"tx-vlan-offload: %s\n"
-		"ntuple-filters: %s\n"
-		"receive-hashing: %s\n",
-		rx ? "on" : "off",
-		tx ? "on" : "off",
-		sg ? "on" : "off",
-		tso ? "on" : "off",
-		ufo ? "on" : "off",
-		gso ? "on" : "off",
-		gro ? "on" : "off",
-		lro ? "on" : "off",
-		rxvlan ? "on" : "off",
-		txvlan ? "on" : "off",
-		ntuple ? "on" : "off",
-		rxhash ? "on" : "off");
+struct feature_state {
+	u32 off_flags;
+	struct ethtool_gfeatures features;
+};
 
-	return 0;
+static void dump_one_feature(const char *indent, const char *name,
+			     const struct feature_state *state,
+			     const struct feature_state *ref_state,
+			     u32 index)
+{
+	if (ref_state &&
+	    !(FEATURE_BIT_IS_SET(state->features.features, index, active) ^
+	      FEATURE_BIT_IS_SET(ref_state->features.features, index, active)))
+		return;
+
+	printf("%s%s: %s%s\n",
+	       indent, name,
+	       FEATURE_BIT_IS_SET(state->features.features, index, active) ?
+	       "on" : "off",
+	       (!FEATURE_BIT_IS_SET(state->features.features, index, available)
+		|| FEATURE_BIT_IS_SET(state->features.features, index,
+				      never_changed))
+	       ? " [fixed]"
+	       : (FEATURE_BIT_IS_SET(state->features.features, index, requested)
+		  ^ FEATURE_BIT_IS_SET(state->features.features, index, active))
+	       ? (FEATURE_BIT_IS_SET(state->features.features, index, requested)
+		  ? " [requested on]" : " [requested off]")
+	       : "");
+}
+
+static int linux_version_code(void)
+{
+	struct utsname utsname;
+	unsigned version, patchlevel, sublevel = 0;
+
+	if (uname(&utsname))
+		return -1;
+	if (sscanf(utsname.release, "%u.%u.%u", &version, &patchlevel, &sublevel) < 2)
+		return -1;
+	return KERNEL_VERSION(version, patchlevel, sublevel);
+}
+
+static void dump_features(const struct feature_defs *defs,
+			  const struct feature_state *state,
+			  const struct feature_state *ref_state)
+{
+	int kernel_ver = linux_version_code();
+	u32 value;
+	int indent;
+	int i, j;
+
+	for (i = 0; i < ARRAY_SIZE(off_flag_def); i++) {
+		/* Don't show features whose state is unknown on this
+		 * kernel version
+		 */
+		if (defs->off_flag_matched[i] == 0 &&
+		    off_flag_def[i].get_cmd == 0 &&
+		    kernel_ver < off_flag_def[i].min_kernel_ver)
+			continue;
+
+		value = off_flag_def[i].value;
+
+		/* If this offload flag matches exactly one generic
+		 * feature then it's redundant to show the flag and
+		 * feature states separately.  Otherwise, show the
+		 * flag state first.
+		 */
+		if (defs->off_flag_matched[i] != 1 &&
+		    (!ref_state ||
+		     (state->off_flags ^ ref_state->off_flags) & value)) {
+			printf("%s: %s\n",
+			       off_flag_def[i].long_name,
+			       (state->off_flags & value) ? "on" : "off");
+			indent = 1;
+		} else {
+			indent = 0;
+		}
+
+		/* Show matching features */
+		for (j = 0; j < defs->n_features; j++) {
+			if (defs->def[j].off_flag_index != i)
+				continue;
+			if (defs->off_flag_matched[i] != 1)
+				/* Show all matching feature states */
+				dump_one_feature(indent ? "\t" : "",
+						 defs->def[j].name,
+						 state, ref_state, j);
+			else
+				/* Show full state with the old flag name */
+				dump_one_feature("", off_flag_def[i].long_name,
+						 state, ref_state, j);
+		}
+	}
+
+	/* Show all unmatched features that have non-null names */
+	for (j = 0; j < defs->n_features; j++)
+		if (defs->def[j].off_flag_index < 0 && defs->def[j].name[0])
+			dump_one_feature("", defs->def[j].name,
+					 state, ref_state, j);
 }
 
 static int dump_rxfhash(int fhash, u64 val)
@@ -1918,7 +1285,9 @@ static int dump_rxfhash(int fhash, u64 val)
 		fprintf(stdout, "SCTP over IPV4 flows");
 		break;
 	case AH_ESP_V4_FLOW:
-		fprintf(stdout, "IPSEC AH over IPV4 flows");
+	case AH_V4_FLOW:
+	case ESP_V4_FLOW:
+		fprintf(stdout, "IPSEC AH/ESP over IPV4 flows");
 		break;
 	case TCP_V6_FLOW:
 		fprintf(stdout, "TCP over IPV6 flows");
@@ -1930,7 +1299,9 @@ static int dump_rxfhash(int fhash, u64 val)
 		fprintf(stdout, "SCTP over IPV6 flows");
 		break;
 	case AH_ESP_V6_FLOW:
-		fprintf(stdout, "IPSEC AH over IPV6 flows");
+	case AH_V6_FLOW:
+	case ESP_V6_FLOW:
+		fprintf(stdout, "IPSEC AH/ESP over IPV6 flows");
 		break;
 	default:
 		break;
@@ -1947,88 +1318,245 @@ static int dump_rxfhash(int fhash, u64 val)
 	return 0;
 }
 
-static int doit(void)
+static void dump_eeecmd(struct ethtool_eee *ep)
 {
-	struct ifreq ifr;
-	int fd;
 
-	/* Setup our control structures. */
-	memset(&ifr, 0, sizeof(ifr));
-	strcpy(ifr.ifr_name, devname);
-
-	/* Open control socket. */
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (fd < 0) {
-		perror("Cannot get control socket");
-		return 70;
+	fprintf(stdout, "	EEE status: ");
+	if (!ep->supported) {
+		fprintf(stdout, "not supported\n");
+		return;
+	} else if (!ep->eee_enabled) {
+		fprintf(stdout, "disabled\n");
+	} else {
+		fprintf(stdout, "enabled - ");
+		if (ep->eee_active)
+			fprintf(stdout, "active\n");
+		else
+			fprintf(stdout, "inactive\n");
 	}
 
-	/* all of these are expected to populate ifr->ifr_data as needed */
-	if (mode == MODE_GDRV) {
-		return do_gdrv(fd, &ifr);
-	} else if (mode == MODE_GSET) {
-		return do_gset(fd, &ifr);
-	} else if (mode == MODE_SSET) {
-		return do_sset(fd, &ifr);
-	} else if (mode == MODE_GREGS) {
-		return do_gregs(fd, &ifr);
-	} else if (mode == MODE_NWAY_RST) {
-		return do_nway_rst(fd, &ifr);
-	} else if (mode == MODE_GEEPROM) {
-		return do_geeprom(fd, &ifr);
-	} else if (mode == MODE_SEEPROM) {
-		return do_seeprom(fd, &ifr);
-	} else if (mode == MODE_TEST) {
-		return do_test(fd, &ifr);
-	} else if (mode == MODE_PHYS_ID) {
-		return do_phys_id(fd, &ifr);
-	} else if (mode == MODE_GPAUSE) {
-		return do_gpause(fd, &ifr);
-	} else if (mode == MODE_SPAUSE) {
-		return do_spause(fd, &ifr);
-	} else if (mode == MODE_GCOALESCE) {
-		return do_gcoalesce(fd, &ifr);
-	} else if (mode == MODE_SCOALESCE) {
-		return do_scoalesce(fd, &ifr);
-	} else if (mode == MODE_GRING) {
-		return do_gring(fd, &ifr);
-	} else if (mode == MODE_SRING) {
-		return do_sring(fd, &ifr);
-	} else if (mode == MODE_GOFFLOAD) {
-		return do_goffload(fd, &ifr);
-	} else if (mode == MODE_SOFFLOAD) {
-		return do_soffload(fd, &ifr);
-	} else if (mode == MODE_GSTATS) {
-		return do_gstats(fd, &ifr);
-	} else if (mode == MODE_GNFC) {
-		return do_grxclass(fd, &ifr);
-	} else if (mode == MODE_SNFC) {
-		return do_srxclass(fd, &ifr);
-	} else if (mode == MODE_GRXFHINDIR) {
-		return do_grxfhindir(fd, &ifr);
-	} else if (mode == MODE_SRXFHINDIR) {
-		return do_srxfhindir(fd, &ifr);
-	} else if (mode == MODE_SNTUPLE) {
-		return do_srxntuple(fd, &ifr);
-	} else if (mode == MODE_GNTUPLE) {
-		return do_grxntuple(fd, &ifr);
-	} else if (mode == MODE_FLASHDEV) {
-		return do_flash(fd, &ifr);
-	} else if (mode == MODE_PERMADDR) {
-		return do_permaddr(fd, &ifr);
-	}
+	fprintf(stdout, "	Tx LPI:");
+	if (ep->tx_lpi_enabled)
+		fprintf(stdout, " %d (us)\n", ep->tx_lpi_timer);
+	else
+		fprintf(stdout, " disabled\n");
 
-	return 69;
+	dump_link_caps("Supported EEE", "", ep->supported, 1);
+	dump_link_caps("Advertised EEE", "", ep->advertised, 1);
+	dump_link_caps("Link partner advertised EEE", "", ep->lp_advertised, 1);
 }
 
-static int do_gdrv(int fd, struct ifreq *ifr)
+#define N_SOTS 7
+
+static char *so_timestamping_labels[N_SOTS] = {
+	"hardware-transmit     (SOF_TIMESTAMPING_TX_HARDWARE)",
+	"software-transmit     (SOF_TIMESTAMPING_TX_SOFTWARE)",
+	"hardware-receive      (SOF_TIMESTAMPING_RX_HARDWARE)",
+	"software-receive      (SOF_TIMESTAMPING_RX_SOFTWARE)",
+	"software-system-clock (SOF_TIMESTAMPING_SOFTWARE)",
+	"hardware-legacy-clock (SOF_TIMESTAMPING_SYS_HARDWARE)",
+	"hardware-raw-clock    (SOF_TIMESTAMPING_RAW_HARDWARE)",
+};
+
+#define N_TX_TYPES (HWTSTAMP_TX_ONESTEP_SYNC + 1)
+
+static char *tx_type_labels[N_TX_TYPES] = {
+	"off                   (HWTSTAMP_TX_OFF)",
+	"on                    (HWTSTAMP_TX_ON)",
+	"one-step-sync         (HWTSTAMP_TX_ONESTEP_SYNC)",
+};
+
+#define N_RX_FILTERS (HWTSTAMP_FILTER_PTP_V2_DELAY_REQ + 1)
+
+static char *rx_filter_labels[N_RX_FILTERS] = {
+	"none                  (HWTSTAMP_FILTER_NONE)",
+	"all                   (HWTSTAMP_FILTER_ALL)",
+	"some                  (HWTSTAMP_FILTER_SOME)",
+	"ptpv1-l4-event        (HWTSTAMP_FILTER_PTP_V1_L4_EVENT)",
+	"ptpv1-l4-sync         (HWTSTAMP_FILTER_PTP_V1_L4_SYNC)",
+	"ptpv1-l4-delay-req    (HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ)",
+	"ptpv2-l4-event        (HWTSTAMP_FILTER_PTP_V2_L4_EVENT)",
+	"ptpv2-l4-sync         (HWTSTAMP_FILTER_PTP_V2_L4_SYNC)",
+	"ptpv2-l4-delay-req    (HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ)",
+	"ptpv2-l2-event        (HWTSTAMP_FILTER_PTP_V2_L2_EVENT)",
+	"ptpv2-l2-sync         (HWTSTAMP_FILTER_PTP_V2_L2_SYNC)",
+	"ptpv2-l2-delay-req    (HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ)",
+	"ptpv2-event           (HWTSTAMP_FILTER_PTP_V2_EVENT)",
+	"ptpv2-sync            (HWTSTAMP_FILTER_PTP_V2_SYNC)",
+	"ptpv2-delay-req       (HWTSTAMP_FILTER_PTP_V2_DELAY_REQ)",
+};
+
+static int dump_tsinfo(const struct ethtool_ts_info *info)
+{
+	int i;
+
+	fprintf(stdout, "Capabilities:\n");
+
+	for (i = 0; i < N_SOTS; i++) {
+		if (info->so_timestamping & (1 << i))
+			fprintf(stdout, "\t%s\n", so_timestamping_labels[i]);
+	}
+
+	fprintf(stdout, "PTP Hardware Clock: ");
+
+	if (info->phc_index < 0)
+		fprintf(stdout, "none\n");
+	else
+		fprintf(stdout, "%d\n", info->phc_index);
+
+	fprintf(stdout, "Hardware Transmit Timestamp Modes:");
+
+	if (!info->tx_types)
+		fprintf(stdout, " none\n");
+	else
+		fprintf(stdout, "\n");
+
+	for (i = 0; i < N_TX_TYPES; i++) {
+		if (info->tx_types & (1 << i))
+			fprintf(stdout,	"\t%s\n", tx_type_labels[i]);
+	}
+
+	fprintf(stdout, "Hardware Receive Filter Modes:");
+
+	if (!info->rx_filters)
+		fprintf(stdout, " none\n");
+	else
+		fprintf(stdout, "\n");
+
+	for (i = 0; i < N_RX_FILTERS; i++) {
+		if (info->rx_filters & (1 << i))
+			fprintf(stdout, "\t%s\n", rx_filter_labels[i]);
+	}
+
+	return 0;
+}
+
+static struct ethtool_gstrings *
+get_stringset(struct cmd_context *ctx, enum ethtool_stringset set_id,
+	      ptrdiff_t drvinfo_offset, int null_terminate)
+{
+	struct {
+		struct ethtool_sset_info hdr;
+		u32 buf[1];
+	} sset_info;
+	struct ethtool_drvinfo drvinfo;
+	u32 len, i;
+	struct ethtool_gstrings *strings;
+
+	sset_info.hdr.cmd = ETHTOOL_GSSET_INFO;
+	sset_info.hdr.reserved = 0;
+	sset_info.hdr.sset_mask = 1ULL << set_id;
+	if (send_ioctl(ctx, &sset_info) == 0) {
+		len = sset_info.hdr.sset_mask ? sset_info.hdr.data[0] : 0;
+	} else if (errno == EOPNOTSUPP && drvinfo_offset != 0) {
+		/* Fallback for old kernel versions */
+		drvinfo.cmd = ETHTOOL_GDRVINFO;
+		if (send_ioctl(ctx, &drvinfo))
+			return NULL;
+		len = *(u32 *)((char *)&drvinfo + drvinfo_offset);
+	} else {
+		return NULL;
+	}
+
+	strings = calloc(1, sizeof(*strings) + len * ETH_GSTRING_LEN);
+	if (!strings)
+		return NULL;
+
+	strings->cmd = ETHTOOL_GSTRINGS;
+	strings->string_set = set_id;
+	strings->len = len;
+	if (len != 0 && send_ioctl(ctx, strings)) {
+		free(strings);
+		return NULL;
+	}
+
+	if (null_terminate)
+		for (i = 0; i < len; i++)
+			strings->data[(i + 1) * ETH_GSTRING_LEN - 1] = 0;
+
+	return strings;
+}
+
+static struct feature_defs *get_feature_defs(struct cmd_context *ctx)
+{
+	struct ethtool_gstrings *names;
+	struct feature_defs *defs;
+	u32 n_features;
+	int i, j;
+
+	names = get_stringset(ctx, ETH_SS_FEATURES, 0, 1);
+	if (names) {
+		n_features = names->len;
+	} else if (errno == EOPNOTSUPP || errno == EINVAL) {
+		/* Kernel doesn't support named features; not an error */
+		n_features = 0;
+	} else if (errno == EPERM) {
+		/* Kernel bug: ETHTOOL_GSSET_INFO was privileged.
+		 * Work around it. */
+		n_features = 0;
+	} else {
+		return NULL;
+	}
+
+	defs = malloc(sizeof(*defs) + sizeof(defs->def[0]) * n_features);
+	if (!defs)
+		return NULL;
+
+	defs->n_features = n_features;
+	memset(defs->off_flag_matched, 0, sizeof(defs->off_flag_matched));
+
+	/* Copy out feature names and find those associated with legacy flags */
+	for (i = 0; i < defs->n_features; i++) {
+		memcpy(defs->def[i].name, names->data + i * ETH_GSTRING_LEN,
+		       ETH_GSTRING_LEN);
+		defs->def[i].off_flag_index = -1;
+
+		for (j = 0;
+		     j < ARRAY_SIZE(off_flag_def) &&
+			     defs->def[i].off_flag_index < 0;
+		     j++) {
+			const char *pattern =
+				off_flag_def[j].kernel_name;
+			const char *name = defs->def[i].name;
+			for (;;) {
+				if (*pattern == '*') {
+					/* There is only one wildcard; so
+					 * switch to a suffix comparison */
+					size_t pattern_len =
+						strlen(pattern + 1);
+					size_t name_len = strlen(name);
+					if (name_len < pattern_len)
+						break; /* name is too short */
+					name += name_len - pattern_len;
+					++pattern;
+				} else if (*pattern != *name) {
+					break; /* mismatch */
+				} else if (*pattern == 0) {
+					defs->def[i].off_flag_index = j;
+					defs->off_flag_matched[j]++;
+					break;
+				} else {
+					++name;
+					++pattern;
+				}
+			}
+		}
+	}
+
+	free(names);
+	return defs;
+}
+
+static int do_gdrv(struct cmd_context *ctx)
 {
 	int err;
 	struct ethtool_drvinfo drvinfo;
 
+	if (ctx->argc != 0)
+		exit_bad_args();
+
 	drvinfo.cmd = ETHTOOL_GDRVINFO;
-	ifr->ifr_data = (caddr_t)&drvinfo;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &drvinfo);
 	if (err < 0) {
 		perror("Cannot get driver information");
 		return 71;
@@ -2036,22 +1564,34 @@ static int do_gdrv(int fd, struct ifreq *ifr)
 	return dump_drvinfo(&drvinfo);
 }
 
-static int do_gpause(int fd, struct ifreq *ifr)
+static int do_gpause(struct cmd_context *ctx)
 {
+	struct ethtool_pauseparam epause;
+	struct ethtool_cmd ecmd;
 	int err;
 
-	fprintf(stdout, "Pause parameters for %s:\n", devname);
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	fprintf(stdout, "Pause parameters for %s:\n", ctx->devname);
 
 	epause.cmd = ETHTOOL_GPAUSEPARAM;
-	ifr->ifr_data = (caddr_t)&epause;
-	err = send_ioctl(fd, ifr);
-	if (err == 0) {
-		err = dump_pause();
-		if (err)
-			return err;
-	} else {
+	err = send_ioctl(ctx, &epause);
+	if (err) {
 		perror("Cannot get device pause settings");
 		return 76;
+	}
+
+	if (epause.autoneg) {
+		ecmd.cmd = ETHTOOL_GSET;
+		err = send_ioctl(ctx, &ecmd);
+		if (err) {
+			perror("Cannot get device settings");
+			return 1;
+		}
+		dump_pause(&epause, ecmd.advertising, ecmd.lp_advertising);
+	} else {
+		dump_pause(&epause, 0, 0);
 	}
 
 	return 0;
@@ -2086,13 +1626,26 @@ static void do_generic_set(struct cmdline_info *info,
 		do_generic_set1(&info[i], changed_out);
 }
 
-static int do_spause(int fd, struct ifreq *ifr)
+static int do_spause(struct cmd_context *ctx)
 {
+	struct ethtool_pauseparam epause;
+	int gpause_changed = 0;
+	int pause_autoneg_wanted = -1;
+	int pause_rx_wanted = -1;
+	int pause_tx_wanted = -1;
+	struct cmdline_info cmdline_pause[] = {
+		{ "autoneg", CMDL_BOOL, &pause_autoneg_wanted,
+		  &epause.autoneg },
+		{ "rx", CMDL_BOOL, &pause_rx_wanted, &epause.rx_pause },
+		{ "tx", CMDL_BOOL, &pause_tx_wanted, &epause.tx_pause },
+	};
 	int err, changed = 0;
 
+	parse_generic_cmdline(ctx, &gpause_changed,
+			      cmdline_pause, ARRAY_SIZE(cmdline_pause));
+
 	epause.cmd = ETHTOOL_GPAUSEPARAM;
-	ifr->ifr_data = (caddr_t)&epause;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &epause);
 	if (err) {
 		perror("Cannot get device pause settings");
 		return 77;
@@ -2106,8 +1659,7 @@ static int do_spause(int fd, struct ifreq *ifr)
 	}
 
 	epause.cmd = ETHTOOL_SPAUSEPARAM;
-	ifr->ifr_data = (caddr_t)&epause;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &epause);
 	if (err) {
 		perror("Cannot set device pause parameters");
 		return 79;
@@ -2116,13 +1668,29 @@ static int do_spause(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_sring(int fd, struct ifreq *ifr)
+static int do_sring(struct cmd_context *ctx)
 {
+	struct ethtool_ringparam ering;
+	int gring_changed = 0;
+	s32 ring_rx_wanted = -1;
+	s32 ring_rx_mini_wanted = -1;
+	s32 ring_rx_jumbo_wanted = -1;
+	s32 ring_tx_wanted = -1;
+	struct cmdline_info cmdline_ring[] = {
+		{ "rx", CMDL_S32, &ring_rx_wanted, &ering.rx_pending },
+		{ "rx-mini", CMDL_S32, &ring_rx_mini_wanted,
+		  &ering.rx_mini_pending },
+		{ "rx-jumbo", CMDL_S32, &ring_rx_jumbo_wanted,
+		  &ering.rx_jumbo_pending },
+		{ "tx", CMDL_S32, &ring_tx_wanted, &ering.tx_pending },
+	};
 	int err, changed = 0;
 
+	parse_generic_cmdline(ctx, &gring_changed,
+			      cmdline_ring, ARRAY_SIZE(cmdline_ring));
+
 	ering.cmd = ETHTOOL_GRINGPARAM;
-	ifr->ifr_data = (caddr_t)&ering;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ering);
 	if (err) {
 		perror("Cannot get device ring settings");
 		return 76;
@@ -2136,8 +1704,7 @@ static int do_sring(int fd, struct ifreq *ifr)
 	}
 
 	ering.cmd = ETHTOOL_SRINGPARAM;
-	ifr->ifr_data = (caddr_t)&ering;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ering);
 	if (err) {
 		perror("Cannot set device ring parameters");
 		return 81;
@@ -2146,17 +1713,20 @@ static int do_sring(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_gring(int fd, struct ifreq *ifr)
+static int do_gring(struct cmd_context *ctx)
 {
+	struct ethtool_ringparam ering;
 	int err;
 
-	fprintf(stdout, "Ring parameters for %s:\n", devname);
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	fprintf(stdout, "Ring parameters for %s:\n", ctx->devname);
 
 	ering.cmd = ETHTOOL_GRINGPARAM;
-	ifr->ifr_data = (caddr_t)&ering;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ering);
 	if (err == 0) {
-		err = dump_ring();
+		err = dump_ring(&ering);
 		if (err)
 			return err;
 	} else {
@@ -2167,17 +1737,94 @@ static int do_gring(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_gcoalesce(int fd, struct ifreq *ifr)
+static int do_schannels(struct cmd_context *ctx)
 {
+	struct ethtool_channels echannels;
+	int gchannels_changed;
+	s32 channels_rx_wanted = -1;
+	s32 channels_tx_wanted = -1;
+	s32 channels_other_wanted = -1;
+	s32 channels_combined_wanted = -1;
+	struct cmdline_info cmdline_channels[] = {
+		{ "rx", CMDL_S32, &channels_rx_wanted, &echannels.rx_count },
+		{ "tx", CMDL_S32, &channels_tx_wanted, &echannels.tx_count },
+		{ "other", CMDL_S32, &channels_other_wanted,
+		  &echannels.other_count },
+		{ "combined", CMDL_S32, &channels_combined_wanted,
+		  &echannels.combined_count },
+	};
+	int err, changed = 0;
+
+	parse_generic_cmdline(ctx, &gchannels_changed,
+			      cmdline_channels, ARRAY_SIZE(cmdline_channels));
+
+	echannels.cmd = ETHTOOL_GCHANNELS;
+	err = send_ioctl(ctx, &echannels);
+	if (err) {
+		perror("Cannot get device channel parameters");
+		return 1;
+	}
+
+	do_generic_set(cmdline_channels, ARRAY_SIZE(cmdline_channels),
+			&changed);
+
+	if (!changed) {
+		fprintf(stderr, "no channel parameters changed, aborting\n");
+		fprintf(stderr, "current values: tx %u rx %u other %u"
+			" combined %u\n", echannels.rx_count,
+			echannels.tx_count, echannels.other_count,
+			echannels.combined_count);
+		return 1;
+	}
+
+	echannels.cmd = ETHTOOL_SCHANNELS;
+	err = send_ioctl(ctx, &echannels);
+	if (err) {
+		perror("Cannot set device channel parameters");
+		return 1;
+	}
+
+	return 0;
+}
+
+static int do_gchannels(struct cmd_context *ctx)
+{
+	struct ethtool_channels echannels;
 	int err;
 
-	fprintf(stdout, "Coalesce parameters for %s:\n", devname);
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	fprintf(stdout, "Channel parameters for %s:\n", ctx->devname);
+
+	echannels.cmd = ETHTOOL_GCHANNELS;
+	err = send_ioctl(ctx, &echannels);
+	if (err == 0) {
+		err = dump_channels(&echannels);
+		if (err)
+			return err;
+	} else {
+		perror("Cannot get device channel parameters\n");
+		return 1;
+	}
+	return 0;
+
+}
+
+static int do_gcoalesce(struct cmd_context *ctx)
+{
+	struct ethtool_coalesce ecoal;
+	int err;
+
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	fprintf(stdout, "Coalesce parameters for %s:\n", ctx->devname);
 
 	ecoal.cmd = ETHTOOL_GCOALESCE;
-	ifr->ifr_data = (caddr_t)&ecoal;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ecoal);
 	if (err == 0) {
-		err = dump_coalesce();
+		err = dump_coalesce(&ecoal);
 		if (err)
 			return err;
 	} else {
@@ -2188,13 +1835,85 @@ static int do_gcoalesce(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_scoalesce(int fd, struct ifreq *ifr)
+static int do_scoalesce(struct cmd_context *ctx)
 {
+	struct ethtool_coalesce ecoal;
+	int gcoalesce_changed = 0;
+	s32 coal_stats_wanted = -1;
+	int coal_adaptive_rx_wanted = -1;
+	int coal_adaptive_tx_wanted = -1;
+	s32 coal_sample_rate_wanted = -1;
+	s32 coal_pkt_rate_low_wanted = -1;
+	s32 coal_pkt_rate_high_wanted = -1;
+	s32 coal_rx_usec_wanted = -1;
+	s32 coal_rx_frames_wanted = -1;
+	s32 coal_rx_usec_irq_wanted = -1;
+	s32 coal_rx_frames_irq_wanted = -1;
+	s32 coal_tx_usec_wanted = -1;
+	s32 coal_tx_frames_wanted = -1;
+	s32 coal_tx_usec_irq_wanted = -1;
+	s32 coal_tx_frames_irq_wanted = -1;
+	s32 coal_rx_usec_low_wanted = -1;
+	s32 coal_rx_frames_low_wanted = -1;
+	s32 coal_tx_usec_low_wanted = -1;
+	s32 coal_tx_frames_low_wanted = -1;
+	s32 coal_rx_usec_high_wanted = -1;
+	s32 coal_rx_frames_high_wanted = -1;
+	s32 coal_tx_usec_high_wanted = -1;
+	s32 coal_tx_frames_high_wanted = -1;
+	struct cmdline_info cmdline_coalesce[] = {
+		{ "adaptive-rx", CMDL_BOOL, &coal_adaptive_rx_wanted,
+		  &ecoal.use_adaptive_rx_coalesce },
+		{ "adaptive-tx", CMDL_BOOL, &coal_adaptive_tx_wanted,
+		  &ecoal.use_adaptive_tx_coalesce },
+		{ "sample-interval", CMDL_S32, &coal_sample_rate_wanted,
+		  &ecoal.rate_sample_interval },
+		{ "stats-block-usecs", CMDL_S32, &coal_stats_wanted,
+		  &ecoal.stats_block_coalesce_usecs },
+		{ "pkt-rate-low", CMDL_S32, &coal_pkt_rate_low_wanted,
+		  &ecoal.pkt_rate_low },
+		{ "pkt-rate-high", CMDL_S32, &coal_pkt_rate_high_wanted,
+		  &ecoal.pkt_rate_high },
+		{ "rx-usecs", CMDL_S32, &coal_rx_usec_wanted,
+		  &ecoal.rx_coalesce_usecs },
+		{ "rx-frames", CMDL_S32, &coal_rx_frames_wanted,
+		  &ecoal.rx_max_coalesced_frames },
+		{ "rx-usecs-irq", CMDL_S32, &coal_rx_usec_irq_wanted,
+		  &ecoal.rx_coalesce_usecs_irq },
+		{ "rx-frames-irq", CMDL_S32, &coal_rx_frames_irq_wanted,
+		  &ecoal.rx_max_coalesced_frames_irq },
+		{ "tx-usecs", CMDL_S32, &coal_tx_usec_wanted,
+		  &ecoal.tx_coalesce_usecs },
+		{ "tx-frames", CMDL_S32, &coal_tx_frames_wanted,
+		  &ecoal.tx_max_coalesced_frames },
+		{ "tx-usecs-irq", CMDL_S32, &coal_tx_usec_irq_wanted,
+		  &ecoal.tx_coalesce_usecs_irq },
+		{ "tx-frames-irq", CMDL_S32, &coal_tx_frames_irq_wanted,
+		  &ecoal.tx_max_coalesced_frames_irq },
+		{ "rx-usecs-low", CMDL_S32, &coal_rx_usec_low_wanted,
+		  &ecoal.rx_coalesce_usecs_low },
+		{ "rx-frames-low", CMDL_S32, &coal_rx_frames_low_wanted,
+		  &ecoal.rx_max_coalesced_frames_low },
+		{ "tx-usecs-low", CMDL_S32, &coal_tx_usec_low_wanted,
+		  &ecoal.tx_coalesce_usecs_low },
+		{ "tx-frames-low", CMDL_S32, &coal_tx_frames_low_wanted,
+		  &ecoal.tx_max_coalesced_frames_low },
+		{ "rx-usecs-high", CMDL_S32, &coal_rx_usec_high_wanted,
+		  &ecoal.rx_coalesce_usecs_high },
+		{ "rx-frames-high", CMDL_S32, &coal_rx_frames_high_wanted,
+		  &ecoal.rx_max_coalesced_frames_high },
+		{ "tx-usecs-high", CMDL_S32, &coal_tx_usec_high_wanted,
+		  &ecoal.tx_coalesce_usecs_high },
+		{ "tx-frames-high", CMDL_S32, &coal_tx_frames_high_wanted,
+		  &ecoal.tx_max_coalesced_frames_high },
+	};
 	int err, changed = 0;
 
+	parse_generic_cmdline(ctx, &gcoalesce_changed,
+			      cmdline_coalesce, ARRAY_SIZE(cmdline_coalesce));
+
 	ecoal.cmd = ETHTOOL_GCOALESCE;
-	ifr->ifr_data = (caddr_t)&ecoal;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ecoal);
 	if (err) {
 		perror("Cannot get device coalesce settings");
 		return 76;
@@ -2209,8 +1928,7 @@ static int do_scoalesce(int fd, struct ifreq *ifr)
 	}
 
 	ecoal.cmd = ETHTOOL_SCOALESCE;
-	ifr->ifr_data = (caddr_t)&ecoal;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ecoal);
 	if (err) {
 		perror("Cannot set device coalesce parameters");
 		return 81;
@@ -2219,223 +1937,269 @@ static int do_scoalesce(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_goffload(int fd, struct ifreq *ifr)
+static struct feature_state *
+get_features(struct cmd_context *ctx, const struct feature_defs *defs)
 {
+	struct feature_state *state;
 	struct ethtool_value eval;
-	int err, allfail = 1, rx = 0, tx = 0, sg = 0;
-	int tso = 0, ufo = 0, gso = 0, gro = 0, lro = 0, rxvlan = 0, txvlan = 0,
-	    ntuple = 0, rxhash = 0;
+	int err, allfail = 1;
+	u32 value;
+	int i;
 
-	fprintf(stdout, "Offload parameters for %s:\n", devname);
+	state = malloc(sizeof(*state) +
+		       FEATURE_BITS_TO_BLOCKS(defs->n_features) *
+		       sizeof(state->features.features[0]));
+	if (!state)
+		return NULL;
 
-	eval.cmd = ETHTOOL_GRXCSUM;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = send_ioctl(fd, ifr);
-	if (err)
-		perror("Cannot get device rx csum settings");
-	else {
-		rx = eval.data;
-		allfail = 0;
-	}
+	state->off_flags = 0;
 
-	eval.cmd = ETHTOOL_GTXCSUM;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = send_ioctl(fd, ifr);
-	if (err)
-		perror("Cannot get device tx csum settings");
-	else {
-		tx = eval.data;
-		allfail = 0;
-	}
-
-	eval.cmd = ETHTOOL_GSG;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = send_ioctl(fd, ifr);
-	if (err)
-		perror("Cannot get device scatter-gather settings");
-	else {
-		sg = eval.data;
-		allfail = 0;
-	}
-
-	eval.cmd = ETHTOOL_GTSO;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = send_ioctl(fd, ifr);
-	if (err)
-		perror("Cannot get device tcp segmentation offload settings");
-	else {
-		tso = eval.data;
-		allfail = 0;
-	}
-
-	eval.cmd = ETHTOOL_GUFO;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = ioctl(fd, SIOCETHTOOL, ifr);
-	if (err)
-		perror("Cannot get device udp large send offload settings");
-	else {
-		ufo = eval.data;
-		allfail = 0;
-	}
-
-	eval.cmd = ETHTOOL_GGSO;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = ioctl(fd, SIOCETHTOOL, ifr);
-	if (err)
-		perror("Cannot get device generic segmentation offload settings");
-	else {
-		gso = eval.data;
-		allfail = 0;
+	for (i = 0; i < ARRAY_SIZE(off_flag_def); i++) {
+		value = off_flag_def[i].value;
+		if (!off_flag_def[i].get_cmd)
+			continue;
+		eval.cmd = off_flag_def[i].get_cmd;
+		err = send_ioctl(ctx, &eval);
+		if (err) {
+			fprintf(stderr,
+				"Cannot get device %s settings: %m\n",
+				off_flag_def[i].long_name);
+		} else {
+			if (eval.data)
+				state->off_flags |= value;
+			allfail = 0;
+		}
 	}
 
 	eval.cmd = ETHTOOL_GFLAGS;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = ioctl(fd, SIOCETHTOOL, ifr);
+	err = send_ioctl(ctx, &eval);
 	if (err) {
 		perror("Cannot get device flags");
 	} else {
-		lro = (eval.data & ETH_FLAG_LRO) != 0;
-		rxvlan = (eval.data & ETH_FLAG_RXVLAN) != 0;
-		txvlan = (eval.data & ETH_FLAG_TXVLAN) != 0;
-		ntuple = (eval.data & ETH_FLAG_NTUPLE) != 0;
-		rxhash = (eval.data & ETH_FLAG_RXHASH) != 0;
+		state->off_flags |= eval.data & ETH_FLAG_EXT_MASK;
 		allfail = 0;
 	}
 
-	eval.cmd = ETHTOOL_GGRO;
-	ifr->ifr_data = (caddr_t)&eval;
-	err = ioctl(fd, SIOCETHTOOL, ifr);
-	if (err)
-		perror("Cannot get device GRO settings");
-	else {
-		gro = eval.data;
-		allfail = 0;
+	if (defs->n_features) {
+		state->features.cmd = ETHTOOL_GFEATURES;
+		state->features.size = FEATURE_BITS_TO_BLOCKS(defs->n_features);
+		err = send_ioctl(ctx, &state->features);
+		if (err)
+			perror("Cannot get device generic features");
+		else
+			allfail = 0;
 	}
 
 	if (allfail) {
-		fprintf(stdout, "no offload info available\n");
-		return 83;
+		free(state);
+		return NULL;
 	}
 
-	return dump_offload(rx, tx, sg, tso, ufo, gso, gro, lro, rxvlan, txvlan,
-			    ntuple, rxhash);
+	return state;
 }
 
-static int do_soffload(int fd, struct ifreq *ifr)
+static int do_gfeatures(struct cmd_context *ctx)
 {
+	struct feature_defs *defs;
+	struct feature_state *features;
+
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	defs = get_feature_defs(ctx);
+	if (!defs) {
+		perror("Cannot get device feature names");
+		return 1;
+	}
+
+	fprintf(stdout, "Features for %s:\n", ctx->devname);
+
+	features = get_features(ctx, defs);
+	if (!features) {
+		fprintf(stdout, "no feature info available\n");
+		return 1;
+	}
+
+	dump_features(defs, features, NULL);
+	return 0;
+}
+
+static int do_sfeatures(struct cmd_context *ctx)
+{
+	struct feature_defs *defs;
+	int any_changed = 0, any_mismatch = 0;
+	u32 off_flags_wanted = 0;
+	u32 off_flags_mask = 0;
+	struct ethtool_sfeatures *efeatures;
+	struct cmdline_info *cmdline_features;
+	struct feature_state *old_state, *new_state;
 	struct ethtool_value eval;
-	int err, changed = 0;
+	int err;
+	int i, j;
 
-	if (off_csum_rx_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_SRXCSUM;
-		eval.data = (off_csum_rx_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = send_ioctl(fd, ifr);
-		if (err) {
-			perror("Cannot set device rx csum settings");
-			return 84;
-		}
+	defs = get_feature_defs(ctx);
+	if (!defs) {
+		perror("Cannot get device feature names");
+		return 1;
 	}
-
-	if (off_csum_tx_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_STXCSUM;
-		eval.data = (off_csum_tx_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = send_ioctl(fd, ifr);
-		if (err) {
-			perror("Cannot set device tx csum settings");
-			return 85;
+	if (defs->n_features) {
+		efeatures = malloc(sizeof(*efeatures) +
+				   FEATURE_BITS_TO_BLOCKS(defs->n_features) *
+				   sizeof(efeatures->features[0]));
+		if (!efeatures) {
+			perror("Cannot parse arguments");
+			return 1;
 		}
-	}
-
-	if (off_sg_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_SSG;
-		eval.data = (off_sg_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = send_ioctl(fd, ifr);
-		if (err) {
-			perror("Cannot set device scatter-gather settings");
-			return 86;
-		}
+		efeatures->cmd = ETHTOOL_SFEATURES;
+		efeatures->size = FEATURE_BITS_TO_BLOCKS(defs->n_features);
+		memset(efeatures->features, 0,
+		       FEATURE_BITS_TO_BLOCKS(defs->n_features) *
+		       sizeof(efeatures->features[0]));
+	} else {
+		efeatures = NULL;
 	}
 
-	if (off_tso_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_STSO;
-		eval.data = (off_tso_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = send_ioctl(fd, ifr);
-		if (err) {
-			perror("Cannot set device tcp segmentation offload settings");
-			return 88;
-		}
+	/* Generate cmdline_info for legacy flags and kernel-named
+	 * features, and parse our arguments.
+	 */
+	cmdline_features = calloc(ARRAY_SIZE(off_flag_def) + defs->n_features,
+				  sizeof(cmdline_features[0]));
+	if (!cmdline_features) {
+		perror("Cannot parse arguments");
+		return 1;
 	}
-	if (off_ufo_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_SUFO;
-		eval.data = (off_ufo_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
-		if (err) {
-			perror("Cannot set device udp large send offload settings");
-			return 89;
-		}
-	}
-	if (off_gso_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_SGSO;
-		eval.data = (off_gso_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
-		if (err) {
-			perror("Cannot set device generic segmentation offload settings");
-			return 90;
-		}
-	}
-	if (off_flags_mask) {
-		changed = 1;
-		eval.cmd = ETHTOOL_GFLAGS;
-		eval.data = 0;
-		ifr->ifr_data = (caddr_t)&eval;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
-		if (err) {
-			perror("Cannot get device flag settings");
-			return 91;
-		}
+	for (i = 0; i < ARRAY_SIZE(off_flag_def); i++)
+		flag_to_cmdline_info(off_flag_def[i].short_name,
+				     off_flag_def[i].value,
+				     &off_flags_wanted, &off_flags_mask,
+				     &cmdline_features[i]);
+	for (i = 0; i < defs->n_features; i++)
+		flag_to_cmdline_info(
+			defs->def[i].name, FEATURE_FIELD_FLAG(i),
+			&FEATURE_WORD(efeatures->features, i, requested),
+			&FEATURE_WORD(efeatures->features, i, valid),
+			&cmdline_features[ARRAY_SIZE(off_flag_def) + i]);
+	parse_generic_cmdline(ctx, &any_changed, cmdline_features,
+			      ARRAY_SIZE(off_flag_def) + defs->n_features);
+	free(cmdline_features);
 
-		eval.cmd = ETHTOOL_SFLAGS;
-		eval.data = ((eval.data & ~off_flags_mask) |
-			     off_flags_wanted);
-
-		err = ioctl(fd, SIOCETHTOOL, ifr);
-		if (err) {
-			perror("Cannot set device flag settings");
-			return 92;
-		}
-	}
-	if (off_gro_wanted >= 0) {
-		changed = 1;
-		eval.cmd = ETHTOOL_SGRO;
-		eval.data = (off_gro_wanted == 1);
-		ifr->ifr_data = (caddr_t)&eval;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
-		if (err) {
-			perror("Cannot set device GRO settings");
-			return 93;
-		}
+	if (!any_changed) {
+		fprintf(stdout, "no features changed\n");
+		return 0;
 	}
 
-	if (!changed) {
-		fprintf(stdout, "no offload settings changed\n");
+	old_state = get_features(ctx, defs);
+	if (!old_state)
+		return 1;
+
+	if (efeatures) {
+		/* For each offload that the user specified, update any
+		 * related features that the user did not specify and that
+		 * are not fixed.  Warn if all related features are fixed.
+		 */
+		for (i = 0; i < ARRAY_SIZE(off_flag_def); i++) {
+			int fixed = 1;
+
+			if (!(off_flags_mask & off_flag_def[i].value))
+				continue;
+
+			for (j = 0; j < defs->n_features; j++) {
+				if (defs->def[j].off_flag_index != i ||
+				    !FEATURE_BIT_IS_SET(
+					    old_state->features.features,
+					    j, available) ||
+				    FEATURE_BIT_IS_SET(
+					    old_state->features.features,
+					    j, never_changed))
+					continue;
+
+				fixed = 0;
+				if (!FEATURE_BIT_IS_SET(efeatures->features,
+							j, valid)) {
+					FEATURE_BIT_SET(efeatures->features,
+							j, valid);
+					if (off_flags_wanted &
+					    off_flag_def[i].value)
+						FEATURE_BIT_SET(
+							efeatures->features,
+							j, requested);
+				}
+			}
+
+			if (fixed)
+				fprintf(stderr, "Cannot change %s\n",
+					off_flag_def[i].long_name);
+		}
+
+		err = send_ioctl(ctx, efeatures);
+		if (err < 0) {
+			perror("Cannot set device feature settings");
+			return 1;
+		}
+	} else {
+		for (i = 0; i < ARRAY_SIZE(off_flag_def); i++) {
+			if (!off_flag_def[i].set_cmd)
+				continue;
+			if (off_flags_mask & off_flag_def[i].value) {
+				eval.cmd = off_flag_def[i].set_cmd;
+				eval.data = !!(off_flags_wanted &
+					       off_flag_def[i].value);
+				err = send_ioctl(ctx, &eval);
+				if (err) {
+					fprintf(stderr,
+						"Cannot set device %s settings: %m\n",
+						off_flag_def[i].long_name);
+					return 1;
+				}
+			}
+		}
+
+		if (off_flags_mask & ETH_FLAG_EXT_MASK) {
+			eval.cmd = ETHTOOL_SFLAGS;
+			eval.data = (old_state->off_flags & ~off_flags_mask &
+				     ETH_FLAG_EXT_MASK);
+			eval.data |= off_flags_wanted & ETH_FLAG_EXT_MASK;
+
+			err = send_ioctl(ctx, &eval);
+			if (err) {
+				perror("Cannot set device flag settings");
+				return 92;
+			}
+		}
+	}
+
+	/* Compare new state with requested state */
+	new_state = get_features(ctx, defs);
+	if (!new_state)
+		return 1;
+	any_changed = new_state->off_flags != old_state->off_flags;
+	any_mismatch = (new_state->off_flags !=
+			((old_state->off_flags & ~off_flags_mask) |
+			 off_flags_wanted));
+	for (i = 0; i < FEATURE_BITS_TO_BLOCKS(defs->n_features); i++) {
+		if (new_state->features.features[i].active !=
+		    old_state->features.features[i].active)
+			any_changed = 1;
+		if (new_state->features.features[i].active !=
+		    ((old_state->features.features[i].active &
+		      ~efeatures->features[i].valid) |
+		     efeatures->features[i].requested))
+			any_mismatch = 1;
+	}
+	if (any_mismatch) {
+		if (!any_changed) {
+			fprintf(stderr,
+				"Could not change any device features\n");
+			return 1;
+		}
+		printf("Actual changes:\n");
+		dump_features(defs, new_state, old_state);
 	}
 
 	return 0;
 }
 
-static int do_gset(int fd, struct ifreq *ifr)
+static int do_gset(struct cmd_context *ctx)
 {
 	int err;
 	struct ethtool_cmd ecmd;
@@ -2443,11 +2207,13 @@ static int do_gset(int fd, struct ifreq *ifr)
 	struct ethtool_value edata;
 	int allfail = 1;
 
-	fprintf(stdout, "Settings for %s:\n", devname);
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	fprintf(stdout, "Settings for %s:\n", ctx->devname);
 
 	ecmd.cmd = ETHTOOL_GSET;
-	ifr->ifr_data = (caddr_t)&ecmd;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ecmd);
 	if (err == 0) {
 		err = dump_ecmd(&ecmd);
 		if (err)
@@ -2458,8 +2224,7 @@ static int do_gset(int fd, struct ifreq *ifr)
 	}
 
 	wolinfo.cmd = ETHTOOL_GWOL;
-	ifr->ifr_data = (caddr_t)&wolinfo;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &wolinfo);
 	if (err == 0) {
 		err = dump_wol(&wolinfo);
 		if (err)
@@ -2470,13 +2235,12 @@ static int do_gset(int fd, struct ifreq *ifr)
 	}
 
 	edata.cmd = ETHTOOL_GMSGLVL;
-	ifr->ifr_data = (caddr_t)&edata;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &edata);
 	if (err == 0) {
 		fprintf(stdout, "	Current message level: 0x%08x (%d)\n"
 			"			       ",
 			edata.data, edata.data);
-		print_flags(cmdline_msglvl, ARRAY_SIZE(cmdline_msglvl),
+		print_flags(flags_msglvl, ARRAY_SIZE(flags_msglvl),
 			    edata.data);
 		fprintf(stdout, "\n");
 		allfail = 0;
@@ -2485,8 +2249,7 @@ static int do_gset(int fd, struct ifreq *ifr)
 	}
 
 	edata.cmd = ETHTOOL_GLINK;
-	ifr->ifr_data = (caddr_t)&edata;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &edata);
 	if (err == 0) {
 		fprintf(stdout, "	Link detected: %s\n",
 			edata.data ? "yes":"no");
@@ -2502,16 +2265,200 @@ static int do_gset(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_sset(int fd, struct ifreq *ifr)
+static int do_sset(struct cmd_context *ctx)
 {
+	int speed_wanted = -1;
+	int duplex_wanted = -1;
+	int port_wanted = -1;
+	int mdix_wanted = -1;
+	int autoneg_wanted = -1;
+	int phyad_wanted = -1;
+	int xcvr_wanted = -1;
+	int full_advertising_wanted = -1;
+	int advertising_wanted = -1;
+	int gset_changed = 0; /* did anything in GSET change? */
+	u32 wol_wanted = 0;
+	int wol_change = 0;
+	u8 sopass_wanted[SOPASS_MAX];
+	int sopass_change = 0;
+	int gwol_changed = 0; /* did anything in GWOL change? */
+	int msglvl_changed = 0;
+	u32 msglvl_wanted = 0;
+	u32 msglvl_mask = 0;
+	struct cmdline_info cmdline_msglvl[ARRAY_SIZE(flags_msglvl)];
+	int argc = ctx->argc;
+	char **argp = ctx->argp;
+	int i;
 	int err;
+
+	for (i = 0; i < ARRAY_SIZE(flags_msglvl); i++)
+		flag_to_cmdline_info(flags_msglvl[i].name,
+				     flags_msglvl[i].value,
+				     &msglvl_wanted, &msglvl_mask,
+				     &cmdline_msglvl[i]);
+
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argp[i], "speed")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			speed_wanted = get_int(argp[i],10);
+		} else if (!strcmp(argp[i], "duplex")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			if (!strcmp(argp[i], "half"))
+				duplex_wanted = DUPLEX_HALF;
+			else if (!strcmp(argp[i], "full"))
+				duplex_wanted = DUPLEX_FULL;
+			else
+				exit_bad_args();
+		} else if (!strcmp(argp[i], "port")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			if (!strcmp(argp[i], "tp"))
+				port_wanted = PORT_TP;
+			else if (!strcmp(argp[i], "aui"))
+				port_wanted = PORT_AUI;
+			else if (!strcmp(argp[i], "bnc"))
+				port_wanted = PORT_BNC;
+			else if (!strcmp(argp[i], "mii"))
+				port_wanted = PORT_MII;
+			else if (!strcmp(argp[i], "fibre"))
+				port_wanted = PORT_FIBRE;
+			else
+				exit_bad_args();
+		} else if (!strcmp(argp[i], "mdix")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			if (!strcmp(argp[i], "auto"))
+				mdix_wanted = ETH_TP_MDI_AUTO;
+			else if (!strcmp(argp[i], "on"))
+				mdix_wanted = ETH_TP_MDI_X;
+			else if (!strcmp(argp[i], "off"))
+				mdix_wanted = ETH_TP_MDI;
+			else
+				exit_bad_args();
+		} else if (!strcmp(argp[i], "autoneg")) {
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			if (!strcmp(argp[i], "on")) {
+				gset_changed = 1;
+				autoneg_wanted = AUTONEG_ENABLE;
+			} else if (!strcmp(argp[i], "off")) {
+				gset_changed = 1;
+				autoneg_wanted = AUTONEG_DISABLE;
+			} else {
+				exit_bad_args();
+			}
+		} else if (!strcmp(argp[i], "advertise")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			full_advertising_wanted = get_int(argp[i], 16);
+		} else if (!strcmp(argp[i], "phyad")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			phyad_wanted = get_int(argp[i], 0);
+		} else if (!strcmp(argp[i], "xcvr")) {
+			gset_changed = 1;
+			i += 1;
+			if (i >= argc)
+				exit_bad_args();
+			if (!strcmp(argp[i], "internal"))
+				xcvr_wanted = XCVR_INTERNAL;
+			else if (!strcmp(argp[i], "external"))
+				xcvr_wanted = XCVR_EXTERNAL;
+			else
+				exit_bad_args();
+		} else if (!strcmp(argp[i], "wol")) {
+			gwol_changed = 1;
+			i++;
+			if (i >= argc)
+				exit_bad_args();
+			if (parse_wolopts(argp[i], &wol_wanted) < 0)
+				exit_bad_args();
+			wol_change = 1;
+		} else if (!strcmp(argp[i], "sopass")) {
+			gwol_changed = 1;
+			i++;
+			if (i >= argc)
+				exit_bad_args();
+			get_mac_addr(argp[i], sopass_wanted);
+			sopass_change = 1;
+		} else if (!strcmp(argp[i], "msglvl")) {
+			i++;
+			if (i >= argc)
+				exit_bad_args();
+			if (isdigit((unsigned char)argp[i][0])) {
+				msglvl_changed = 1;
+				msglvl_mask = ~0;
+				msglvl_wanted =
+					get_uint_range(argp[i], 0,
+						       0xffffffff);
+			} else {
+				ctx->argc -= i;
+				ctx->argp += i;
+				parse_generic_cmdline(
+					ctx, &msglvl_changed,
+					cmdline_msglvl,
+					ARRAY_SIZE(cmdline_msglvl));
+				break;
+			}
+		} else {
+			exit_bad_args();
+		}
+	}
+
+	if (full_advertising_wanted < 0) {
+		/* User didn't supply a full advertisement bitfield:
+		 * construct one from the specified speed and duplex.
+		 */
+		if (speed_wanted == SPEED_10 && duplex_wanted == DUPLEX_HALF)
+			advertising_wanted = ADVERTISED_10baseT_Half;
+		else if (speed_wanted == SPEED_10 &&
+			 duplex_wanted == DUPLEX_FULL)
+			advertising_wanted = ADVERTISED_10baseT_Full;
+		else if (speed_wanted == SPEED_100 &&
+			 duplex_wanted == DUPLEX_HALF)
+			advertising_wanted = ADVERTISED_100baseT_Half;
+		else if (speed_wanted == SPEED_100 &&
+			 duplex_wanted == DUPLEX_FULL)
+			advertising_wanted = ADVERTISED_100baseT_Full;
+		else if (speed_wanted == SPEED_1000 &&
+			 duplex_wanted == DUPLEX_HALF)
+			advertising_wanted = ADVERTISED_1000baseT_Half;
+		else if (speed_wanted == SPEED_1000 &&
+			 duplex_wanted == DUPLEX_FULL)
+			advertising_wanted = ADVERTISED_1000baseT_Full;
+		else if (speed_wanted == SPEED_2500 &&
+			 duplex_wanted == DUPLEX_FULL)
+			advertising_wanted = ADVERTISED_2500baseX_Full;
+		else if (speed_wanted == SPEED_10000 &&
+			 duplex_wanted == DUPLEX_FULL)
+			advertising_wanted = ADVERTISED_10000baseT_Full;
+		else
+			/* auto negotiate without forcing,
+			 * all supported speed will be assigned below
+			 */
+			advertising_wanted = 0;
+	}
 
 	if (gset_changed) {
 		struct ethtool_cmd ecmd;
 
 		ecmd.cmd = ETHTOOL_GSET;
-		ifr->ifr_data = (caddr_t)&ecmd;
-		err = send_ioctl(fd, ifr);
+		err = send_ioctl(ctx, &ecmd);
 		if (err < 0) {
 			perror("Cannot get current device settings");
 		} else {
@@ -2522,31 +2469,68 @@ static int do_sset(int fd, struct ifreq *ifr)
 				ecmd.duplex = duplex_wanted;
 			if (port_wanted != -1)
 				ecmd.port = port_wanted;
+			if (mdix_wanted != -1) {
+				/* check driver supports MDI-X */
+				if (ecmd.eth_tp_mdix_ctrl != ETH_TP_MDI_INVALID)
+					ecmd.eth_tp_mdix_ctrl = mdix_wanted;
+				else
+					fprintf(stderr, "setting MDI not supported\n");
+			}
 			if (autoneg_wanted != -1)
 				ecmd.autoneg = autoneg_wanted;
 			if (phyad_wanted != -1)
 				ecmd.phy_address = phyad_wanted;
 			if (xcvr_wanted != -1)
 				ecmd.transceiver = xcvr_wanted;
-			if (advertising_wanted != -1) {
-				if (advertising_wanted == 0)
-					ecmd.advertising = ecmd.supported &
-						(ADVERTISED_10baseT_Half |
-						 ADVERTISED_10baseT_Full |
-						 ADVERTISED_100baseT_Half |
-						 ADVERTISED_100baseT_Full |
-						 ADVERTISED_1000baseT_Half |
-						 ADVERTISED_1000baseT_Full |
-						 ADVERTISED_2500baseX_Full |
-						 ADVERTISED_10000baseT_Full);
-				else
-					ecmd.advertising = advertising_wanted;
+			/* XXX If the user specified speed or duplex
+			 * then we should mask the advertised modes
+			 * accordingly.  For now, warn that we aren't
+			 * doing that.
+			 */
+			if ((speed_wanted != -1 || duplex_wanted != -1) &&
+			    ecmd.autoneg && advertising_wanted == 0) {
+				fprintf(stderr, "Cannot advertise");
+				if (speed_wanted >= 0)
+					fprintf(stderr, " speed %d",
+						speed_wanted);
+				if (duplex_wanted >= 0)
+					fprintf(stderr, " duplex %s",
+						duplex_wanted ? 
+						"full" : "half");
+				fprintf(stderr,	"\n");
+			}
+			if (autoneg_wanted == AUTONEG_ENABLE &&
+			    advertising_wanted == 0) {
+				/* Auto negotiation enabled, but with
+				 * unspecified speed and duplex: enable all
+				 * supported speeds and duplexes.
+				 */
+				ecmd.advertising =
+					(ecmd.advertising &
+					 ~ALL_ADVERTISED_MODES) |
+					(ALL_ADVERTISED_MODES & ecmd.supported);
+
+				/* If driver supports unknown flags, we cannot
+				 * be sure that we enable all link modes.
+				 */
+				if ((ecmd.supported & ALL_ADVERTISED_FLAGS) !=
+				    ecmd.supported) {
+					fprintf(stderr, "Driver supports one "
+					        "or more unknown flags\n");
+				}
+			} else if (advertising_wanted > 0) {
+				/* Enable all requested modes */
+				ecmd.advertising =
+					(ecmd.advertising &
+					 ~ALL_ADVERTISED_MODES) |
+					advertising_wanted;
+			} else if (full_advertising_wanted > 0) {
+				ecmd.advertising = full_advertising_wanted;
 			}
 
 			/* Try to perform the update. */
 			ecmd.cmd = ETHTOOL_SSET;
-			ifr->ifr_data = (caddr_t)&ecmd;
-			err = send_ioctl(fd, ifr);
+			err = send_ioctl(ctx, &ecmd);
 			if (err < 0)
 				perror("Cannot set new settings");
 		}
@@ -2563,6 +2547,8 @@ static int do_sset(int fd, struct ifreq *ifr)
 				fprintf(stderr, "  not setting phy_address\n");
 			if (xcvr_wanted != -1)
 				fprintf(stderr, "  not setting transceiver\n");
+			if (mdix_wanted != -1)
+				fprintf(stderr, "  not setting mdix\n");
 		}
 	}
 
@@ -2570,8 +2556,7 @@ static int do_sset(int fd, struct ifreq *ifr)
 		struct ethtool_wolinfo wol;
 
 		wol.cmd = ETHTOOL_GWOL;
-		ifr->ifr_data = (caddr_t)&wol;
-		err = send_ioctl(fd, ifr);
+		err = send_ioctl(ctx, &wol);
 		if (err < 0) {
 			perror("Cannot get current wake-on-lan settings");
 		} else {
@@ -2588,8 +2573,7 @@ static int do_sset(int fd, struct ifreq *ifr)
 
 			/* Try to perform the update. */
 			wol.cmd = ETHTOOL_SWOL;
-			ifr->ifr_data = (caddr_t)&wol;
-			err = send_ioctl(fd, ifr);
+			err = send_ioctl(ctx, &wol);
 			if (err < 0)
 				perror("Cannot set new wake-on-lan settings");
 		}
@@ -2605,16 +2589,14 @@ static int do_sset(int fd, struct ifreq *ifr)
 		struct ethtool_value edata;
 
 		edata.cmd = ETHTOOL_GMSGLVL;
-		ifr->ifr_data = (caddr_t)&edata;
-		err = send_ioctl(fd, ifr);
+		err = send_ioctl(ctx, &edata);
 		if (err < 0) {
 			perror("Cannot get msglvl");
 		} else {
 			edata.cmd = ETHTOOL_SMSGLVL;
 			edata.data = ((edata.data & ~msglvl_mask) |
 				      msglvl_wanted);
-			ifr->ifr_data = (caddr_t)&edata;
-			err = send_ioctl(fd, ifr);
+			err = send_ioctl(ctx, &edata);
 			if (err < 0)
 				perror("Cannot set new msglvl");
 		}
@@ -2623,15 +2605,26 @@ static int do_sset(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_gregs(int fd, struct ifreq *ifr)
+static int do_gregs(struct cmd_context *ctx)
 {
+	int gregs_changed = 0;
+	int gregs_dump_raw = 0;
+	int gregs_dump_hex = 0;
+	char *gregs_dump_file = NULL;
+	struct cmdline_info cmdline_gregs[] = {
+		{ "raw", CMDL_BOOL, &gregs_dump_raw, NULL },
+		{ "hex", CMDL_BOOL, &gregs_dump_hex, NULL },
+		{ "file", CMDL_STR, &gregs_dump_file, NULL },
+	};
 	int err;
 	struct ethtool_drvinfo drvinfo;
 	struct ethtool_regs *regs;
 
+	parse_generic_cmdline(ctx, &gregs_changed,
+			      cmdline_gregs, ARRAY_SIZE(cmdline_gregs));
+
 	drvinfo.cmd = ETHTOOL_GDRVINFO;
-	ifr->ifr_data = (caddr_t)&drvinfo;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &drvinfo);
 	if (err < 0) {
 		perror("Cannot get driver information");
 		return 72;
@@ -2644,15 +2637,15 @@ static int do_gregs(int fd, struct ifreq *ifr)
 	}
 	regs->cmd = ETHTOOL_GREGS;
 	regs->len = drvinfo.regdump_len;
-	ifr->ifr_data = (caddr_t)regs;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, regs);
 	if (err < 0) {
 		perror("Cannot get register dump");
 		free(regs);
 		return 74;
 	}
-	if(dump_regs(&drvinfo, regs) < 0) {
-		perror("Cannot dump registers");
+	if (dump_regs(gregs_dump_raw, gregs_dump_hex, gregs_dump_file,
+		      &drvinfo, regs) < 0) {
+		fprintf(stderr, "Cannot dump registers\n");
 		free(regs);
 		return 75;
 	}
@@ -2661,35 +2654,48 @@ static int do_gregs(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_nway_rst(int fd, struct ifreq *ifr)
+static int do_nway_rst(struct cmd_context *ctx)
 {
 	struct ethtool_value edata;
 	int err;
 
+	if (ctx->argc != 0)
+		exit_bad_args();
+
 	edata.cmd = ETHTOOL_NWAY_RST;
-	ifr->ifr_data = (caddr_t)&edata;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &edata);
 	if (err < 0)
 		perror("Cannot restart autonegotiation");
 
 	return err;
 }
 
-static int do_geeprom(int fd, struct ifreq *ifr)
+static int do_geeprom(struct cmd_context *ctx)
 {
+	int geeprom_changed = 0;
+	int geeprom_dump_raw = 0;
+	u32 geeprom_offset = 0;
+	u32 geeprom_length = -1;
+	struct cmdline_info cmdline_geeprom[] = {
+		{ "offset", CMDL_U32, &geeprom_offset, NULL },
+		{ "length", CMDL_U32, &geeprom_length, NULL },
+		{ "raw", CMDL_BOOL, &geeprom_dump_raw, NULL },
+	};
 	int err;
 	struct ethtool_drvinfo drvinfo;
 	struct ethtool_eeprom *eeprom;
 
+	parse_generic_cmdline(ctx, &geeprom_changed,
+			      cmdline_geeprom, ARRAY_SIZE(cmdline_geeprom));
+
 	drvinfo.cmd = ETHTOOL_GDRVINFO;
-	ifr->ifr_data = (caddr_t)&drvinfo;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &drvinfo);
 	if (err < 0) {
 		perror("Cannot get driver information");
 		return 74;
 	}
 
-	if (geeprom_length <= 0)
+	if (geeprom_length == -1)
 		geeprom_length = drvinfo.eedump_len;
 
 	if (drvinfo.eedump_len < geeprom_offset + geeprom_length)
@@ -2703,37 +2709,51 @@ static int do_geeprom(int fd, struct ifreq *ifr)
 	eeprom->cmd = ETHTOOL_GEEPROM;
 	eeprom->len = geeprom_length;
 	eeprom->offset = geeprom_offset;
-	ifr->ifr_data = (caddr_t)eeprom;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, eeprom);
 	if (err < 0) {
 		perror("Cannot get EEPROM data");
 		free(eeprom);
 		return 74;
 	}
-	err = dump_eeprom(&drvinfo, eeprom);
+	err = dump_eeprom(geeprom_dump_raw, &drvinfo, eeprom);
 	free(eeprom);
 
 	return err;
 }
 
-static int do_seeprom(int fd, struct ifreq *ifr)
+static int do_seeprom(struct cmd_context *ctx)
 {
+	int seeprom_changed = 0;
+	u32 seeprom_magic = 0;
+	u32 seeprom_length = -1;
+	u32 seeprom_offset = 0;
+	u8 seeprom_value = 0;
+	int seeprom_value_seen = 0;
+	struct cmdline_info cmdline_seeprom[] = {
+		{ "magic", CMDL_U32, &seeprom_magic, NULL },
+		{ "offset", CMDL_U32, &seeprom_offset, NULL },
+		{ "length", CMDL_U32, &seeprom_length, NULL },
+		{ "value", CMDL_U8, &seeprom_value, NULL,
+		  0, &seeprom_value_seen },
+	};
 	int err;
 	struct ethtool_drvinfo drvinfo;
 	struct ethtool_eeprom *eeprom;
 
+	parse_generic_cmdline(ctx, &seeprom_changed,
+			      cmdline_seeprom, ARRAY_SIZE(cmdline_seeprom));
+
 	drvinfo.cmd = ETHTOOL_GDRVINFO;
-	ifr->ifr_data = (caddr_t)&drvinfo;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &drvinfo);
 	if (err < 0) {
 		perror("Cannot get driver information");
 		return 74;
 	}
 
-	if (seeprom_value != EOF)
+	if (seeprom_value_seen)
 		seeprom_length = 1;
 
-	if (seeprom_length <= 0)
+	if (seeprom_length == -1)
 		seeprom_length = drvinfo.eedump_len;
 
 	if (drvinfo.eedump_len < seeprom_offset + seeprom_length)
@@ -2752,11 +2772,10 @@ static int do_seeprom(int fd, struct ifreq *ifr)
 	eeprom->data[0] = seeprom_value;
 
 	/* Multi-byte write: read input from stdin */
-	if (seeprom_value == EOF)
+	if (!seeprom_value_seen)
 		eeprom->len = fread(eeprom->data, 1, eeprom->len, stdin);
 
-	ifr->ifr_data = (caddr_t)eeprom;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, eeprom);
 	if (err < 0) {
 		perror("Cannot set EEPROM data");
 		err = 87;
@@ -2766,130 +2785,130 @@ static int do_seeprom(int fd, struct ifreq *ifr)
 	return err;
 }
 
-static int do_test(int fd, struct ifreq *ifr)
+static int do_test(struct cmd_context *ctx)
 {
+	enum {
+		ONLINE=0,
+		OFFLINE,
+		EXTERNAL_LB,
+	} test_type;
 	int err;
-	struct ethtool_drvinfo drvinfo;
 	struct ethtool_test *test;
 	struct ethtool_gstrings *strings;
 
-	drvinfo.cmd = ETHTOOL_GDRVINFO;
-	ifr->ifr_data = (caddr_t)&drvinfo;
-	err = send_ioctl(fd, ifr);
-	if (err < 0) {
-		perror("Cannot get driver information");
-		return 72;
+	if (ctx->argc > 1)
+		exit_bad_args();
+	if (ctx->argc == 1) {
+		if (!strcmp(ctx->argp[0], "online")) {
+			test_type = ONLINE;
+	 	} else if (!strcmp(*ctx->argp, "offline")) {
+			test_type = OFFLINE;
+		} else if (!strcmp(*ctx->argp, "external_lb")) {
+			test_type = EXTERNAL_LB;
+		} else {
+			exit_bad_args();
+		}
+	} else {
+		test_type = OFFLINE;
 	}
 
-	test = calloc(1, sizeof(*test) + drvinfo.testinfo_len * sizeof(u64));
+	strings = get_stringset(ctx, ETH_SS_TEST,
+				offsetof(struct ethtool_drvinfo, testinfo_len),
+				1);
+	if (!strings) {
+		perror("Cannot get strings");
+		return 74;
+	}
+
+	test = calloc(1, sizeof(*test) + strings->len * sizeof(u64));
 	if (!test) {
 		perror("Cannot allocate memory for test info");
+		free(strings);
 		return 73;
 	}
-	memset (test->data, 0, drvinfo.testinfo_len * sizeof(u64));
+	memset(test->data, 0, strings->len * sizeof(u64));
 	test->cmd = ETHTOOL_TEST;
-	test->len = drvinfo.testinfo_len;
-	if (test_type == OFFLINE)
+	test->len = strings->len;
+	if (test_type == EXTERNAL_LB)
+		test->flags = (ETH_TEST_FL_OFFLINE | ETH_TEST_FL_EXTERNAL_LB);
+	else if (test_type == OFFLINE)
 		test->flags = ETH_TEST_FL_OFFLINE;
 	else
 		test->flags = 0;
-	ifr->ifr_data = (caddr_t)test;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, test);
 	if (err < 0) {
 		perror("Cannot test");
 		free (test);
+		free(strings);
 		return 74;
 	}
 
-	strings = calloc(1, sizeof(*strings) +
-			    drvinfo.testinfo_len * ETH_GSTRING_LEN);
-	if (!strings) {
-		perror("Cannot allocate memory for strings");
-		free(test);
-		return 73;
-	}
-	memset (strings->data, 0, drvinfo.testinfo_len * ETH_GSTRING_LEN);
-	strings->cmd = ETHTOOL_GSTRINGS;
-	strings->string_set = ETH_SS_TEST;
-	strings->len = drvinfo.testinfo_len;
-	ifr->ifr_data = (caddr_t)strings;
-	err = send_ioctl(fd, ifr);
-	if (err < 0) {
-		perror("Cannot get strings");
-		free (test);
-		free (strings);
-		return 74;
-	}
-	err = dump_test(&drvinfo, test, strings);
+	err = dump_test(test, strings);
 	free(test);
 	free(strings);
 
 	return err;
 }
 
-static int do_phys_id(int fd, struct ifreq *ifr)
+static int do_phys_id(struct cmd_context *ctx)
 {
 	int err;
 	struct ethtool_value edata;
+	int phys_id_time;
+
+	if (ctx->argc > 1)
+		exit_bad_args();
+	if (ctx->argc == 1)
+		phys_id_time = get_int(*ctx->argp, 0);
+	else
+		phys_id_time = 0;
 
 	edata.cmd = ETHTOOL_PHYS_ID;
 	edata.data = phys_id_time;
-	ifr->ifr_data = (caddr_t)&edata;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &edata);
 	if (err < 0)
 		perror("Cannot identify NIC");
 
 	return err;
 }
 
-static int do_gstats(int fd, struct ifreq *ifr)
+static int do_gstats(struct cmd_context *ctx)
 {
-	struct ethtool_drvinfo drvinfo;
 	struct ethtool_gstrings *strings;
 	struct ethtool_stats *stats;
-	unsigned int n_stats, sz_str, sz_stats, i;
+	unsigned int n_stats, sz_stats, i;
 	int err;
 
-	drvinfo.cmd = ETHTOOL_GDRVINFO;
-	ifr->ifr_data = (caddr_t)&drvinfo;
-	err = send_ioctl(fd, ifr);
-	if (err < 0) {
-		perror("Cannot get driver information");
-		return 71;
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	strings = get_stringset(ctx, ETH_SS_STATS,
+				offsetof(struct ethtool_drvinfo, n_stats),
+				0);
+	if (!strings) {
+		perror("Cannot get stats strings information");
+		return 96;
 	}
 
-	n_stats = drvinfo.n_stats;
+	n_stats = strings->len;
 	if (n_stats < 1) {
 		fprintf(stderr, "no stats available\n");
+		free(strings);
 		return 94;
 	}
 
-	sz_str = n_stats * ETH_GSTRING_LEN;
 	sz_stats = n_stats * sizeof(u64);
 
-	strings = calloc(1, sz_str + sizeof(struct ethtool_gstrings));
 	stats = calloc(1, sz_stats + sizeof(struct ethtool_stats));
-	if (!strings || !stats) {
+	if (!stats) {
 		fprintf(stderr, "no memory available\n");
-		return 95;
-	}
-
-	strings->cmd = ETHTOOL_GSTRINGS;
-	strings->string_set = ETH_SS_STATS;
-	strings->len = n_stats;
-	ifr->ifr_data = (caddr_t) strings;
-	err = send_ioctl(fd, ifr);
-	if (err < 0) {
-		perror("Cannot get stats strings information");
 		free(strings);
-		free(stats);
-		return 96;
+		return 95;
 	}
 
 	stats->cmd = ETHTOOL_GSTATS;
 	stats->n_stats = n_stats;
-	ifr->ifr_data = (caddr_t) stats;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, stats);
 	if (err < 0) {
 		perror("Cannot get stats information");
 		free(strings);
@@ -2911,49 +2930,119 @@ static int do_gstats(int fd, struct ifreq *ifr)
 	return 0;
 }
 
+static int do_srxntuple(struct cmd_context *ctx,
+			struct ethtool_rx_flow_spec *rx_rule_fs);
 
-static int do_srxclass(int fd, struct ifreq *ifr)
+static int do_srxclass(struct cmd_context *ctx)
 {
 	int err;
 
-	if (rx_fhash_changed) {
+	if (ctx->argc < 2)
+		exit_bad_args();
+
+	if (ctx->argc == 3 && !strcmp(ctx->argp[0], "rx-flow-hash")) {
+		int rx_fhash_set;
+		u32 rx_fhash_val;
 		struct ethtool_rxnfc nfccmd;
+
+		rx_fhash_set = rxflow_str_to_type(ctx->argp[1]);
+		if (!rx_fhash_set)
+			exit_bad_args();
+		if (parse_rxfhashopts(ctx->argp[2], &rx_fhash_val) < 0)
+			exit_bad_args();
 
 		nfccmd.cmd = ETHTOOL_SRXFH;
 		nfccmd.flow_type = rx_fhash_set;
 		nfccmd.data = rx_fhash_val;
 
-		ifr->ifr_data = (caddr_t)&nfccmd;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
+		err = send_ioctl(ctx, &nfccmd);
 		if (err < 0)
 			perror("Cannot change RX network flow hashing options");
+	} else if (!strcmp(ctx->argp[0], "flow-type")) {	
+		struct ethtool_rx_flow_spec rx_rule_fs;
 
+		ctx->argc--;
+		ctx->argp++;
+		if (rxclass_parse_ruleopts(ctx, &rx_rule_fs) < 0)
+			exit_bad_args();
+
+		/* attempt to add rule via N-tuple specifier */
+		err = do_srxntuple(ctx, &rx_rule_fs);
+		if (!err)
+			return 0;
+
+		/* attempt to add rule via network flow classifier */
+		err = rxclass_rule_ins(ctx, &rx_rule_fs);
+		if (err < 0) {
+			fprintf(stderr, "Cannot insert"
+				" classification rule\n");
+			return 1;
+		}
+	} else if (!strcmp(ctx->argp[0], "delete")) {
+		int rx_class_rule_del =
+			get_uint_range(ctx->argp[1], 0, INT_MAX);
+
+		err = rxclass_rule_del(ctx, rx_class_rule_del);
+
+		if (err < 0) {
+			fprintf(stderr, "Cannot delete"
+				" classification rule\n");
+			return 1;
+		}
+	} else {
+		exit_bad_args();
 	}
 
 	return 0;
 }
 
-static int do_grxclass(int fd, struct ifreq *ifr)
+static int do_grxclass(struct cmd_context *ctx)
 {
+	struct ethtool_rxnfc nfccmd;
 	int err;
 
-	if (rx_fhash_get) {
-		struct ethtool_rxnfc nfccmd;
+	if (ctx->argc == 2 && !strcmp(ctx->argp[0], "rx-flow-hash")) {
+		int rx_fhash_get;
+
+		rx_fhash_get = rxflow_str_to_type(ctx->argp[1]);
+		if (!rx_fhash_get)
+			exit_bad_args();
 
 		nfccmd.cmd = ETHTOOL_GRXFH;
 		nfccmd.flow_type = rx_fhash_get;
-		ifr->ifr_data = (caddr_t)&nfccmd;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
+		err = send_ioctl(ctx, &nfccmd);
 		if (err < 0)
 			perror("Cannot get RX network flow hashing options");
 		else
 			dump_rxfhash(rx_fhash_get, nfccmd.data);
+	} else if (ctx->argc == 2 && !strcmp(ctx->argp[0], "rule")) {
+		int rx_class_rule_get =
+			get_uint_range(ctx->argp[1], 0, INT_MAX);
+
+		err = rxclass_rule_get(ctx, rx_class_rule_get);
+		if (err < 0)
+			fprintf(stderr, "Cannot get RX classification rule\n");
+	} else if (ctx->argc == 0) {
+		nfccmd.cmd = ETHTOOL_GRXRINGS;
+		err = send_ioctl(ctx, &nfccmd);
+		if (err < 0)
+			perror("Cannot get RX rings");
+		else
+			fprintf(stdout, "%d RX rings available\n",
+				(int)nfccmd.data);
+
+		err = rxclass_rule_getall(ctx);
+		if (err < 0)
+			fprintf(stderr, "RX classification rule retrieval failed\n");
+
+	} else {
+		exit_bad_args();
 	}
 
-	return 0;
+	return err ? 1 : 0;
 }
 
-static int do_grxfhindir(int fd, struct ifreq *ifr)
+static int do_grxfhindir(struct cmd_context *ctx)
 {
 	struct ethtool_rxnfc ring_count;
 	struct ethtool_rxfh_indir indir_head;
@@ -2962,8 +3051,7 @@ static int do_grxfhindir(int fd, struct ifreq *ifr)
 	int err;
 
 	ring_count.cmd = ETHTOOL_GRXRINGS;
-	ifr->ifr_data = (caddr_t) &ring_count;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &ring_count);
 	if (err < 0) {
 		perror("Cannot get RX ring count");
 		return 102;
@@ -2971,8 +3059,7 @@ static int do_grxfhindir(int fd, struct ifreq *ifr)
 
 	indir_head.cmd = ETHTOOL_GRXFHINDIR;
 	indir_head.size = 0;
-	ifr->ifr_data = (caddr_t) &indir_head;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &indir_head);
 	if (err < 0) {
 		perror("Cannot get RX flow hash indirection table size");
 		return 103;
@@ -2982,15 +3069,14 @@ static int do_grxfhindir(int fd, struct ifreq *ifr)
 		       indir_head.size * sizeof(*indir->ring_index));
 	indir->cmd = ETHTOOL_GRXFHINDIR;
 	indir->size = indir_head.size;
-	ifr->ifr_data = (caddr_t) indir;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, indir);
 	if (err < 0) {
 		perror("Cannot get RX flow hash indirection table");
 		return 103;
 	}
 
 	printf("RX flow hash indirection table for %s with %llu RX ring(s):\n",
-	       devname, ring_count.data);
+	       ctx->devname, ring_count.data);
 	for (i = 0; i < indir->size; i++) {
 		if (i % 8 == 0)
 			printf("%5u: ", i);
@@ -3001,20 +3087,30 @@ static int do_grxfhindir(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_srxfhindir(int fd, struct ifreq *ifr)
+static int do_srxfhindir(struct cmd_context *ctx)
 {
+	int rxfhindir_equal = 0;
+	char **rxfhindir_weight = NULL;
 	struct ethtool_rxfh_indir indir_head;
 	struct ethtool_rxfh_indir *indir;
 	u32 i;
 	int err;
 
-	if (!rxfhindir_equal && !rxfhindir_weight)
-		show_usage(1);
+	if (ctx->argc < 2)
+		exit_bad_args();
+	if (!strcmp(ctx->argp[0], "equal")) {
+		if (ctx->argc != 2)
+			exit_bad_args();
+		rxfhindir_equal = get_int_range(ctx->argp[1], 0, 1, INT_MAX);
+	} else if (!strcmp(ctx->argp[0], "weight")) {
+		rxfhindir_weight = ctx->argp + 1;
+	} else {
+		exit_bad_args();
+	}
 
 	indir_head.cmd = ETHTOOL_GRXFHINDIR;
 	indir_head.size = 0;
-	ifr->ifr_data = (caddr_t) &indir_head;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &indir_head);
 	if (err < 0) {
 		perror("Cannot get RX flow hash indirection table size");
 		return 104;
@@ -3060,8 +3156,7 @@ static int do_srxfhindir(int fd, struct ifreq *ifr)
 		}
 	}
 
-	ifr->ifr_data = (caddr_t) indir;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, indir);
 	if (err < 0) {
 		perror("Cannot set RX flow hash indirection table");
 		return 105;
@@ -3070,15 +3165,22 @@ static int do_srxfhindir(int fd, struct ifreq *ifr)
 	return 0;
 }
 
-static int do_flash(int fd, struct ifreq *ifr)
+static int do_flash(struct cmd_context *ctx)
 {
+	char *flash_file;
+	int flash_region;
 	struct ethtool_flash efl;
 	int err;
 
-	if (flash < 0) {
-		fprintf(stdout, "Missing filename argument\n");
-		show_usage(1);
-		return 98;
+	if (ctx->argc < 1 || ctx->argc > 2)
+		exit_bad_args();
+	flash_file = ctx->argp[0];
+	if (ctx->argc == 2) {
+		flash_region = strtol(ctx->argp[1], NULL, 0);
+		if (flash_region < 0)
+			exit_bad_args();
+	} else {
+		flash_region = -1;
 	}
 
 	if (strlen(flash_file) > ETHTOOL_FLASH_MAX_FILENAME - 1) {
@@ -3094,15 +3196,14 @@ static int do_flash(int fd, struct ifreq *ifr)
 	else
 		efl.region = flash_region;
 
-	ifr->ifr_data = (caddr_t)&efl;
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, &efl);
 	if (err < 0)
 		perror("Flashing failed");
 
 	return err;
 }
 
-static int do_permaddr(int fd, struct ifreq *ifr)
+static int do_permaddr(struct cmd_context *ctx)
 {
 	int i, err;
 	struct ethtool_perm_addr *epaddr;
@@ -3110,9 +3211,8 @@ static int do_permaddr(int fd, struct ifreq *ifr)
 	epaddr = malloc(sizeof(struct ethtool_perm_addr) + MAX_ADDR_LEN);
 	epaddr->cmd = ETHTOOL_GPERMADDR;
 	epaddr->size = MAX_ADDR_LEN;
-	ifr->ifr_data = (caddr_t)epaddr;
 
-	err = send_ioctl(fd, ifr);
+	err = send_ioctl(ctx, epaddr);
 	if (err < 0)
 		perror("Cannot read permanent address");
 	else {
@@ -3127,84 +3227,753 @@ static int do_permaddr(int fd, struct ifreq *ifr)
 	return err;
 }
 
-static int do_srxntuple(int fd, struct ifreq *ifr)
+static int flow_spec_to_ntuple(struct ethtool_rx_flow_spec *fsp,
+			       struct ethtool_rx_ntuple_flow_spec *ntuple)
 {
+	size_t i;
+
+	/* verify location is not specified */
+	if (fsp->location != RX_CLS_LOC_ANY)
+		return -1;
+
+	/* destination MAC address in L3/L4 rules is not supported by ntuple */
+	if (fsp->flow_type & FLOW_MAC_EXT)
+		return -1;
+
+	/* verify ring cookie can transfer to action */
+	if (fsp->ring_cookie > INT_MAX && fsp->ring_cookie < (u64)(-2))
+		return -1;
+
+	/* verify only one field is setting data field */
+	if ((fsp->flow_type & FLOW_EXT) &&
+	    (fsp->m_ext.data[0] || fsp->m_ext.data[1]) &&
+	    fsp->m_ext.vlan_etype)
+		return -1;
+
+	/* Set entire ntuple to ~0 to guarantee all masks are set */
+	memset(ntuple, ~0, sizeof(*ntuple));
+
+	/* set non-filter values */
+	ntuple->flow_type = fsp->flow_type;
+	ntuple->action = fsp->ring_cookie;
+
+	/*
+	 * Copy over header union, they are identical in layout however
+	 * the ntuple union contains additional padding on the end
+	 */
+	memcpy(&ntuple->h_u, &fsp->h_u, sizeof(fsp->h_u));
+
+	/*
+	 * The same rule mentioned above applies to the mask union.  However,
+	 * in addition we need to invert the mask bits to match the ntuple
+	 * mask which is 1 for masked, versus 0 for masked as seen in nfc.
+	 */
+	memcpy(&ntuple->m_u, &fsp->m_u, sizeof(fsp->m_u));
+	for (i = 0; i < sizeof(fsp->m_u); i++)
+		ntuple->m_u.hdata[i] ^= 0xFF;
+
+	/* copy extended fields */
+	if (fsp->flow_type & FLOW_EXT) {
+		ntuple->vlan_tag =
+			ntohs(fsp->h_ext.vlan_tci);
+		ntuple->vlan_tag_mask =
+			~ntohs(fsp->m_ext.vlan_tci);
+		if (fsp->m_ext.vlan_etype) {
+			/*
+			 * vlan_etype and user data are mutually exclusive
+			 * in ntuple configuration as they occupy the same
+			 * space.
+			 */
+			if (fsp->m_ext.data[0] || fsp->m_ext.data[1])
+				return -1;
+			ntuple->data =
+				ntohl(fsp->h_ext.vlan_etype);
+			ntuple->data_mask =
+				~(u64)ntohl(fsp->m_ext.vlan_etype);
+		} else {
+			ntuple->data =
+				(u64)ntohl(fsp->h_ext.data[0]) << 32;
+			ntuple->data |=
+				(u64)ntohl(fsp->h_ext.data[1]);
+			ntuple->data_mask =
+				(u64)ntohl(~fsp->m_ext.data[0]) << 32;
+			ntuple->data_mask |=
+				(u64)ntohl(~fsp->m_ext.data[1]);
+		}
+	}
+
+	/* Mask out the extended bit, because ntuple does not know it! */
+	ntuple->flow_type &= ~FLOW_EXT;
+
+	return 0;
+}
+
+static int do_srxntuple(struct cmd_context *ctx,
+			struct ethtool_rx_flow_spec *rx_rule_fs)
+{
+	struct ethtool_rx_ntuple ntuplecmd;
+	struct ethtool_value eval;
 	int err;
 
-	if (sntuple_changed) {
-		struct ethtool_rx_ntuple ntuplecmd;
+	/* attempt to convert the flow classifier to an ntuple classifier */
+	err = flow_spec_to_ntuple(rx_rule_fs, &ntuplecmd.fs);
+	if (err)
+		return -1;
 
-		ntuplecmd.cmd = ETHTOOL_SRXNTUPLE;
-		memcpy(&ntuplecmd.fs, &ntuple_fs,
-		       sizeof(struct ethtool_rx_ntuple_flow_spec));
+	/*
+	 * Check to see if the flag is set for N-tuple, this allows
+	 * us to avoid the possible EINVAL response for the N-tuple
+	 * flag not being set on the device
+	 */
+	eval.cmd = ETHTOOL_GFLAGS;
+	err = send_ioctl(ctx, &eval);
+	if (err || !(eval.data & ETH_FLAG_NTUPLE))
+		return -1;
 
-		ifr->ifr_data = (caddr_t)&ntuplecmd;
-		err = ioctl(fd, SIOCETHTOOL, ifr);
-		if (err < 0)
-			perror("Cannot add new RX n-tuple filter");
-	} else {
-		show_usage(1);
-	}
+	/* send rule via N-tuple */
+	ntuplecmd.cmd = ETHTOOL_SRXNTUPLE;
+	err = send_ioctl(ctx, &ntuplecmd);
 
-	return 0;
-}
-
-static int do_grxntuple(int fd, struct ifreq *ifr)
-{
-	struct ethtool_sset_info *sset_info;
-	struct ethtool_gstrings *strings;
-	int sz_str, n_strings, err, i;
-
-	sset_info = malloc(sizeof(struct ethtool_sset_info) + sizeof(u32));
-	sset_info->cmd = ETHTOOL_GSSET_INFO;
-	sset_info->sset_mask = (1ULL << ETH_SS_NTUPLE_FILTERS);
-	ifr->ifr_data = (caddr_t)sset_info;
-	err = send_ioctl(fd, ifr);
-
-	if ((err < 0) ||
-	    (!(sset_info->sset_mask & (1ULL << ETH_SS_NTUPLE_FILTERS)))) {
-		perror("Cannot get driver strings info");
-		return 100;
-	}
-
-	n_strings = sset_info->data[0];
-	free(sset_info);
-	sz_str = n_strings * ETH_GSTRING_LEN;
-
-	strings = calloc(1, sz_str + sizeof(struct ethtool_gstrings));
-	if (!strings) {
-		fprintf(stderr, "no memory available\n");
-		return 95;
-	}
-
-	strings->cmd = ETHTOOL_GRXNTUPLE;
-	strings->string_set = ETH_SS_NTUPLE_FILTERS;
-	strings->len = n_strings;
-	ifr->ifr_data = (caddr_t) strings;
-	err = send_ioctl(fd, ifr);
+	/*
+	 * Display error only if response is something other than op not
+	 * supported.  It is possible that the interface uses the network
+	 * flow classifier interface instead of N-tuple. 
+	 */ 
 	if (err < 0) {
-		perror("Cannot get Rx n-tuple information");
-		free(strings);
-		return 101;
+		if (errno != EOPNOTSUPP)
+			perror("Cannot add new rule via N-tuple");
+		return -1;
 	}
-
-	n_strings = strings->len;
-	fprintf(stdout, "Rx n-tuple filters:\n");
-	for (i = 0; i < n_strings; i++)
-		fprintf(stdout, "%s", &strings->data[i * ETH_GSTRING_LEN]);
-
-	free(strings);
 
 	return 0;
 }
 
-static int send_ioctl(int fd, struct ifreq *ifr)
+static int do_writefwdump(struct ethtool_dump *dump, const char *dump_file)
 {
-	return ioctl(fd, SIOCETHTOOL, ifr);
+	int err = 0;
+	FILE *f;
+	size_t bytes;
+
+	f = fopen(dump_file, "wb+");
+
+	if (!f) {
+		fprintf(stderr, "Can't open file %s: %s\n",
+			dump_file, strerror(errno));
+		return 1;
+	}
+	bytes = fwrite(dump->data, 1, dump->len, f);
+	if (bytes != dump->len) {
+		fprintf(stderr, "Can not write all of dump data\n");
+		err = 1;
+	}
+	if (fclose(f)) {
+		fprintf(stderr, "Can't close file %s: %s\n",
+			dump_file, strerror(errno));
+		err = 1;
+	}
+	return err;
 }
 
-int main(int argc, char **argp, char **envp)
+static int do_getfwdump(struct cmd_context *ctx)
 {
-	parse_cmdline(argc, argp);
-	return doit();
+	u32 dump_flag;
+	char *dump_file;
+	int err;
+	struct ethtool_dump edata;
+	struct ethtool_dump *data;
+
+	if (ctx->argc == 2 && !strcmp(ctx->argp[0], "data")) {
+		dump_flag = ETHTOOL_GET_DUMP_DATA;
+		dump_file = ctx->argp[1];
+	} else if (ctx->argc == 0) {
+		dump_flag = 0;
+		dump_file = NULL;
+	} else {
+		exit_bad_args();
+	}
+
+	edata.cmd = ETHTOOL_GET_DUMP_FLAG;
+
+	err = send_ioctl(ctx, &edata);
+	if (err < 0) {
+		perror("Can not get dump level\n");
+		return 1;
+	}
+	if (dump_flag != ETHTOOL_GET_DUMP_DATA) {
+		fprintf(stdout, "flag: %u, version: %u, length: %u\n",
+			edata.flag, edata.version, edata.len);
+		return 0;
+	}
+	data = calloc(1, offsetof(struct ethtool_dump, data) + edata.len);
+	if (!data) {
+		perror("Can not allocate enough memory\n");
+		return 1;
+	}
+	data->cmd = ETHTOOL_GET_DUMP_DATA;
+	data->len = edata.len;
+	err = send_ioctl(ctx, data);
+	if (err < 0) {
+		perror("Can not get dump data\n");
+		err = 1;
+		goto free;
+	}
+	err = do_writefwdump(data, dump_file);
+free:
+	free(data);
+	return err;
+}
+
+static int do_setfwdump(struct cmd_context *ctx)
+{
+	u32 dump_flag;
+	int err;
+	struct ethtool_dump dump;
+
+	if (ctx->argc != 1)
+		exit_bad_args();
+	dump_flag = get_u32(ctx->argp[0], 0);
+
+	dump.cmd = ETHTOOL_SET_DUMP;
+	dump.flag = dump_flag;
+	err = send_ioctl(ctx, &dump);
+	if (err < 0) {
+		perror("Can not set dump level\n");
+		return 1;
+	}
+	return 0;
+}
+
+static int do_gprivflags(struct cmd_context *ctx)
+{
+	struct ethtool_gstrings *strings;
+	struct ethtool_value flags;
+	unsigned int i;
+	int max_len = 0, cur_len;
+
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	strings = get_stringset(ctx, ETH_SS_PRIV_FLAGS,
+				offsetof(struct ethtool_drvinfo, n_priv_flags),
+				1);
+	if (!strings) {
+		perror("Cannot get private flag names");
+		return 1;
+	}
+	if (strings->len == 0) {
+		fprintf(stderr, "No private flags defined\n");
+		return 1;
+	}
+	if (strings->len > 32) {
+		/* ETHTOOL_GPFLAGS can only cover 32 flags */
+		fprintf(stderr, "Only showing first 32 private flags\n");
+		strings->len = 32;
+	}
+
+	flags.cmd = ETHTOOL_GPFLAGS;
+	if (send_ioctl(ctx, &flags)) {
+		perror("Cannot get private flags");
+		return 1;
+	}
+
+	/* Find longest string and align all strings accordingly */
+	for (i = 0; i < strings->len; i++) {
+		cur_len = strlen((const char*)strings->data +
+				 i * ETH_GSTRING_LEN);
+		if (cur_len > max_len)
+			max_len = cur_len;
+	}
+
+	printf("Private flags for %s:\n", ctx->devname);
+	for (i = 0; i < strings->len; i++)
+		printf("%-*s: %s\n",
+		       max_len,
+		       (const char *)strings->data + i * ETH_GSTRING_LEN,
+		       (flags.data & (1U << i)) ? "on" : "off");
+
+	return 0;
+}
+
+static int do_sprivflags(struct cmd_context *ctx)
+{
+	struct ethtool_gstrings *strings;
+	struct cmdline_info *cmdline;
+	struct ethtool_value flags;
+	u32 wanted_flags = 0, seen_flags = 0;
+	int any_changed;
+	unsigned int i;
+
+	strings = get_stringset(ctx, ETH_SS_PRIV_FLAGS,
+				offsetof(struct ethtool_drvinfo, n_priv_flags),
+				1);
+	if (!strings) {
+		perror("Cannot get private flag names");
+		return 1;
+	}
+	if (strings->len == 0) {
+		fprintf(stderr, "No private flags defined\n");
+		return 1;
+	}
+	if (strings->len > 32) {
+		/* ETHTOOL_{G,S}PFLAGS can only cover 32 flags */
+		fprintf(stderr, "Only setting first 32 private flags\n");
+		strings->len = 32;
+	}
+
+	cmdline = calloc(strings->len, sizeof(*cmdline));
+	if (!cmdline) {
+		perror("Cannot parse arguments");
+		return 1;
+	}
+	for (i = 0; i < strings->len; i++) {
+		cmdline[i].name = ((const char *)strings->data +
+				   i * ETH_GSTRING_LEN);
+		cmdline[i].type = CMDL_FLAG;
+		cmdline[i].wanted_val = &wanted_flags;
+		cmdline[i].flag_val = 1U << i;
+		cmdline[i].seen_val = &seen_flags;
+	}
+	parse_generic_cmdline(ctx, &any_changed, cmdline, strings->len);
+	free(cmdline);
+
+	flags.cmd = ETHTOOL_GPFLAGS;
+	if (send_ioctl(ctx, &flags)) {
+		perror("Cannot get private flags");
+		return 1;
+	}
+
+	flags.cmd = ETHTOOL_SPFLAGS;
+	flags.data = (flags.data & ~seen_flags) | wanted_flags;
+	if (send_ioctl(ctx, &flags)) {
+		perror("Cannot set private flags");
+		return 1;
+	}
+
+	return 0;
+}
+
+static int do_tsinfo(struct cmd_context *ctx)
+{
+	struct ethtool_ts_info info;
+
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	fprintf(stdout, "Time stamping parameters for %s:\n", ctx->devname);
+	info.cmd = ETHTOOL_GET_TS_INFO;
+	if (send_ioctl(ctx, &info)) {
+		perror("Cannot get device time stamping settings");
+		return -1;
+	}
+	dump_tsinfo(&info);
+	return 0;
+}
+
+static int do_getmodule(struct cmd_context *ctx)
+{
+	struct ethtool_modinfo modinfo;
+	struct ethtool_eeprom *eeprom;
+	u32 geeprom_offset = 0;
+	u32 geeprom_length = -1;
+	int geeprom_changed = 0;
+	int geeprom_dump_raw = 0;
+	int geeprom_dump_hex = 0;
+	int err;
+
+	struct cmdline_info cmdline_geeprom[] = {
+		{ "offset", CMDL_U32, &geeprom_offset, NULL },
+		{ "length", CMDL_U32, &geeprom_length, NULL },
+		{ "raw", CMDL_BOOL, &geeprom_dump_raw, NULL },
+		{ "hex", CMDL_BOOL, &geeprom_dump_hex, NULL },
+	};
+
+	parse_generic_cmdline(ctx, &geeprom_changed,
+			      cmdline_geeprom, ARRAY_SIZE(cmdline_geeprom));
+
+	if (geeprom_dump_raw && geeprom_dump_hex) {
+		printf("Hex and raw dump cannot be specified together\n");
+		return 1;
+	}
+
+	modinfo.cmd = ETHTOOL_GMODULEINFO;
+	err = send_ioctl(ctx, &modinfo);
+	if (err < 0) {
+		perror("Cannot get module EEPROM information");
+		return 1;
+	}
+
+	if (geeprom_length == -1)
+		geeprom_length = modinfo.eeprom_len;
+
+	if (modinfo.eeprom_len < geeprom_offset + geeprom_length)
+		geeprom_length = modinfo.eeprom_len - geeprom_offset;
+
+	eeprom = calloc(1, sizeof(*eeprom)+geeprom_length);
+	if (!eeprom) {
+		perror("Cannot allocate memory for Module EEPROM data");
+		return 1;
+	}
+
+	eeprom->cmd = ETHTOOL_GMODULEEEPROM;
+	eeprom->len = geeprom_length;
+	eeprom->offset = geeprom_offset;
+	err = send_ioctl(ctx, eeprom);
+	if (err < 0) {
+		perror("Cannot get Module EEPROM data");
+		free(eeprom);
+		return 1;
+	}
+
+	/*
+	 * SFF-8079 EEPROM layout contains the memory available at A0 address on
+	 * the PHY EEPROM.
+	 * SFF-8472 defines a virtual extension of the EEPROM, where the
+	 * microcontroller on the SFP/SFP+ generates a page at the A2 address,
+	 * which contains data relative to optical diagnostics.
+	 * The current kernel implementation returns a blob, which contains:
+	 *  - ETH_MODULE_SFF_8079 => The A0 page only.
+	 *  - ETH_MODULE_SFF_8472 => The A0 and A2 page concatenated.
+	 */
+	if (geeprom_dump_raw) {
+		fwrite(eeprom->data, 1, eeprom->len, stdout);
+	} else {
+		if (eeprom->offset != 0  ||
+		    (eeprom->len != modinfo.eeprom_len)) {
+			geeprom_dump_hex = 1;
+		} else if (!geeprom_dump_hex) {
+			switch (modinfo.type) {
+#ifdef ETHTOOL_ENABLE_PRETTY_DUMP
+			case ETH_MODULE_SFF_8079:
+				sff8079_show_all(eeprom->data);
+				break;
+			case ETH_MODULE_SFF_8472:
+				sff8079_show_all(eeprom->data);
+				sff8472_show_all(eeprom->data);
+				break;
+#endif
+			default:
+				geeprom_dump_hex = 1;
+				break;
+			}
+		}
+		if (geeprom_dump_hex)
+			dump_hex(stdout, eeprom->data,
+				 eeprom->len, eeprom->offset);
+	}
+
+	free(eeprom);
+
+	return 0;
+}
+
+static int do_geee(struct cmd_context *ctx)
+{
+	struct ethtool_eee eeecmd;
+
+	if (ctx->argc != 0)
+		exit_bad_args();
+
+	eeecmd.cmd = ETHTOOL_GEEE;
+	if (send_ioctl(ctx, &eeecmd)) {
+		perror("Cannot get EEE settings");
+		return 1;
+	}
+
+	fprintf(stdout, "EEE Settings for %s:\n", ctx->devname);
+	dump_eeecmd(&eeecmd);
+
+	return 0;
+}
+
+static int do_seee(struct cmd_context *ctx)
+{
+	int adv_c = -1, lpi_c = -1, lpi_time_c = -1, eee_c = -1;
+	int change = -1, change2 = 0;
+	struct ethtool_eee eeecmd;
+	struct cmdline_info cmdline_eee[] = {
+		{ "advertise",    CMDL_U32,  &adv_c,       &eeecmd.advertised },
+		{ "tx-lpi",       CMDL_BOOL, &lpi_c,   &eeecmd.tx_lpi_enabled },
+		{ "tx-timer",	  CMDL_U32,  &lpi_time_c, &eeecmd.tx_lpi_timer},
+		{ "eee",	  CMDL_BOOL, &eee_c,	   &eeecmd.eee_enabled},
+	};
+
+	if (ctx->argc == 0)
+		exit_bad_args();
+
+	parse_generic_cmdline(ctx, &change, cmdline_eee,
+			      ARRAY_SIZE(cmdline_eee));
+
+	eeecmd.cmd = ETHTOOL_GEEE;
+	if (send_ioctl(ctx, &eeecmd)) {
+		perror("Cannot get EEE settings");
+		return 1;
+	}
+
+	do_generic_set(cmdline_eee, ARRAY_SIZE(cmdline_eee), &change2);
+
+	if (change2) {
+
+		eeecmd.cmd = ETHTOOL_SEEE;
+		if (send_ioctl(ctx, &eeecmd)) {
+			perror("Cannot set EEE settings");
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+#ifndef TEST_ETHTOOL
+int send_ioctl(struct cmd_context *ctx, void *cmd)
+{
+	ctx->ifr.ifr_data = cmd;
+	return ioctl(ctx->fd, SIOCETHTOOL, &ctx->ifr);
+}
+#endif
+
+static int show_usage(struct cmd_context *ctx);
+
+static const struct option {
+	const char *opts;
+	int want_device;
+	int (*func)(struct cmd_context *);
+	char *help;
+	char *opthelp;
+} args[] = {
+	{ "-s|--change", 1, do_sset, "Change generic options",
+	  "		[ speed %d ]\n"
+	  "		[ duplex half|full ]\n"
+	  "		[ port tp|aui|bnc|mii|fibre ]\n"
+	  "		[ mdix auto|on|off ]\n"
+	  "		[ autoneg on|off ]\n"
+	  "		[ advertise %x ]\n"
+	  "		[ phyad %d ]\n"
+	  "		[ xcvr internal|external ]\n"
+	  "		[ wol p|u|m|b|a|g|s|d... ]\n"
+	  "		[ sopass %x:%x:%x:%x:%x:%x ]\n"
+	  "		[ msglvl %d | msglvl type on|off ... ]\n" },
+	{ "-a|--show-pause", 1, do_gpause, "Show pause options" },
+	{ "-A|--pause", 1, do_spause, "Set pause options",
+	  "		[ autoneg on|off ]\n"
+	  "		[ rx on|off ]\n"
+	  "		[ tx on|off ]\n" },
+	{ "-c|--show-coalesce", 1, do_gcoalesce, "Show coalesce options" },
+	{ "-C|--coalesce", 1, do_scoalesce, "Set coalesce options",
+	  "		[adaptive-rx on|off]\n"
+	  "		[adaptive-tx on|off]\n"
+	  "		[rx-usecs N]\n"
+	  "		[rx-frames N]\n"
+	  "		[rx-usecs-irq N]\n"
+	  "		[rx-frames-irq N]\n"
+	  "		[tx-usecs N]\n"
+	  "		[tx-frames N]\n"
+	  "		[tx-usecs-irq N]\n"
+	  "		[tx-frames-irq N]\n"
+	  "		[stats-block-usecs N]\n"
+	  "		[pkt-rate-low N]\n"
+	  "		[rx-usecs-low N]\n"
+	  "		[rx-frames-low N]\n"
+	  "		[tx-usecs-low N]\n"
+	  "		[tx-frames-low N]\n"
+	  "		[pkt-rate-high N]\n"
+	  "		[rx-usecs-high N]\n"
+	  "		[rx-frames-high N]\n"
+	  "		[tx-usecs-high N]\n"
+	  "		[tx-frames-high N]\n"
+	  "		[sample-interval N]\n" },
+	{ "-g|--show-ring", 1, do_gring, "Query RX/TX ring parameters" },
+	{ "-G|--set-ring", 1, do_sring, "Set RX/TX ring parameters",
+	  "		[ rx N ]\n"
+	  "		[ rx-mini N ]\n"
+	  "		[ rx-jumbo N ]\n"
+	  "		[ tx N ]\n" },
+	{ "-k|--show-features|--show-offload", 1, do_gfeatures,
+	  "Get state of protocol offload and other features" },
+	{ "-K|--features|--offload", 1, do_sfeatures,
+	  "Set protocol offload and other features",
+	  "		FEATURE on|off ...\n" },
+	{ "-i|--driver", 1, do_gdrv, "Show driver information" },
+	{ "-d|--register-dump", 1, do_gregs, "Do a register dump",
+	  "		[ raw on|off ]\n"
+	  "		[ file FILENAME ]\n" },
+	{ "-e|--eeprom-dump", 1, do_geeprom, "Do a EEPROM dump",
+	  "		[ raw on|off ]\n"
+	  "		[ offset N ]\n"
+	  "		[ length N ]\n" },
+	{ "-E|--change-eeprom", 1, do_seeprom,
+	  "Change bytes in device EEPROM",
+	  "		[ magic N ]\n"
+	  "		[ offset N ]\n"
+	  "		[ length N ]\n"
+	  "		[ value N ]\n" },
+	{ "-r|--negotiate", 1, do_nway_rst, "Restart N-WAY negotiation" },
+	{ "-p|--identify", 1, do_phys_id,
+	  "Show visible port identification (e.g. blinking)",
+	  "               [ TIME-IN-SECONDS ]\n" },
+	{ "-t|--test", 1, do_test, "Execute adapter self test",
+	  "               [ online | offline | external_lb ]\n" },
+	{ "-S|--statistics", 1, do_gstats, "Show adapter statistics" },
+	{ "-n|-u|--show-nfc|--show-ntuple", 1, do_grxclass,
+	  "Show Rx network flow classification options or rules",
+	  "		[ rx-flow-hash tcp4|udp4|ah4|esp4|sctp4|"
+	  "tcp6|udp6|ah6|esp6|sctp6 |\n"
+	  "		  rule %d ]\n" },
+	{ "-N|-U|--config-nfc|--config-ntuple", 1, do_srxclass,
+	  "Configure Rx network flow classification options or rules",
+	  "		rx-flow-hash tcp4|udp4|ah4|esp4|sctp4|"
+	  "tcp6|udp6|ah6|esp6|sctp6 m|v|t|s|d|f|n|r... |\n"
+	  "		flow-type ether|ip4|tcp4|udp4|sctp4|ah4|esp4\n"
+	  "			[ src %x:%x:%x:%x:%x:%x [m %x:%x:%x:%x:%x:%x] ]\n"
+	  "			[ dst %x:%x:%x:%x:%x:%x [m %x:%x:%x:%x:%x:%x] ]\n"
+	  "			[ proto %d [m %x] ]\n"
+	  "			[ src-ip %d.%d.%d.%d [m %d.%d.%d.%d] ]\n"
+	  "			[ dst-ip %d.%d.%d.%d [m %d.%d.%d.%d] ]\n"
+	  "			[ tos %d [m %x] ]\n"
+	  "			[ l4proto %d [m %x] ]\n"
+	  "			[ src-port %d [m %x] ]\n"
+	  "			[ dst-port %d [m %x] ]\n"
+	  "			[ spi %d [m %x] ]\n"
+	  "			[ vlan-etype %x [m %x] ]\n"
+	  "			[ vlan %x [m %x] ]\n"
+	  "			[ user-def %x [m %x] ]\n"
+	  "			[ dst-mac %x:%x:%x:%x:%x:%x [m %x:%x:%x:%x:%x:%x] ]\n"
+	  "			[ action %d ]\n"
+	  "			[ loc %d]] |\n"
+	  "		delete %d\n" },
+	{ "-T|--show-time-stamping", 1, do_tsinfo,
+	  "Show time stamping capabilities" },
+	{ "-x|--show-rxfh-indir", 1, do_grxfhindir,
+	  "Show Rx flow hash indirection" },
+	{ "-X|--set-rxfh-indir", 1, do_srxfhindir,
+	  "Set Rx flow hash indirection",
+	  "		equal N | weight W0 W1 ...\n" },
+	{ "-f|--flash", 1, do_flash,
+	  "Flash firmware image from the specified file to a region on the device",
+	  "               FILENAME [ REGION-NUMBER-TO-FLASH ]\n" },
+	{ "-P|--show-permaddr", 1, do_permaddr,
+	  "Show permanent hardware address" },
+	{ "-w|--get-dump", 1, do_getfwdump,
+	  "Get dump flag, data",
+	  "		[ data FILENAME ]\n" },
+	{ "-W|--set-dump", 1, do_setfwdump,
+	  "Set dump flag of the device",
+	  "		N\n"},
+	{ "-l|--show-channels", 1, do_gchannels, "Query Channels" },
+	{ "-L|--set-channels", 1, do_schannels, "Set Channels",
+	  "               [ rx N ]\n"
+	  "               [ tx N ]\n"
+	  "               [ other N ]\n"
+	  "               [ combined N ]\n" },
+	{ "--show-priv-flags" , 1, do_gprivflags, "Query private flags" },
+	{ "--set-priv-flags", 1, do_sprivflags, "Set private flags",
+	  "		FLAG on|off ...\n" },
+	{ "-m|--dump-module-eeprom|--module-info", 1, do_getmodule,
+	  "Query/Decode Module EEPROM information and optical diagnostics if available",
+	  "		[ raw on|off ]\n"
+	  "		[ hex on|off ]\n"
+	  "		[ offset N ]\n"
+	  "		[ length N ]\n" },
+	{ "--show-eee", 1, do_geee, "Show EEE settings"},
+	{ "--set-eee", 1, do_seee, "Set EEE settings",
+	  "		[ eee on|off ]\n"
+	  "		[ advertise %x ]\n"
+	  "		[ tx-lpi on|off ]\n"
+	  "		[ tx-timer %d ]\n"},
+	{ "-h|--help", 0, show_usage, "Show this help" },
+	{ "--version", 0, do_version, "Show version number" },
+	{}
+};
+
+static int show_usage(struct cmd_context *ctx)
+{
+	int i;
+
+	/* ethtool -h */
+	fprintf(stdout, PACKAGE " version " VERSION "\n");
+	fprintf(stdout,
+		"Usage:\n"
+		"        ethtool DEVNAME\t"
+		"Display standard information about device\n");
+	for (i = 0; args[i].opts; i++) {
+		fputs("        ethtool ", stdout);
+		fprintf(stdout, "%s %s\t%s\n",
+			args[i].opts,
+			args[i].want_device ? "DEVNAME" : "\t",
+			args[i].help);
+		if (args[i].opthelp)
+			fputs(args[i].opthelp, stdout);
+	}
+
+	return 0;
+}
+
+int main(int argc, char **argp)
+{
+	int (*func)(struct cmd_context *);
+	int want_device;
+	struct cmd_context ctx;
+	int k;
+
+	/* Skip command name */
+	argp++;
+	argc--;
+
+	/* First argument must be either a valid option or a device
+	 * name to get settings for (which we don't expect to begin
+	 * with '-').
+	 */
+	if (argc == 0)
+		exit_bad_args();
+	for (k = 0; args[k].opts; k++) {
+		const char *opt;
+		size_t len;
+		opt = args[k].opts;
+		for (;;) {
+			len = strcspn(opt, "|");
+			if (strncmp(*argp, opt, len) == 0 &&
+			    (*argp)[len] == 0) {
+				argp++;
+				argc--;
+				func = args[k].func;
+				want_device = args[k].want_device;
+				goto opt_found;
+			}
+			if (opt[len] == 0)
+				break;
+			opt += len + 1;
+		}
+	}
+	if ((*argp)[0] == '-')
+		exit_bad_args();
+	func = do_gset;
+	want_device = 1;
+
+opt_found:
+	if (want_device) {
+		ctx.devname = *argp++;
+		argc--;
+
+		if (ctx.devname == NULL)
+			exit_bad_args();
+		if (strlen(ctx.devname) >= IFNAMSIZ)
+			exit_bad_args();
+
+		/* Setup our control structures. */
+		memset(&ctx.ifr, 0, sizeof(ctx.ifr));
+		strcpy(ctx.ifr.ifr_name, ctx.devname);
+
+		/* Open control socket. */
+		ctx.fd = socket(AF_INET, SOCK_DGRAM, 0);
+		if (ctx.fd < 0) {
+			perror("Cannot get control socket");
+			return 70;
+		}
+	} else {
+		ctx.fd = -1;
+	}
+
+	ctx.argc = argc;
+	ctx.argp = argp;
+
+	return func(&ctx);
 }

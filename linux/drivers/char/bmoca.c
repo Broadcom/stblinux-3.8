@@ -2176,6 +2176,29 @@ static int moca_parse_dt_node(struct moca_priv_data *priv)
 	memset(&pd, 0, sizeof(pd));
 
 	/* mandatory entries */
+
+	/* get the common clocks from bmoca node */
+	priv->clk = of_clk_get_by_name(of_node, "sw_moca");
+	if (IS_ERR(priv->clk)) {
+		dev_err(&pdev->dev,
+			"can't find sw_moca clk\n");
+		priv->clk = NULL;
+	}
+
+	priv->cpu_clk = of_clk_get_by_name(of_node, "sw_moca_cpu");
+	if (IS_ERR(priv->cpu_clk)) {
+		dev_err(&pdev->dev,
+			"can't find moca_cpu clk\n");
+		priv->cpu_clk = NULL;
+	}
+
+	priv->phy_clk = of_clk_get_by_name(of_node, "sw_moca_phy");
+	if (IS_ERR(priv->phy_clk)) {
+		dev_err(&pdev->dev,
+			"can't find moca_phy clk\n");
+		priv->phy_clk = NULL;
+	}
+
 	status = of_property_read_u32(of_node, "hw-rev", &pd.hw_rev);
 	if (status)
 		goto err;
@@ -2262,10 +2285,6 @@ static int moca_probe(struct platform_device *pdev)
 	if (err)
 		goto bad;
 #endif
-	priv->clk = clk_get(&pdev->dev, "moca");
-	priv->cpu_clk = clk_get(&pdev->dev, "moca-cpu");
-	priv->phy_clk = clk_get(&pdev->dev, "moca-phy");
-
 	pd = pdev->dev.platform_data;
 	priv->hw_rev = pd->hw_rev;
 

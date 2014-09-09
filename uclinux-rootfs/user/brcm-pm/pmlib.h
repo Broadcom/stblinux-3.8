@@ -60,7 +60,6 @@
 
 struct brcm_pm_state
 {
-	int usb_status;		/* 1=on, 0=off */
 	int sata_status;	/* 1=on, 0=off */
 	int tp1_status;		/* 1=on, 0=off */
 	int tp2_status;		/* 1=on, 0=off */

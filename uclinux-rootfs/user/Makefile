@@ -72,7 +72,6 @@ dir_$(CONFIG_USER_DHRYSTONE_DHRYSTONE)      += dhrystone
 dir_$(CONFIG_USER_DHCP_ISC_SERVER_DHCPD)    += dhcp-isc
 dir_$(CONFIG_USER_DHCPCD_DHCPCD)            += dhcpcd
 dir_$(CONFIG_USER_DHCPCD_NEW_DHCPCD)        += dhcpcd
-dir_$(CONFIG_USER_DHCPD_DHCPD)              += dhcpd
 dir_$(CONFIG_USER_DHCPCV6_DHCPCV6)          += dhcpv6
 dir_$(CONFIG_USER_DHCPSV6_DHCPSV6)          += dhcpv6
 dir_$(CONFIG_USER_DIALD_DIALD)              += diald

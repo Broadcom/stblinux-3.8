@@ -30,7 +30,6 @@
 #include <linux/of_address.h>
 #include <linux/module.h>
 #include <linux/irqdomain.h>
-#include <linux/jiffies.h>
 
 /* Broadcom PCIE Offsets */
 #define PCIE_RC_CFG_TYPE1_STATUS_COMMAND		0x0004
@@ -53,6 +52,7 @@
 #define PCIE_MISC_MSI_BAR_CONFIG_HI			0x4048
 #define PCIE_MISC_PCIE_STATUS				0x4068
 #define PCIE_MISC_CPU_2_PCIE_MEM_WIN0_BASE_LIMIT	0x4070
+#define PCIE_MISC_HARD_PCIE_HARD_DEBUG			0x4204
 #define PCIE_INTR2_CPU_CLEAR				0x4308
 #define PCIE_INTR2_CPU_MASK_SET				0x4310
 #define PCIE_INTR2_CPU_MASK_CLEAR			0x4314
@@ -84,7 +84,7 @@ static int brcm_setup_pcie_bridge(int nr, struct pci_sys_data *sys);
 struct pci_bus __init *brcm_pci_sys_scan_bus(int nr, struct pci_sys_data *sys);
 static int __init brcm_map_irq(const struct pci_dev *dev, u8 slot, u8 pin);
 
-static __initdata struct hw_pci brcm_pcie_hw = {
+static struct hw_pci brcm_pcie_hw __initdata = {
 	.nr_controllers	= 0,
 	.setup		= brcm_setup_pcie_bridge,
 	.scan		= brcm_pci_sys_scan_bus,
@@ -106,15 +106,17 @@ static struct brcm_pci_bus {
 	char			name[8];
 	int			busnr;
 	unsigned int		hw_busnum;
+	bool			suspended;
 	struct clk		*clk;
 	struct device_node	*dn;
-	unsigned long		pcie_wake_up_time_jiffies;
 	int			pcie_irq[4];
 	int			num_out_wins;
 	struct brcm_window	out_wins[BRCM_NUM_PCI_OUT_WINS];
+	struct pci_sys_data	*sys;
 } brcm_buses[BRCM_MAX_PCI_CONTROLLERS];
 
 static int brcm_num_pci_controllers;
+static void turn_off(void __iomem *base);
 
 
 /***********************************************************************
@@ -184,13 +186,6 @@ static void brcm_pcie_setup_early(int nr)
 	void __iomem *base = bus->base;
 	int i;
 
-	/*
-	 * Starts PCIe link negotiation immediately at kernel boot time.  The
-	 * RC is supposed to give the endpoint device 100ms to settle down
-	 * before attempting configuration accesses.  So we let the link
-	 * negotiation happen in the background instead of busy-waiting.
-	 */
-
 	/* reset the bridge and the endpoint device */
 	/* field: PCIE_BRIDGE_SW_INIT = 1 */
 	wr_fld_rb(base + PCIE_RGR1_SW_INIT_1, 0x00000002, 1, 1);
@@ -240,10 +235,6 @@ static void brcm_pcie_setup_early(int nr)
 	/* take the EP device out of reset */
 	/* field: PCIE_SW_PERST = 0 */
 	wr_fld_rb(base + PCIE_RGR1_SW_INIT_1, 0x00000001, 0, 0);
-
-	/* record the current time, add 100ms */
-	brcm_buses[nr].pcie_wake_up_time_jiffies = jiffies
-		+ msecs_to_jiffies(100);
 }
 
 
@@ -251,27 +242,31 @@ static int brcm_setup_pcie_bridge(int nr, struct pci_sys_data *sys)
 {
 	struct brcm_pci_bus *bus = &brcm_buses[nr];
 	void __iomem *base = bus->base;
+	const int limit = bus->suspended ? 1000 : 100;
 	u32 pcie_out_win_start, pcie_out_win_end;
 	struct clk *clk;
 	unsigned status;
-	int i;
+	int i, j;
 
-	/* Give the RC/EP time to wake up, before trying to configure RC */
-	while (!is_pcie_link_up(nr)
-	       && time_before_eq(jiffies,
-				 brcm_buses[nr].pcie_wake_up_time_jiffies))
-		;
+	bus->sys = sys;
+
+	/* Give the RC/EP time to wake up, before trying to configure RC.
+	 * Intermittently check status for link-up, up to a total of 100ms
+	 * when we don't know if the device is there, and up to 1000ms if
+	 * we do know the device is there. */
+	for (i = 1, j = 0; j < limit && !is_pcie_link_up(nr); j += i, i = i*2)
+		mdelay(i + j > limit ? limit - j : i);
 
 	if (!is_pcie_link_up(nr)) {
 		pr_info("PCIe: link down\n");
 		goto FAIL;
 	}
 
-	for (i = 0; i < bus->num_out_wins; i++) {
-		struct brcm_window *w = &bus->out_wins[i];
-		pci_add_resource_offset(&sys->resources, &w->pcie_iomem_res,
+	if (!bus->suspended)
+		for (i = 0; i < bus->num_out_wins; i++)
+			pci_add_resource_offset(&sys->resources,
+					&bus->out_wins[i].pcie_iomem_res,
 					sys->mem_offset);
-	}
 
 	status = __raw_readl(base + PCIE_RC_CFG_PCIE_LINK_STATUS_CONTROL);
 	pr_info("PCIe link up, %sGbps x%u\n",
@@ -311,10 +306,16 @@ static int brcm_setup_pcie_bridge(int nr, struct pci_sys_data *sys)
 
 	return 1;
 FAIL:
+#if defined(CONFIG_PM)
+	turn_off(base);
+#endif
 	clk = brcm_buses[nr].clk;
-	if (clk) {
+	if (bus->suspended)
 		clk_disable(clk);
+	else {
+		clk_disable_unprepare(clk);
 		clk_put(clk);
+		bus->busnr = -1;
 	}
 	return 0;
 
@@ -336,31 +337,73 @@ struct pci_bus __init *brcm_pci_sys_scan_bus(int nr, struct pci_sys_data *sys)
 /*
  * syscore device to handle PCIe bus suspend and resume
  */
-static inline void pcie_enable(int enable)
-{
-	struct clk *clk;
-	int i;
 
-	for (i = 0; i < brcm_num_pci_controllers; i++) {
-		clk = brcm_buses[i].clk;
-		if (clk)
-			enable ? clk_enable(clk) : clk_disable(clk);
-	}
+static void turn_off(void __iomem *base)
+{
+	/* Reset endpoint device */
+	wr_fld_rb(base + PCIE_RGR1_SW_INIT_1, 0x00000001, 0, 1);
+	/* SERDES_IDDQ = 1 */
+	wr_fld_rb(base + PCIE_MISC_HARD_PCIE_HARD_DEBUG, 0x08000000,
+		  27, 1);
+	/* Shutdown PCIe bridge */
+	wr_fld_rb(base + PCIE_RGR1_SW_INIT_1, 0x00000002, 1, 1);
 }
 
 
 static int pcie_suspend(void)
 {
-	pcie_enable(0);
+	int i;
+
+	for (i = 0; i < brcm_num_pci_controllers; i++) {
+		struct brcm_pci_bus *bus = &brcm_buses[i];
+		void __iomem *base = bus->base;
+
+		if (bus->busnr < 0)
+			continue;
+
+		turn_off(base);
+		clk_disable(bus->clk);
+		bus->suspended = true;
+	}
 	return 0;
 }
 
 
 static void pcie_resume(void)
 {
-	pcie_enable(1);
-}
+	int i;
 
+	for (i = 0; i < brcm_num_pci_controllers; i++) {
+		struct brcm_pci_bus *bus = &brcm_buses[i];
+		void __iomem *base = bus->base;
+
+		if (bus->busnr < 0)
+			continue;
+
+		clk_enable(bus->clk);
+
+		/* Take bridge out of reset so we can access the SERDES reg */
+		wr_fld_rb(base + PCIE_RGR1_SW_INIT_1, 0x00000002, 1, 0);
+
+		/* SERDES_IDDQ = 0 */
+		wr_fld_rb(base + PCIE_MISC_HARD_PCIE_HARD_DEBUG, 0x08000000,
+			  27, 0);
+		/* wait for serdes to be stable */
+		udelay(100);
+
+		brcm_pcie_setup_early(i);
+	}
+
+	for (i = 0; i < brcm_num_pci_controllers; i++) {
+		struct brcm_pci_bus *bus = &brcm_buses[i];
+
+		if (bus->busnr < 0)
+			continue;
+
+		brcm_setup_pcie_bridge(i, bus->sys);
+		bus->suspended = false;
+	}
+}
 
 static struct syscore_ops pcie_pm_ops = {
 	.suspend        = pcie_suspend,
@@ -499,7 +542,7 @@ static int __init brcm_pci_probe(struct platform_device *pdev)
 {
 	struct device_node *dn = pdev->dev.of_node;
 	const u32 *imap_prop;
-	int len, i, irq_offset, rlen, pna, np;
+	int len, i, irq_offset, rlen, pna, np, ret;
 	struct brcm_pci_bus *bus = &brcm_buses[brcm_num_pci_controllers];
 	struct resource *r;
 	const u32 *ranges;
@@ -527,9 +570,17 @@ static int __init brcm_pci_probe(struct platform_device *pdev)
 	snprintf(bus->name,
 		 sizeof(bus->name)-1, "PCIe%d", brcm_num_pci_controllers);
 	bus->hw_busnum = 1;
-	bus->clk = of_clk_get_by_name(dn, "pcie");
-	if (IS_ERR(bus->clk))
+	bus->suspended = false;
+	bus->clk = of_clk_get_by_name(dn, "sw_pcie");
+	if (IS_ERR(bus->clk)) {
+		pr_err("PCIe: could not get clock\n");
 		bus->clk = NULL;
+	}
+	ret = clk_prepare_enable(bus->clk);
+	if (ret) {
+		pr_err("PCIe: could not enable clock\n");
+		return ret;
+	}
 	bus->dn = dn;
 	bus->base = base;
 
@@ -565,7 +616,12 @@ static int __init brcm_pci_probe(struct platform_device *pdev)
 		}
 	}
 
-	/* Program PCIE Core Controller Registers.*/
+	/*
+	 * Starts PCIe link negotiation immediately at kernel boot time.  The
+	 * RC is supposed to give the endpoint device 100ms to settle down
+	 * before attempting configuration accesses.  So we let the link
+	 * negotiation happen in the background instead of busy-waiting.
+	 */
 	brcm_pcie_setup_early(brcm_num_pci_controllers);
 
 	brcm_num_pci_controllers++;

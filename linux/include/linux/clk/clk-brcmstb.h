@@ -19,7 +19,6 @@
 #ifndef __LINUX_CLK_BRCMSTB_H_
 #define __LINUX_CLK_BRCMSTB_H_
 
-void __init __brcmstb_clk_init(void);
 void __init brcmstb_clocks_init(void);
 
 #endif

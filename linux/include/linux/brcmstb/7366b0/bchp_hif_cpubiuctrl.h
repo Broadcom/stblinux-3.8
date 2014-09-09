@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Tue Jan 21 16:04:09 2014
- *                 Full Compile MD5 Checksum e1f095afa685eb5b4f122eaf1dedd468
+ * Date:           Generated on              Wed Jul  2 03:12:36 2014
+ *                 Full Compile MD5 Checksum 7dc2787604a7d66ecd88cf44bdf8b9f2
  *                   (minus title and desc)  
- *                 MD5 Checksum              70443a5d2bc7efa01ea37d6c5ead2e95
+ *                 MD5 Checksum              fac21eb3a5c0bbaa870b50b1cab81ef9
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -152,7 +152,7 @@
 #define BCHP_HIF_CPUBIUCTRL_CPU_DEFEATURE_KEY_REG 0x004425a4 /* CPU Defeature Key Register */
 #define BCHP_HIF_CPUBIUCTRL_CPU_DEBUGROMADDR_REG 0x004425a8 /* CPU Debug ROM Address Register */
 #define BCHP_HIF_CPUBIUCTRL_CPU_DEBUGSELFADDR_REG 0x004425ac /* CPU Debug SELF Address Register */
-#define BCHP_HIF_CPUBIUCTRL_CPU_DEBUG_TRACECTRL_REG 0x004425b0 /* CPU Debug Trace Control Registeer */
+#define BCHP_HIF_CPUBIUCTRL_CPU_DEBUG_TRACECTRL_REG 0x004425b0 /* CPU Debug Trace Control Register */
 #define BCHP_HIF_CPUBIUCTRL_CPU_AXICONFIG_REG    0x004425b4 /* CPU AXI Config Register */
 #define BCHP_HIF_CPUBIUCTRL_CPU_REVISION_REG     0x004425b8 /* CPU Revision Register */
 #define BCHP_HIF_CPUBIUCTRL_CPU_UBUS_CFGWINDOW0  0x004425bc /* UBUS CFG Window0 Register */
@@ -3273,7 +3273,7 @@
 #define BCHP_HIF_CPUBIUCTRL_CPU_DEBUGSELFADDR_REG_DBGSELFADDRV_DEFAULT 0x00000000
 
 /***************************************************************************
- *CPU_DEBUG_TRACECTRL_REG - CPU Debug Trace Control Registeer
+ *CPU_DEBUG_TRACECTRL_REG - CPU Debug Trace Control Register
  ***************************************************************************/
 /* HIF_CPUBIUCTRL :: CPU_DEBUG_TRACECTRL_REG :: reserved0 [31:05] */
 #define BCHP_HIF_CPUBIUCTRL_CPU_DEBUG_TRACECTRL_REG_reserved0_MASK 0xffffffe0

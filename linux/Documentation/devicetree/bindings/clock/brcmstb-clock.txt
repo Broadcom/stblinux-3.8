@@ -65,7 +65,8 @@ Optional properties:
 - clocks : see clock-bindings.txt.
 - clock-names : see clock-bindings.txt.
 - set-bit-to-disable : inverts default gate programming. Setting the bit
-	gates the clock and clearing the bit ungates the clock.
+	gates the clock and clearing the bit ungates the clock.  This
+        is a boolean.
 - brcm,delay : this indicates that there must be a delay after the
 	bit is changed.  The first parameter is the delay in usec
 	after the bit is being set to 0.  The second parameter is the
@@ -73,6 +74,8 @@ Optional properties:
 	example of <0 200>, there must be a delay of 200 usec after
 	setting the bit to 1.  
 - clock-output-names : see clock-bindings.txt.
+- brcm,read-only : specified if a clock is precluded from being
+	disabled.  This is a boolean.
 
 example:
 	lc_pll_reseta : lc_pll_reseta@f04e014c {
@@ -89,7 +92,7 @@ example:
 === bcm_clk_sw ===
 
 bcm_clk_sw is a clock type which has no hardware counterpart: it
-is used solely to enable/disable two or more parent clocks in
+is used solely to enable/disable one or more parent clocks in
 unison.  
 
 Required properties:

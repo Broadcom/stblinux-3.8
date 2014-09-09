@@ -21,15 +21,15 @@
  * file. You must edit the source file for changes to be made to this file.
  *
  *
- * Date:           Generated on              Tue Jan 21 16:04:08 2014
- *                 Full Compile MD5 Checksum e1f095afa685eb5b4f122eaf1dedd468
+ * Date:           Generated on              Wed Jul  2 03:12:36 2014
+ *                 Full Compile MD5 Checksum 7dc2787604a7d66ecd88cf44bdf8b9f2
  *                   (minus title and desc)  
- *                 MD5 Checksum              70443a5d2bc7efa01ea37d6c5ead2e95
+ *                 MD5 Checksum              fac21eb3a5c0bbaa870b50b1cab81ef9
  *
  * Compiled with:  RDB Utility               combo_header.pl
  *                 RDB Parser                3.0
  *                 unknown                   unknown
- *                 Perl Interpreter          5.008005
+ *                 Perl Interpreter          5.008008
  *                 Operating System          linux
  *
  * Revision History:
@@ -211,7 +211,7 @@
 /* DDR34_PHY_CONTROL_REGS_0 :: REVISION :: MINOR [07:00] */
 #define BCHP_DDR34_PHY_CONTROL_REGS_0_REVISION_MINOR_MASK          0x000000ff
 #define BCHP_DDR34_PHY_CONTROL_REGS_0_REVISION_MINOR_SHIFT         0
-#define BCHP_DDR34_PHY_CONTROL_REGS_0_REVISION_MINOR_DEFAULT       0x00000001
+#define BCHP_DDR34_PHY_CONTROL_REGS_0_REVISION_MINOR_DEFAULT       0x00000002
 
 /***************************************************************************
  *PLL_STATUS - PHY PLL status register
