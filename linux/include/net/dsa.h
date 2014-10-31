@@ -213,7 +213,8 @@ struct dsa_switch_driver {
 	/*
 	 * Port enable/disable
 	 */
-	int	(*port_enable)(struct dsa_switch *ds, int port);
+	int	(*port_enable)(struct dsa_switch *ds, int port,
+			       struct phy_device *phy);
 	void	(*port_disable)(struct dsa_switch *ds, int port);
 
 	/*

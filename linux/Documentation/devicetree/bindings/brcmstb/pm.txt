@@ -34,7 +34,7 @@ the example device tree snippet below.
 Represents a single memory controller instance.
 
 Required properties:
-- compatible     : should contain "brcm,brcmstb-memc"
+- compatible     : should contain "brcm,brcmstb-memc" and "simple-bus"
 
 Should contain subnodes for any of the following relevant hardware resources:
 
@@ -55,13 +55,23 @@ Required properties:
 - compatible     : should contain "brcm,brcmstb-ddr-shimphy-v1.0"
 - reg            : the DDR SHIMPHY register range
 
+* MEMC DDR control
+
+Sequencer DRAM parameters and control registers. Used for Self-Refresh
+Power-Down (SRPD), among other things.
+
+Required properties:
+- compatible     : should contain "brcm,brcmstb-memc-ddr"
+- reg            : the MEMC DDR register range
+
 Example:
 
 memory_controllers {
 	ranges;
+	compatible = "simple-bus";
 
 	memc@0 {
-		compatible = "brcm,brcmstb-memc";
+		compatible = "brcm,brcmstb-memc", "simple-bus";
 		ranges;
 
 		ddr-phy@f1106000 {
@@ -73,10 +83,15 @@ memory_controllers {
 			compatible = "brcm,brcmstb-ddr-shimphy-v1.0";
 			reg = <0xf1108000 0xe4>;
 		};
+
+		memc-ddr@f1102000 {
+			reg = <0xf1102000 0x800>;
+			compatible = "brcm,brcmstb-memc-ddr";
+		};
 	};
 
 	memc@1 {
-		compatible = "brcm,brcmstb-memc";
+		compatible = "brcm,brcmstb-memc", "simple-bus";
 		ranges;
 
 		ddr-phy@f1186000 {
@@ -88,10 +103,15 @@ memory_controllers {
 			compatible = "brcm,brcmstb-ddr-shimphy-v1.0";
 			reg = <0xf1188000 0xe4>;
 		};
+
+		memc-ddr@f1182000 {
+			reg = <0xf1182000 0x800>;
+			compatible = "brcm,brcmstb-memc-ddr";
+		};
 	};
 
 	memc@2 {
-		compatible = "brcm,brcmstb-memc";
+		compatible = "brcm,brcmstb-memc", "simple-bus";
 		ranges;
 
 		ddr-phy@f1206000 {
@@ -102,6 +122,11 @@ memory_controllers {
 		shimphy@f1208000 {
 			compatible = "brcm,brcmstb-ddr-shimphy-v1.0";
 			reg = <0xf1208000 0xe4>;
+		};
+
+		memc-ddr@f1202000 {
+			reg = <0xf1202000 0x800>;
+			compatible = "brcm,brcmstb-memc-ddr";
 		};
 	};
 };

@@ -133,6 +133,7 @@ dir_$(CONFIG_USER_HD_HD)                    += hd
 dir_$(CONFIG_USER_HDPARM_HDPARM)            += hdparm
 dir_$(CONFIG_USER_HTTPD_HTTPD)              += httpd
 dir_$(CONFIG_USER_HWCLOCK_HWCLOCK)          += hwclock
+dir_$(CONFIG_USER_I2C_TOOLS)                += i2c-tools
 dir_$(CONFIG_USER_IFATTACH_IFATTACH)        += ifattach
 dir_$(CONFIG_USER_INETD_INETD)              += inetd
 dir_$(CONFIG_USER_INETUTILS)                += inetutils
@@ -321,6 +322,7 @@ dir_$(CONFIG_USER_LEDCON_LEDCON)            += ledcon
 dir_$(CONFIG_USER_W3CAM_W3CAMD)             += w3cam
 dir_$(CONFIG_USER_WGET)                     += wget
 dir_$(CONFIG_USER_WIRELESS_TOOLS)           += wireless_tools
+
 dir_$(CONFIG_USER_XFS_XFSPROGS)             += xfsprogs
 # dir_$(CONFIG_USER_XFS_TEST_SUITE)           += xfstests
 dir_$(CONFIG_USER_ZEBRA_BGPD_BGPD)          += zebra

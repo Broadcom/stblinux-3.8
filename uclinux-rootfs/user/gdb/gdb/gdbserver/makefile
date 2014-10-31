@@ -51,6 +51,10 @@ all::
 
 endif  # CONFIG_USER_GDB
 
+.PHONY: clean distclean
+clean distclean:
+	[ ! -f Makefile ] || $(MAKE) -f Makefile $@
+
 .PHONY: romfs
 romfs::
 	$(ROMFSINST) -e CONFIG_USER_GDBSERVER_GDBSERVER /bin/gdbserver

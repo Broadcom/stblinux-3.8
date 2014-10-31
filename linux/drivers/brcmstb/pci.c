@@ -32,13 +32,15 @@
 #include <linux/irqdomain.h>
 
 /* Broadcom PCIE Offsets */
-#define PCIE_RC_CFG_TYPE1_STATUS_COMMAND		0x0004
-#define PCIE_RC_CFG_TYPE1_PRI_SEC_BUS_NO		0x0018
-#define PCIE_RC_CFG_TYPE1_RC_MEM_BASE_LIMIT		0x0020
-#define PCIE_RC_CFG_TYPE1_RC_PREF_BASE_LIMIT		0x0024
+#define PCIE_RC_CFG_PCIE_LINK_CAPABILITY		0x00b8
 #define PCIE_RC_CFG_PCIE_LINK_STATUS_CONTROL		0x00bc
 #define PCIE_RC_CFG_PCIE_ROOT_CAP_CONTROL		0x00c8
+#define PCIE_RC_CFG_PCIE_LINK_STATUS_CONTROL_2		0x00dc
 #define PCIE_RC_CFG_VENDOR_VENDOR_SPECIFIC_REG1		0x0188
+#define PCIE_RC_CFG_PRIV1_ID_VAL3			0x043c
+#define PCIE_RC_DL_MDIO_ADDR				0x1100
+#define PCIE_RC_DL_MDIO_WR_DATA				0x1104
+#define PCIE_RC_DL_MDIO_RD_DATA				0x1108
 #define PCIE_MISC_MISC_CTRL				0x4008
 #define PCIE_MISC_CPU_2_PCIE_MEM_WIN0_LO		0x400c
 #define PCIE_MISC_CPU_2_PCIE_MEM_WIN0_HI		0x4010
@@ -104,18 +106,23 @@ struct brcm_window {
 static struct brcm_pci_bus {
 	void __iomem		*base;
 	char			name[8];
-	int			busnr;
-	unsigned int		hw_busnum;
 	bool			suspended;
+	int			busnr_start;
+	int			busnr_end;
 	struct clk		*clk;
 	struct device_node	*dn;
 	int			pcie_irq[4];
 	int			num_out_wins;
+	bool			ssc;
+	int			gen;
 	struct brcm_window	out_wins[BRCM_NUM_PCI_OUT_WINS];
 	struct pci_sys_data	*sys;
+	struct device		*dev;
 } brcm_buses[BRCM_MAX_PCI_CONTROLLERS];
 
 static int brcm_num_pci_controllers;
+static int next_busnr;
+static int num_memc;
 static void turn_off(void __iomem *base);
 
 
@@ -131,11 +138,52 @@ static void turn_off(void __iomem *base);
 #endif
 
 
+/* negative return value indicates error */
+static int mdio_read(void __iomem *base, u8 phyad, u8 regad)
+{
+	u32 data = ((phyad & 0xf) << 16)
+		| (regad & 0x1f)
+		| 0x100000;
+
+	__raw_writel(data, base + PCIE_RC_DL_MDIO_ADDR);
+	__raw_readl(base + PCIE_RC_DL_MDIO_ADDR);
+
+	data = __raw_readl(base + PCIE_RC_DL_MDIO_RD_DATA);
+	if (!(data & 0x80000000)) {
+		mdelay(1);
+		data = __raw_readl(base + PCIE_RC_DL_MDIO_RD_DATA);
+	}
+	return (data & 0x80000000) ? (data & 0xffff) : -EIO;
+}
+
+
+/* negative return value indicates error */
+static int mdio_write(void __iomem *base, u8 phyad, u8 regad, u16 wrdata)
+{
+	u32 data = ((phyad & 0xf) << 16) | (regad & 0x1f);
+
+	__raw_writel(data, base + PCIE_RC_DL_MDIO_ADDR);
+	__raw_readl(base + PCIE_RC_DL_MDIO_ADDR);
+
+	__raw_writel(0x80000000 | wrdata, base + PCIE_RC_DL_MDIO_WR_DATA);
+	data = __raw_readl(base + PCIE_RC_DL_MDIO_WR_DATA);
+	if (!(data & 0x80000000)) {
+		mdelay(1);
+		data = __raw_readl(base + PCIE_RC_DL_MDIO_WR_DATA);
+	}
+	return (data & 0x80000000) ? 0 : -EIO;
+}
+
+
 static int busnr_to_nr(int busnr)
 {
 	int i;
+
 	for (i = 0; i < brcm_num_pci_controllers; i++) {
-		if (brcm_buses[i].busnr == busnr)
+		struct brcm_pci_bus *bus = &brcm_buses[i];
+		if (bus->busnr_start >= 0
+		    && bus->busnr_start <= busnr
+		    && busnr <= bus->busnr_end)
 			return i;
 	}
 	return -EINVAL;
@@ -153,6 +201,55 @@ static void wr_fld_rb(void __iomem *p, u32 mask, int shift, u32 val)
 {
 	wr_fld(p, mask, shift, val);
 	(void) __raw_readl(p);
+}
+
+
+/* configures device for ssc mode; negative return value indicates error */
+static int set_ssc(void __iomem *base)
+{
+	int tmp;
+	u16 wrdata;
+
+	tmp = mdio_write(base, 0, 0x1f, 0x1100);
+	if (tmp < 0)
+		return tmp;
+
+	tmp = mdio_read(base, 0, 2);
+	if (tmp < 0)
+		return tmp;
+
+	wrdata = ((u16)tmp & 0x3fff) | 0xc000;
+	tmp = mdio_write(base, 0, 2, wrdata);
+	if (tmp < 0)
+		return tmp;
+
+	mdelay(1);
+	tmp = mdio_read(base, 0, 1);
+	if (tmp < 0)
+		return tmp;
+
+	return 0;
+}
+
+
+/* returns 0 if in ssc mode, 1 if not, <0 on error */
+static int is_ssc(void __iomem *base)
+{
+	int tmp = mdio_write(base, 0, 0x1f, 0x1100);
+	if (tmp < 0)
+		return tmp;
+	tmp = mdio_read(base, 0, 1);
+	if (tmp < 0)
+		return tmp;
+	return (tmp & 0xc00) == 0xc00 ? 0 : 1;
+}
+
+
+/* limits operation to a specific generation (1, 2, or 3) */
+static void set_gen(void __iomem *base, int gen)
+{
+	wr_fld(base + PCIE_RC_CFG_PCIE_LINK_CAPABILITY, 0xf, 0, gen);
+	wr_fld(base + PCIE_RC_CFG_PCIE_LINK_STATUS_CONTROL_2, 0xf, 0, gen);
 }
 
 
@@ -210,10 +307,15 @@ static void brcm_pcie_setup_early(int nr)
 	/* set up 4GB PCIE->SCB memory window on BAR2 */
 	__raw_writel(0x00000011, base + PCIE_MISC_RC_BAR2_CONFIG_LO);
 	__raw_writel(0x00000000, base + PCIE_MISC_RC_BAR2_CONFIG_HI);
-	/* field: SCB0_SIZE = 2 Gb */
-	wr_fld(base + PCIE_MISC_MISC_CTRL, 0xf8000000, 27, 0x10);
+
+	/* field: SCB0_SIZE = 1 Gb */
+	wr_fld(base + PCIE_MISC_MISC_CTRL, 0xf8000000, 27, 0x0f);
 	/* field: SCB1_SIZE = 1 Gb */
-	wr_fld(base + PCIE_MISC_MISC_CTRL, 0x07c00000, 22, 0x0f);
+	if (num_memc > 1)
+		wr_fld(base + PCIE_MISC_MISC_CTRL, 0x07c00000, 22, 0x0f);
+	/* field: SCB2_SIZE = 1 Gb */
+	if (num_memc > 2)
+		wr_fld(base + PCIE_MISC_MISC_CTRL, 0x0000001f, 0, 0x0f);
 
 	/* disable the PCIE->GISB memory window */
 	__raw_writel(0x00000000, base + PCIE_MISC_RC_BAR1_CONFIG_LO);
@@ -232,6 +334,12 @@ static void brcm_pcie_setup_early(int nr)
 	__raw_writel(0xffffffff, base + PCIE_INTR2_CPU_MASK_SET);
 	(void) __raw_readl(base + PCIE_INTR2_CPU_MASK_SET);
 
+	if (bus->ssc)
+		if (set_ssc(base))
+			dev_err(bus->dev, "error while configuring ssc mode\n");
+	if (bus->gen)
+		set_gen(base, bus->gen);
+
 	/* take the EP device out of reset */
 	/* field: PCIE_SW_PERST = 0 */
 	wr_fld_rb(base + PCIE_RGR1_SW_INIT_1, 0x00000001, 0, 0);
@@ -243,12 +351,16 @@ static int brcm_setup_pcie_bridge(int nr, struct pci_sys_data *sys)
 	struct brcm_pci_bus *bus = &brcm_buses[nr];
 	void __iomem *base = bus->base;
 	const int limit = bus->suspended ? 1000 : 100;
-	u32 pcie_out_win_start, pcie_out_win_end;
 	struct clk *clk;
 	unsigned status;
+	static const char *link_speed[4] = { "???", "2.5", "5.0", "8.0" };
 	int i, j;
 
 	bus->sys = sys;
+	if (!bus->suspended) {
+		bus->busnr_start = sys->busnr;
+		bus->busnr_end = 0xff;
+	}
 
 	/* Give the RC/EP time to wake up, before trying to configure RC.
 	 * Intermittently check status for link-up, up to a total of 100ms
@@ -258,9 +370,13 @@ static int brcm_setup_pcie_bridge(int nr, struct pci_sys_data *sys)
 		mdelay(i + j > limit ? limit - j : i);
 
 	if (!is_pcie_link_up(nr)) {
-		pr_info("PCIe: link down\n");
+		dev_info(bus->dev, "link down\n");
 		goto FAIL;
 	}
+
+	/* For config space accesses on the RC, show the right class for
+	 * a PCI-PCI bridge */
+	wr_fld_rb(base + PCIE_RC_CFG_PRIV1_ID_VAL3, 0x00ffffff, 0, 0x060400);
 
 	if (!bus->suspended)
 		for (i = 0; i < bus->num_out_wins; i++)
@@ -269,31 +385,12 @@ static int brcm_setup_pcie_bridge(int nr, struct pci_sys_data *sys)
 					sys->mem_offset);
 
 	status = __raw_readl(base + PCIE_RC_CFG_PCIE_LINK_STATUS_CONTROL);
-	pr_info("PCIe link up, %sGbps x%u\n",
-		((status & 0x000f0000) >> 16) == 0x2 ? "5.0" : "2.5",
-		(status & 0x03f00000) >> 20);
+	dev_info(bus->dev, "link up, %s Gbps x%u\n",
+		 link_speed[((status & 0x000f0000) >> 16) & 0x3],
+		 (status & 0x03f00000) >> 20);
 
-	/* Enable MEM_SPACE and BUS_MASTER for RC */
-	__raw_writel(0x6, base + PCIE_RC_CFG_TYPE1_STATUS_COMMAND);
-
-	/* Set base/limit for outbound transactions.  Assume that
-	 * the out windows are contiguous.
-	 */
-	pcie_out_win_start = bus->out_wins[0].pcie_iomem_res.start;
-	pcie_out_win_end = pcie_out_win_start - 1;
-	for (i = 0; i < bus->num_out_wins; i++)
-		pcie_out_win_end += bus->out_wins[i].pcie_iomem_res.end
-			- bus->out_wins[i].pcie_iomem_res.start + 1;
-
-	__raw_writel(((pcie_out_win_end & 0xfff00000)
-		      | ((pcie_out_win_start>>16)&0x0000fff0)),
-		     base + PCIE_RC_CFG_TYPE1_RC_MEM_BASE_LIMIT);
-
-	/* Disable the prefetch range */
-	__raw_writel(0x0000fff0, base + PCIE_RC_CFG_TYPE1_RC_PREF_BASE_LIMIT);
-
-	/* Set pri/sec bus numbers */
-	__raw_writel(0x00010100, base + PCIE_RC_CFG_TYPE1_PRI_SEC_BUS_NO);
+	if (bus->ssc && is_ssc(base) != 0)
+		dev_err(bus->dev, "failed to enter ssc mode\n");
 
 	/* Enable configuration request retry (see pci_scan_device()) */
 	/* field RC_CRS_EN = 1 */
@@ -315,7 +412,8 @@ FAIL:
 	else {
 		clk_disable_unprepare(clk);
 		clk_put(clk);
-		bus->busnr = -1;
+		bus->busnr_start = -1;
+		bus->busnr_end = -1;
 	}
 	return 0;
 
@@ -325,10 +423,13 @@ FAIL:
 struct pci_bus __init *brcm_pci_sys_scan_bus(int nr, struct pci_sys_data *sys)
 {
 	struct pci_bus *pbus;
-	pr_info("PCIe: Scanning Root Bus %d, busnr %d\n", nr, sys->busnr);
-	brcm_buses[nr].busnr = sys->busnr;
-	pbus = pci_scan_root_bus(NULL, sys->busnr, &brcm_pci_ops, sys,
+	struct brcm_pci_bus *bus = &brcm_buses[nr];
+
+	dev_info(bus->dev, "scanning root bus %d, busnr %d\n", nr, sys->busnr);
+	pbus = pci_scan_root_bus(bus->dev, sys->busnr, &brcm_pci_ops, sys,
 				 &sys->resources);
+	bus->busnr_end = pbus->busn_res.end;
+	next_busnr = bus->busnr_end + 1;
 	return pbus;
 }
 
@@ -358,7 +459,7 @@ static int pcie_suspend(void)
 		struct brcm_pci_bus *bus = &brcm_buses[i];
 		void __iomem *base = bus->base;
 
-		if (bus->busnr < 0)
+		if (bus->busnr_start < 0)
 			continue;
 
 		turn_off(base);
@@ -377,7 +478,7 @@ static void pcie_resume(void)
 		struct brcm_pci_bus *bus = &brcm_buses[i];
 		void __iomem *base = bus->base;
 
-		if (bus->busnr < 0)
+		if (bus->busnr_start < 0)
 			continue;
 
 		clk_enable(bus->clk);
@@ -397,7 +498,7 @@ static void pcie_resume(void)
 	for (i = 0; i < brcm_num_pci_controllers; i++) {
 		struct brcm_pci_bus *bus = &brcm_buses[i];
 
-		if (bus->busnr < 0)
+		if (bus->busnr_start < 0)
 			continue;
 
 		brcm_setup_pcie_bridge(i, bus->sys);
@@ -415,24 +516,27 @@ static struct syscore_ops pcie_pm_ops = {
 /***********************************************************************
  * Read/write PCI configuration registers
  ***********************************************************************/
-static int cfg_index(const struct pci_bus *bus, int devfn, int reg)
+static int cfg_index(int busnr, int devfn, int reg)
 {
-	int nr = busnr_to_nr(bus->number);
-	WARN_ON(nr < 0);
 	return ((PCI_SLOT(devfn) & 0x1f) << PCI_SLOT_SHIFT)
 		| ((PCI_FUNC(devfn) & 0x07) << PCI_FUNC_SHIFT)
-		| (brcm_buses[nr].hw_busnum << PCI_BUSNUM_SHIFT)
-		| (reg);
+		| (busnr << PCI_BUSNUM_SHIFT)
+		| (reg & ~3);
 }
 
-static int devfn_ok(struct pci_bus *bus, unsigned int devfn)
+static u32 read_config(void __iomem *base, int cfg_idx)
 {
-	/* PCIe: check for link down or invalid slot number */
-	int nr = busnr_to_nr(bus->number);
-	if (nr >= 0 && (!is_pcie_link_up(nr) || PCI_SLOT(devfn) != 0))
-		return 0;
+	__raw_writel(cfg_idx, IDX_ADDR(base));
+	__raw_readl(IDX_ADDR(base));
+	return __raw_readl(DATA_ADDR(base));
+}
 
-	return 1;	/* OK */
+static void write_config(void __iomem *base, int cfg_idx, u32 val)
+{
+	__raw_writel(cfg_idx, IDX_ADDR(base));
+	__raw_readl(IDX_ADDR(base));
+	__raw_writel(val, DATA_ADDR(base));
+	__raw_readl(DATA_ADDR(base));
 }
 
 
@@ -441,29 +545,39 @@ static int brcm_pci_write_config(struct pci_bus *bus, unsigned int devfn,
 {
 	u32 val = 0, mask, shift;
 	int nr = busnr_to_nr(bus->number);
-	void __iomem *base = brcm_buses[nr].base;
+	void __iomem *base;
+	bool rc_access;
+	int idx;
 
-	if (!devfn_ok(bus, devfn))
-		return PCIBIOS_FUNC_NOT_SUPPORTED;
+	if (nr < 0 || !is_pcie_link_up(nr))
+		return PCIBIOS_DEVICE_NOT_FOUND;
 
+	base = brcm_buses[nr].base;
+	rc_access = bus->number == brcm_buses[nr].busnr_start;
+	idx = cfg_index(bus->number, devfn, where);
 	BUG_ON(((where & 3) + size) > 4);
+
+	if (rc_access && PCI_SLOT(devfn))
+		return PCIBIOS_DEVICE_NOT_FOUND;
 
 	if (size < 4) {
 		/* partial word - read, modify, write */
-		__raw_writel(cfg_index(bus, devfn, where & ~3), IDX_ADDR(base));
-		__raw_readl(IDX_ADDR(base));
-		val = __raw_readl(DATA_ADDR(base));
+		if (rc_access)
+			val = __raw_readl(base + (where & ~3));
+		else
+			val = read_config(base, idx);
 	}
 
 	shift = (where & 3) << 3;
 	mask = (0xffffffff >> ((4 - size) << 3)) << shift;
-	__raw_writel(cfg_index(bus, devfn, where & ~3), IDX_ADDR(base));
-	__raw_readl(IDX_ADDR(base));
-
 	val = (val & ~mask) | ((data << shift) & mask);
-	__raw_writel(val, DATA_ADDR(base));
-	__raw_readl(DATA_ADDR(base));
 
+	if (rc_access) {
+		__raw_writel(val, base + (where & ~3));
+		__raw_readl(base + (where & ~3));
+	} else {
+		write_config(base, idx, val);
+	}
 	return PCIBIOS_SUCCESSFUL;
 }
 
@@ -473,21 +587,32 @@ static int brcm_pci_read_config(struct pci_bus *bus, unsigned int devfn,
 {
 	u32 val, mask, shift;
 	int nr = busnr_to_nr(bus->number);
-	void __iomem *base = brcm_buses[nr].base;
+	void __iomem *base;
+	bool rc_access;
+	int idx;
 
-	if (!devfn_ok(bus, devfn))
-		return PCIBIOS_FUNC_NOT_SUPPORTED;
+	if (nr < 0 || !is_pcie_link_up(nr))
+		return PCIBIOS_DEVICE_NOT_FOUND;
 
+	base = brcm_buses[nr].base;
+	rc_access = bus->number == brcm_buses[nr].busnr_start;
+	idx = cfg_index(bus->number, devfn, where);
 	BUG_ON(((where & 3) + size) > 4);
 
-	__raw_writel(cfg_index(bus, devfn, where & ~3), IDX_ADDR(base));
-	__raw_readl(IDX_ADDR(base));
-	val = __raw_readl(DATA_ADDR(base));
+	if (rc_access && PCI_SLOT(devfn)) {
+		*data = 0xffffffff;
+		return PCIBIOS_FUNC_NOT_SUPPORTED;
+	}
+
+	if (rc_access)
+		val = __raw_readl(base + (where & ~3));
+	else
+		val = read_config(base, idx);
 
 	shift = (where & 3) << 3;
 	mask = (0xffffffff >> ((4 - size) << 3)) << shift;
-
 	*data = (val & mask) >> shift;
+
 	return PCIBIOS_SUCCESSFUL;
 }
 
@@ -517,20 +642,12 @@ brcm_pcibios_fixup(struct pci_dev *dev)
 {
 	int slot = PCI_SLOT(dev->devfn);
 	int nr = busnr_to_nr(dev->bus->number);
+	struct brcm_pci_bus *bus = &brcm_buses[nr];
 
-	pr_info("found device %04x:%04x on %s bus, slot %d (irq %d)\n",
-		dev->vendor, dev->device, brcm_buses[nr].name,
-		slot, brcm_map_irq(dev, slot, 1));
-
-	/* zero out the BARs and let Linux assign an address */
-	pci_write_config_dword(dev, PCI_COMMAND, 0);
-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_0, 0);
-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_2, 0);
-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_3, 0);
-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_4, 0);
-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_5, 0);
-	pci_write_config_dword(dev, PCI_INTERRUPT_LINE, 0);
+	dev_info(bus->dev,
+		 "found device %04x:%04x on bus %d (%s), slot %d (irq %d)\n",
+		 dev->vendor, dev->device, dev->bus->number, bus->name,
+		 slot, brcm_map_irq(dev, slot, 1));
 }
 DECLARE_PCI_FIXUP_EARLY(PCI_ANY_ID, PCI_ANY_ID, brcm_pcibios_fixup);
 
@@ -540,13 +657,21 @@ DECLARE_PCI_FIXUP_EARLY(PCI_ANY_ID, PCI_ANY_ID, brcm_pcibios_fixup);
  ***********************************************************************/
 static int __init brcm_pci_probe(struct platform_device *pdev)
 {
-	struct device_node *dn = pdev->dev.of_node;
+	struct device_node *dn = pdev->dev.of_node, *mdn;
 	const u32 *imap_prop;
 	int len, i, irq_offset, rlen, pna, np, ret;
 	struct brcm_pci_bus *bus = &brcm_buses[brcm_num_pci_controllers];
 	struct resource *r;
 	const u32 *ranges;
 	void __iomem *base;
+	u32 tmp;
+
+	/* 'num_memc' will be set only by the first controller, and all
+	 * other controllers will use the value set by the first. */
+	if (num_memc == 0)
+		for_each_compatible_node(mdn, NULL, "brcm,brcmstb-memc")
+			if (of_device_is_available(mdn))
+				num_memc++;
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!r)
@@ -569,24 +694,37 @@ static int __init brcm_pci_probe(struct platform_device *pdev)
 
 	snprintf(bus->name,
 		 sizeof(bus->name)-1, "PCIe%d", brcm_num_pci_controllers);
-	bus->hw_busnum = 1;
 	bus->suspended = false;
 	bus->clk = of_clk_get_by_name(dn, "sw_pcie");
 	if (IS_ERR(bus->clk)) {
-		pr_err("PCIe: could not get clock\n");
+		dev_err(&pdev->dev, "could not get clock\n");
 		bus->clk = NULL;
 	}
 	ret = clk_prepare_enable(bus->clk);
 	if (ret) {
-		pr_err("PCIe: could not enable clock\n");
+		dev_err(&pdev->dev, "could not enable clock\n");
 		return ret;
 	}
 	bus->dn = dn;
 	bus->base = base;
+	bus->dev = &pdev->dev;
+	bus->gen = 0;
+
+	ret = of_property_read_u32(dn, "brcm,gen", &tmp);
+	if (ret == 0) {
+		if (tmp > 0 && tmp < 3)
+			bus->gen = (int) tmp;
+		else
+			dev_warn(bus->dev, "bad DT value for prop 'brcm,gen");
+	} else if (ret != -EINVAL) {
+		dev_warn(bus->dev, "error reading DT prop 'brcm,gen");
+	}
+
+	bus->ssc = of_property_read_bool(dn, "brcm,ssc");
 
 	ranges = of_get_property(dn, "ranges", &rlen);
 	if (ranges == NULL) {
-		pr_err("PCIe: no ranges property in dev tree.\n");
+		dev_err(bus->dev, "no ranges property in dev tree.\n");
 		return -EINVAL;
 	}
 	/* set up CPU->PCIE memory windows (max of four) */
@@ -611,7 +749,7 @@ static int __init brcm_pci_probe(struct platform_device *pdev)
 		/* Request memory region resources. */
 		if (request_resource(&iomem_resource, &w->pcie_iomem_res)) {
 			dev_err(&pdev->dev,
-			"PCIe: request PCIe Memory resource failed\n");
+				"request PCIe memory resource failed\n");
 			return -EIO;
 		}
 	}
@@ -650,8 +788,10 @@ int __init brcm_pcibios_init(void)
 {
 	int i, ret;
 
-	for (i = 0; i < BRCM_MAX_PCI_CONTROLLERS; i++)
-		brcm_buses[i].busnr = -1;
+	for (i = 0; i < BRCM_MAX_PCI_CONTROLLERS; i++) {
+		brcm_buses[i].busnr_start = -1;
+		brcm_buses[i].busnr_end = -1;
+	}
 
 	ret = platform_driver_probe(&brcm_pci_driver, brcm_pci_probe);
 	if (!ret && brcm_num_pci_controllers > 0) {

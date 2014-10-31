@@ -155,7 +155,7 @@ static unsigned bcm_sf2_num_active_ports(struct dsa_switch *ds)
 static void bcm_sf2_recalc_clock(struct dsa_switch *ds)
 {
 	struct bcm_sf2_priv *priv = ds_to_priv(ds);
-	unsigned long old_rate, new_rate;
+	unsigned long new_rate;
 	unsigned int ports_active;
 	/* Frequenty in Mhz */
 	const unsigned long rate_table[] = {
@@ -171,7 +171,6 @@ static void bcm_sf2_recalc_clock(struct dsa_switch *ds)
 		return;
 
 	new_rate = rate_table[ports_active - 1];
-	old_rate = clk_get_rate(priv->clk_mdiv);
 	clk_set_rate(priv->clk_mdiv, new_rate);
 }
 
@@ -275,7 +274,37 @@ static void bcm_sf2_eee_enable_set(struct dsa_switch *ds, int port, bool enable)
 	core_writel(priv, reg, CORE_EEE_EN_CTRL);
 }
 
-static int bcm_sf2_port_setup(struct dsa_switch *ds, int port)
+static void bcm_sf2_gphy_enable_set(struct dsa_switch *ds, bool enable)
+{
+	struct bcm_sf2_priv *priv = ds_to_priv(ds);
+	u32 reg;
+
+	reg = reg_readl(priv, REG_SPHY_CNTRL);
+	if (enable) {
+		reg |= PHY_RESET;
+		reg &= ~(EXT_PWR_DOWN | IDDQ_BIAS | CK25_DIS);
+		reg_writel(priv, reg, REG_SPHY_CNTRL);
+		udelay(21);
+		reg = reg_readl(priv, REG_SPHY_CNTRL);
+		reg &= ~PHY_RESET;
+	} else {
+		reg |= EXT_PWR_DOWN | IDDQ_BIAS | PHY_RESET;
+		reg_writel(priv, reg, REG_SPHY_CNTRL);
+		mdelay(1);
+		reg |= CK25_DIS;
+	}
+	reg_writel(priv, reg, REG_SPHY_CNTRL);
+
+	/* Use PHY-driven LED signaling */
+	if (!enable) {
+		reg = reg_readl(priv, REG_LED_CNTRL(0));
+		reg |= SPDLNK_SRC_SEL;
+		reg_writel(priv, reg, REG_LED_CNTRL(0));
+	}
+}
+
+static int bcm_sf2_port_setup(struct dsa_switch *ds, int port,
+			      struct phy_device *phy)
 {
 	struct bcm_sf2_priv *priv = ds_to_priv(ds);
 	s8 cpu_port = ds->dst[ds->index].cpu_port;
@@ -288,6 +317,13 @@ static int bcm_sf2_port_setup(struct dsa_switch *ds, int port)
 
 	/* Clear the Rx and Tx disable bits and set to no spanning tree */
 	core_writel(priv, 0, CORE_G_PCTL_PORT(port));
+
+	/* Re-enable the GPHY and re-apply workarounds */
+	if (port == 0 && priv->hw_params.num_gphy == 1) {
+		bcm_sf2_gphy_enable_set(ds, true);
+		if (phy)
+			phy_init_hw(phy);
+	}
 
 	/* Enable port 7 interrupts to get notified */
 	if (port == 7)
@@ -326,6 +362,9 @@ static void bcm_sf2_port_disable(struct dsa_switch *ds, int port)
 		intrl2_1_mask_set(priv, P_IRQ_MASK(P7_IRQ_OFF));
 		intrl2_1_writel(priv, P_IRQ_MASK(P7_IRQ_OFF), INTRL2_CPU_CLEAR);
 	}
+
+	if (port == 0 && priv->hw_params.num_gphy == 1)
+		bcm_sf2_gphy_enable_set(ds, false);
 
 	if (dsa_is_cpu_port(ds, port))
 		off = CORE_IMP_CTL;
@@ -516,7 +555,7 @@ static int bcm_sf2_sw_setup(struct dsa_switch *ds)
 	for (port = 0; port < priv->hw_params.num_ports; port++) {
 		/* IMP port receives special treatment */
 		if ((1 << port) & ds->phys_port_mask)
-			bcm_sf2_port_setup(ds, port);
+			bcm_sf2_port_setup(ds, port, NULL);
 		else if (dsa_is_cpu_port(ds, port))
 			bcm_sf2_imp_setup(ds, port);
 		else
@@ -810,7 +849,6 @@ static int bcm_sf2_sw_resume(struct dsa_switch *ds)
 {
 	struct bcm_sf2_priv *priv = ds_to_priv(ds);
 	unsigned int port;
-	u32 reg;
 	int ret;
 
 	if (!priv->wol_ports_mask)
@@ -822,21 +860,12 @@ static int bcm_sf2_sw_resume(struct dsa_switch *ds)
 		return ret;
 	}
 
-	/* Reinitialize the single GPHY */
-	if (priv->hw_params.num_gphy == 1) {
-		reg = reg_readl(priv, REG_SPHY_CNTRL);
-		reg |= PHY_RESET;
-		reg &= ~(EXT_PWR_DOWN | IDDQ_BIAS);
-		reg_writel(priv, reg, REG_SPHY_CNTRL);
-		udelay(21);
-		reg = reg_readl(priv, REG_SPHY_CNTRL);
-		reg &= ~PHY_RESET;
-		reg_writel(priv, reg, REG_SPHY_CNTRL);
-	}
+	if (priv->hw_params.num_gphy == 1)
+		bcm_sf2_gphy_enable_set(ds, true);
 
 	for (port = 0; port < DSA_MAX_PORTS; port++) {
 		if ((1 << port) & ds->phys_port_mask)
-			bcm_sf2_port_setup(ds, port);
+			bcm_sf2_port_setup(ds, port, NULL);
 		else if (dsa_is_cpu_port(ds, port))
 			bcm_sf2_imp_setup(ds, port);
 	}

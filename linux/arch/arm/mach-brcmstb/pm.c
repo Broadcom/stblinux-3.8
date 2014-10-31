@@ -524,7 +524,7 @@ static noinline int brcmstb_pm_s3_finish(void)
 }
 
 #define SWAP_STACK(new_sp, saved_sp) \
-	__asm__ ( \
+	__asm__ __volatile__ ( \
 		 "mov	%[save], sp\n" \
 		 "mov	sp, %[new]\n" \
 		 : [save] "=&r" (saved_sp) \

@@ -311,33 +311,6 @@ void __init brcmstb_dt_init_irq(void)
 	of_irq_init(brcmstb_dt_irq_match);
 }
 
-void wktmr_read(struct wktmr_time *t)
-{
-	uint32_t tmp;
-
-	do {
-		t->sec = BDEV_RD(BCHP_WKTMR_COUNTER);
-		tmp = BDEV_RD(BCHP_WKTMR_PRESCALER_VAL);
-	} while (tmp >= WKTMR_FREQ);
-
-	t->pre = WKTMR_FREQ - tmp;
-}
-
-unsigned long wktmr_elapsed(struct wktmr_time *t)
-{
-	struct wktmr_time now;
-
-	wktmr_read(&now);
-	now.sec -= t->sec;
-	if (now.pre > t->pre) {
-		now.pre -= t->pre;
-	} else {
-		now.pre = WKTMR_FREQ + now.pre - t->pre;
-		now.sec--;
-	}
-	return (now.sec * WKTMR_FREQ) + now.pre;
-}
-
 static void __init brcmstb_reserve(void)
 {
 	cma_reserve();

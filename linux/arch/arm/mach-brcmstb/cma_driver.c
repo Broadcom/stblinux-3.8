@@ -354,7 +354,7 @@ void __init cma_register(void)
 /* CMA driver implementation */
 
 /* Mutex for serializing accesses to private variables */
-static DEFINE_MUTEX(cma_dev_mutex);
+static DEFINE_SPINLOCK(cma_dev_lock);
 static dev_t cma_dev_devno;
 static struct class *cma_dev_class;
 static struct cma_root_dev *cma_root_dev;
@@ -488,11 +488,12 @@ struct cma_dev *cma_dev_get_cma_dev(int memc)
 {
 	struct list_head *pos;
 	struct cma_dev *cma_dev = NULL;
+	unsigned long flags;
 
 	if (!cma_root_dev)
 		return NULL;
 
-	mutex_lock(&cma_dev_mutex);
+	spin_lock_irqsave(&cma_dev_lock, flags);
 
 	list_for_each(pos, &cma_root_dev->cma_devs.list) {
 		struct cma_dev *curr_cma_dev;
@@ -504,7 +505,7 @@ struct cma_dev *cma_dev_get_cma_dev(int memc)
 		}
 	}
 
-	mutex_unlock(&cma_dev_mutex);
+	spin_unlock_irqrestore(&cma_dev_lock, flags);
 
 	dev_dbg(cma_root_dev->dev, "cma_dev index %d not in list\n", memc);
 	return cma_dev;
@@ -1140,8 +1141,6 @@ static int __init cma_drvr_probe(struct platform_device *pdev)
 	struct cma_pdev_data *data =
 		(struct cma_pdev_data *)dev->platform_data;
 
-	mutex_lock(&cma_dev_mutex);
-
 	/* Prepare a major number for the devices if not already done */
 	ret = cma_drvr_alloc_devno(dev);
 	if (ret)
@@ -1182,9 +1181,7 @@ static int __init cma_drvr_probe(struct platform_device *pdev)
 		 * device has been initialized at this point. An error will be
 		 * logged if there is a failure.
 		 */
-		mutex_unlock(&cma_dev_mutex);
 		cma_drvr_do_prealloc(dev, cma_dev);
-		mutex_lock(&cma_dev_mutex);
 	}
 
 	goto done;
@@ -1193,7 +1190,6 @@ free_cma_dev:
 	devm_kfree(dev, cma_dev);
 
 done:
-	mutex_unlock(&cma_dev_mutex);
 	return ret;
 }
 

@@ -31,6 +31,8 @@
 #include <linux/brcmstb/brcmstb.h>
 #include <linux/clk/clk-brcmstb.h>
 
+static bool shut_off_unused_clks;
+
 struct bcm_clk_gate {
 	struct clk_hw hw;
 	void __iomem *reg;
@@ -303,7 +305,8 @@ static struct clk __init *brcm_clk_gate_register(
 	init.parent_names = (parent_name ? &parent_name : NULL);
 	init.num_parents = (parent_name ? 1 : 0);
 	init.flags = flags | (parent_name ? 0 : CLK_IS_ROOT);
-	init.flags |= CLK_IGNORE_UNUSED; /* FIXME */
+	if (!shut_off_unused_clks)
+		init.flags |= CLK_IGNORE_UNUSED; /* FIXME */
 
 	/* struct bcm_gate assignments */
 	gate->reg = reg;
@@ -353,7 +356,8 @@ static struct clk __init *brcmstb_clk_sw_register(
 	init.parent_names = parent_names;
 	init.num_parents = num_parents;
 	init.flags = flags | CLK_IS_BASIC | CLK_IS_SW;
-	init.flags |= CLK_IGNORE_UNUSED; /* FIXME */
+	if (!shut_off_unused_clks)
+		init.flags |= CLK_IGNORE_UNUSED; /* FIXME */
 
 	sw_clk->hw.init = &init;
 	clk = clk_register(dev, &sw_clk->hw);
@@ -447,11 +451,18 @@ static void __init of_brcmstb_clk_sw_setup(struct device_node *node)
 	}
 }
 
-static bool bcm_full_clk;
+static bool bcm_full_clk = true;
 
 static int __init _bcm_full_clk(char *str)
 {
-	bcm_full_clk = true;
+	int level = 1;
+
+	get_option(&str, &level);
+	if (level == 0)
+		bcm_full_clk = false;
+	else if (level > 1)
+		shut_off_unused_clks = true;
+
 	return 0;
 }
 

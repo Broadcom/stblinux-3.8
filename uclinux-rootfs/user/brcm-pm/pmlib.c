@@ -77,15 +77,14 @@ struct brcm_pm_priv
 #define BUF_SIZE	64
 #define MAX_ARGS	16
 
-#define SYS_MEMC1_STAT	"/sys/devices/platform/brcmstb/memc1_power"
 #define SYS_SATA_STAT	"/sys/devices/platform/brcmstb/sata_power"
-#define SYS_DDR_STAT	"/sys/devices/platform/brcmstb/ddr_timeout"
+#define SYS_SRPD_GLOB	"/sys/bus/platform/drivers/brcmstb_memc/*/srpd"
 #define SYS_TP1_STAT	"/sys/devices/system/cpu/cpu1/online"
 #define SYS_TP2_STAT	"/sys/devices/system/cpu/cpu2/online"
 #define SYS_TP3_STAT	"/sys/devices/system/cpu/cpu3/online"
-#define SYS_CPU_KHZ	"/sys/devices/platform/brcmstb/cpu_khz"
-#define SYS_CPU_PLL	"/sys/devices/platform/brcmstb/cpu_pll"
-#define SYS_CPU_DIV	"/sys/devices/platform/brcmstb/cpu_div"
+#define SYS_CPU_KHZ	"/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed"
+#define SYS_CPUFREQ_AVAIL	"/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies"
+#define SYS_CPUFREQ_GOV	"/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
 #define SYS_STANDBY	"/sys/power/state"
 #define HALT_PATH	"/sbin/halt"
 #define AHCI_DEV_NAME	"strict-ahci.0"
@@ -281,6 +280,48 @@ int brcm_pm_set_cfg(void *vctx, struct brcm_pm_cfg *cfg)
 	return(0);
 }
 
+static int get_srpd_status(void)
+{
+	glob_t g;
+	int i, ret = 0;
+	unsigned int val = 0;
+
+	if (glob(SYS_SRPD_GLOB, GLOB_NOSORT, NULL, &g) != 0)
+		return BRCM_PM_UNDEF;
+
+	for (i = 0; i < (int)g.gl_pathc; i++) {
+		if (sysfs_get(g.gl_pathv[i], &val) != 0)
+			return BRCM_PM_UNDEF;
+
+		/* Stop with the first non-zero value */
+		if (val > 0)
+			break;
+	}
+	globfree(&g);
+
+	return val;
+}
+
+static int set_srpd(int val)
+{
+	glob_t g;
+	int i, ret = 0;
+
+	if (val < 0)
+		return 1;
+
+	if (glob(SYS_SRPD_GLOB, GLOB_NOSORT, NULL, &g) != 0)
+		return BRCM_PM_UNDEF;
+
+	for (i = 0; i < (int)g.gl_pathc; i++) {
+		if (sysfs_set(g.gl_pathv[i], val) != 0)
+			return 1;
+	}
+	globfree(&g);
+
+	return 0;
+}
+
 int brcm_pm_get_status(void *vctx, struct brcm_pm_state *st)
 {
 	struct brcm_pm_priv *ctx = vctx;
@@ -288,9 +329,6 @@ int brcm_pm_get_status(void *vctx, struct brcm_pm_state *st)
 	/* read status from /proc */
 	if(sysfs_get(SYS_SATA_STAT, (unsigned int *)&st->sata_status) != 0) {
 		st->sata_status = BRCM_PM_UNDEF;
-	}
-	if(sysfs_get(SYS_DDR_STAT, (unsigned int *)&st->ddr_timeout) != 0) {
-		st->ddr_timeout = BRCM_PM_UNDEF;
 	}
 	if(sysfs_get(SYS_TP1_STAT, (unsigned int *)&st->tp1_status) != 0) {
 		st->tp1_status = BRCM_PM_UNDEF;
@@ -301,18 +339,19 @@ int brcm_pm_get_status(void *vctx, struct brcm_pm_state *st)
 	if(sysfs_get(SYS_TP3_STAT, (unsigned int *)&st->tp3_status) != 0) {
 		st->tp3_status = BRCM_PM_UNDEF;
 	}
-	if(sysfs_get(SYS_MEMC1_STAT, (unsigned int *)&st->memc1_status) != 0) {
-		st->memc1_status = BRCM_PM_UNDEF;
-	}
 	if(sysfs_get(SYS_CPU_KHZ, (unsigned int *)&st->cpu_base) != 0) {
 		st->cpu_base = BRCM_PM_UNDEF;
 	}
-	if(sysfs_get(SYS_CPU_DIV, (unsigned int *)&st->cpu_divisor) != 0) {
-		st->cpu_divisor = BRCM_PM_UNDEF;
+	if(sysfs_get_string(SYS_CPUFREQ_AVAIL, st->cpufreq_avail,
+			    CPUFREQ_AVAIL_MAXLEN) != 0) {
+		strcpy(st->cpufreq_avail, "");
 	}
-	if(sysfs_get(SYS_CPU_PLL, (unsigned int *)&st->cpu_pll) != 0) {
-		st->cpu_pll = BRCM_PM_UNDEF;
+	if(sysfs_get_string(SYS_CPUFREQ_GOV, st->cpufreq_gov,
+			    CPUFREQ_GOV_MAXLEN) != 0) {
+		strcpy(st->cpufreq_gov, "");
 	}
+
+	st->srpd_status = get_srpd_status();
 
 	if(st != &ctx->last_state)
 		memcpy(&ctx->last_state, st, sizeof(*st));
@@ -370,6 +409,10 @@ int brcm_pm_set_status(void *vctx, struct brcm_pm_state *st)
 	((st->element != BRCM_PM_UNDEF) && \
 	 (st->element != ctx->last_state.element))
 
+#define CHANGED_STRING(element) \
+	((st->element && ctx->last_state.element) && \
+	 (strncmp(st->element, ctx->last_state.element, CPUFREQ_GOV_MAXLEN)) != 0)
+
 	if(CHANGED(sata_status))
 	{
 		if(st->sata_status)
@@ -401,24 +444,19 @@ int brcm_pm_set_status(void *vctx, struct brcm_pm_state *st)
 		ret |= sysfs_set(SYS_TP3_STAT, st->tp3_status);
 	}
 
-	if(CHANGED(cpu_divisor))
+	if(CHANGED_STRING(cpufreq_gov))
 	{
-		ret |= sysfs_set(SYS_CPU_DIV, st->cpu_divisor);
+		ret |= sysfs_set_string(SYS_CPUFREQ_GOV, st->cpufreq_gov);
 	}
 
-	if(CHANGED(cpu_pll))
+	if(CHANGED(cpu_base))
 	{
-		ret |= sysfs_set(SYS_CPU_PLL, st->cpu_pll);
+		ret |= sysfs_set(SYS_CPU_KHZ, st->cpu_base);
 	}
 
-	if(CHANGED(ddr_timeout))
+	if(CHANGED(srpd_status))
 	{
-		ret |= sysfs_set(SYS_DDR_STAT, st->ddr_timeout);
-	}
-
-	if(CHANGED(memc1_status))
-	{
-		ret |= sysfs_set(SYS_MEMC1_STAT, st->memc1_status);
+		ret |= set_srpd(st->srpd_status);
 	}
 
 #undef CHANGED

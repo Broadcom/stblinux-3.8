@@ -123,6 +123,9 @@ void brcmstb_cpu_boot(unsigned int cpu)
 	const int reg_ofs = cpu * 8;
 	u32 tmp;
 
+	/* Mark this CPU as "up" */
+	per_cpu(per_cpu_sw_state, cpu) = 1;
+
 	pr_info("SMP: Booting CPU%d...\n", cpu);
 
 	/*
@@ -177,8 +180,6 @@ void brcmstb_cpu_power_on(unsigned int cpu)
 		if (pwr_ctrl_wait_tmout(cpu, 1, ZONE_PWR_ON_STATE_MASK))
 			panic("ZONE_PWR_ON_STATE_MASK set timeout");
 	}
-
-	per_cpu(per_cpu_sw_state, cpu) = 1;
 }
 
 int brcmstb_cpu_get_power_state(unsigned int cpu)
@@ -278,16 +279,6 @@ int brcmstb_cpu_kill(unsigned int cpu)
 	pr_info("SMP: Powering down CPU%d...\n", cpu);
 
 	if (USE_MANUAL_MODE) {
-		/*
-		 * FIXME: See HW7445-1743
-		 * We are often trying to yank the CPU power before it is
-		 * actually ready. We suspect this is (at least partly) because
-		 * we aren't polling the STANDBYWFI signal to ensure that the
-		 * CPU we just killed has fully quiesced. This is a magic
-		 * number delay determined experimentally.
-		 */
-		mdelay(50);
-
 		pwr_ctrl_set(cpu, ZONE_MANUAL_CONTROL_MASK, -1);
 		pwr_ctrl_clr(cpu, ZONE_MAN_RESET_CNTL_MASK, -1);
 		pwr_ctrl_clr(cpu, ZONE_MAN_CLKEN_MASK, -1);

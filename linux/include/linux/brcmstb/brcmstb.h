@@ -857,18 +857,6 @@ extern atomic_t brcm_rdhwr_count;		/* excludes rdhwr fastpath */
 extern unsigned long brcm_cpu_khz;
 extern unsigned long brcm_adj_cpu_khz;
 
-#define WKTMR_FREQ		27000000
-#define WKTMR_1US		(WKTMR_FREQ / 1000000)
-#define WKTMR_1MS		(WKTMR_FREQ / 1000)
-
-struct wktmr_time {
-	u32			sec;
-	u32			pre;
-};
-
-void wktmr_read(struct wktmr_time *t);
-unsigned long wktmr_elapsed(struct wktmr_time *t);
-
 extern void brcmstb_mega_barrier(void);
 
 /* BCMGENET device tree properties */

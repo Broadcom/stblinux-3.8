@@ -87,7 +87,7 @@ static int dsa_slave_open(struct net_device *dev)
 	}
 
 	if (ds->drv->port_enable) {
-		err = ds->drv->port_enable(ds, p->port);
+		err = ds->drv->port_enable(ds, p->port, p->phy);
 		if (err)
 			goto clear_promisc;
 	}
@@ -655,7 +655,6 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 		p->phy->speed = 0;
 		p->phy->duplex = 0;
 		p->phy->advertising = p->phy->supported | ADVERTISED_Autoneg;
-		phy_start_aneg(p->phy);
 	}
 
 	return slave_dev;

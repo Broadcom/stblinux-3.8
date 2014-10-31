@@ -18,41 +18,30 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/syscore_ops.h>
-#include <linux/mfd/syscon.h>
-#include <linux/regmap.h>
+#include <linux/io.h>
 #include <linux/slab.h>
 
 
-struct brcmstb_rm_group {
-	struct regmap *rm;
-	int count;
-	void *mem;
+struct brcmstb_reg_group {
+	void __iomem *regs;
+	unsigned int count;
 };
-static struct brcmstb_rm_group *rm_groups;
-static int num_regmap_groups;
-
+static struct brcmstb_reg_group *reg_groups;
+static int num_reg_groups;
+static u32 *reg_mem;
 
 static int reg_save(void)
 {
-	int i, ret, total;
-	u32 *mem;
+	int i;
+	unsigned int j, total;
 
-	if (0 == num_regmap_groups)
+	if (0 == num_reg_groups)
 		return 0;
 
-	for (i = 0, total = 0; i < num_regmap_groups; i++)
-		total += rm_groups[i].count;
-	mem = kmalloc(total * sizeof(u32), GFP_KERNEL);
-	if (!mem)
-		return -ENOMEM;
-
-	for (i = 0, total = 0; i < num_regmap_groups; i++) {
-		struct brcmstb_rm_group *p = &rm_groups[i];
-		p->mem = &mem[total];
-		ret = regmap_bulk_read(p->rm, 0, p->mem, p->count);
-		if (ret)
-			return ret;
-		total += p->count;
+	for (i = 0, total = 0; i < num_reg_groups; i++) {
+		struct brcmstb_reg_group *p = &reg_groups[i];
+		for (j = 0; j < p->count; j++)
+			reg_mem[total++] = __raw_readl(p->regs + (j * 4));
 	}
 	return 0;
 }
@@ -60,18 +49,17 @@ static int reg_save(void)
 
 static void reg_restore(void)
 {
-	int i, ret, total;
+	int i;
+	unsigned int j, total;
 
-	if (0 == num_regmap_groups)
+	if (0 == num_reg_groups)
 		return;
 
-	for (i = 0, total = 0; i < num_regmap_groups; i++) {
-		struct brcmstb_rm_group *p = &rm_groups[i];
-		ret = regmap_bulk_write(p->rm, 0, p->mem, p->count);
-		if (ret)
-			pr_err("failed to restore reg group\n");
+	for (i = 0, total = 0; i < num_reg_groups; i++) {
+		struct brcmstb_reg_group *p = &reg_groups[i];
+		for (j = 0; j < p->count; j++)
+			__raw_writel(reg_mem[total++], p->regs + (j * 4));
 	}
-	kfree(rm_groups[0].mem);
 }
 
 
@@ -83,51 +71,78 @@ static struct syscore_ops regsave_pm_ops = {
 
 int brcmstb_regsave_init(void)
 {
-	struct regmap *rm;
 	struct resource res;
 	struct device_node *dn, *pp;
-	int ret = 0, len, num_phandles, i;
+	int ret = 0, len, num_phandles = 0, i;
+	unsigned int total;
+	resource_size_t size;
+	const char *name;
+
 
 	dn = of_find_node_by_name(NULL, "s3");
 	if (!dn)
 		/* FIXME: return -EINVAL when all bolts have 's3' node */
 		goto fail;
 
-	if (!of_get_property(dn, "syscon-refs", &len))
+	if (of_get_property(dn, "syscon-refs", &len))
+		name = "syscon-refs";
+	else if (of_get_property(dn, "regsave-refs", &len))
+		name = "regsave-refs";
+	else
 		/* FIXME: return -EINVAL when all bolts have 'syscon-refs' */
 		goto fail;
 
 	num_phandles = len / 4;
-	rm_groups = kzalloc(num_phandles * sizeof(struct brcmstb_rm_group),
+	reg_groups = kzalloc(num_phandles * sizeof(struct brcmstb_reg_group),
 			    GFP_KERNEL);
-	if (rm_groups == NULL) {
+	if (reg_groups == NULL) {
 		ret = -ENOMEM;
 		goto fail;
 	}
 
 	for (i = 0; i < num_phandles; i++) {
-		pp = of_parse_phandle(dn, "syscon-refs", i);
-		if (pp) {
-			rm = syscon_node_to_regmap(pp);
-			if (rm == NULL) {
-				ret = -EIO;
-				goto fail;
-			}
-			WARN_ON(4 != regmap_get_val_bytes(rm));
-			ret = of_address_to_resource(pp, 0, &res);
-			if (ret)
-				goto fail;
-			rm_groups[num_regmap_groups].rm = rm;
-			rm_groups[num_regmap_groups].count
-				= resource_size(&res) >> 2;
-			num_regmap_groups++;
+		void __iomem *regs;
+
+		pp = of_parse_phandle(dn, name, i);
+		if (!pp) {
+			ret = -EIO;
+			goto fail;
 		}
+		ret = of_address_to_resource(pp, 0, &res);
+		if (ret)
+			goto fail;
+		size = resource_size(&res);
+		regs = ioremap(res.start, size);
+		if (!regs) {
+			ret = -EIO;
+			goto fail;
+		}
+
+		reg_groups[num_reg_groups].regs = regs;
+		reg_groups[num_reg_groups].count = (unsigned) (size >> 2);
+		num_reg_groups++;
 	};
+
+	for (i = 0, total = 0; i < num_reg_groups; i++)
+		total += reg_groups[i].count;
+	reg_mem = kmalloc(total * sizeof(u32), GFP_KERNEL);
+	if (!reg_mem) {
+		ret = -ENOMEM;
+		goto fail;
+	}
 	of_node_put(dn);
 	register_syscore_ops(&regsave_pm_ops);
 	return 0;
 fail:
+	if (reg_groups) {
+		for (i = 0; i < num_phandles; i++)
+			if (reg_groups[i].regs)
+				iounmap(reg_groups[i].regs);
+			else
+				break;
+		kfree(reg_groups);
+	}
+	kfree(reg_mem);
 	of_node_put(dn);
-	kfree(rm_groups);
 	return ret;
 }

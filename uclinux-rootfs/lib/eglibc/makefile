@@ -9,8 +9,18 @@ BOGUS_TARGETS		:= FORCE makefile $(ROOTDIR)/config.arch
 ifneq ($(EGLIBC_MAKEFILE_GUARD),1)
 EGLIBC_MAKEFILE_GUARD = 1
 
+# Only build locally if necessary
+ifeq ($(CONFIG_LIB_LIBC_FROM_ROOTFS),y)
+libc-source := rootfs
+else
+libc-source := toolchain
+endif
+
 .PHONY: all
-all::
+all:: all-$(libc-source)
+
+.PHONY: all-rootfs
+all-rootfs:
 	if [ ! -e build/Makefile ]; then \
 		mkdir -p build; \
 		cd build; \
@@ -22,21 +32,37 @@ all::
 	fi
 	$(MAKE) -C build
 
+.PHONY: all-toolchain
+all-toolchain:
+
+.PHONY: clean
+clean::
+	[ ! -f build/Makefile ] || $(MAKE) -C build $@
+
 .PHONY: distclean
 distclean::
 	rm -rf build temp
 
 # We install to a temporary folder first and generate the list of
 # files we actually want from that folder, then copy those to the romfs.
-# This is based off of Fedora's glibc RPM spec.
-.PHONY: romfs
-romfs::
-	mkdir -p temp
-	make -C build install DESTDIR=$(CURDIR)/temp
+.PHONY: romfs romfs-rootfs romfs-toolchain
+romfs:: romfs-$(libc-source)
+	$(STRIP) temp/lib/*.so* temp/sbin/ldconfig
 	mkdir -p $(ROMFSDIR)/lib
 	cp -df temp/lib/*.so* $(ROMFSDIR)/lib
-	$(ROMFSINST) -e CONFIG_LIB_EGLIBC_LDD temp/bin/ldd /bin/ldd
-	$(ROMFSINST) -e CONFIG_LIB_EGLIBC_LDCONFIG temp/sbin/ldconfig /sbin/ldconfig
+	$(ROMFSINST) -e CONFIG_LIB_LIBC_LDD temp/bin/ldd /bin/ldd
+	$(ROMFSINST) -e CONFIG_LIB_LIBC_LDCONFIG temp/sbin/ldconfig /sbin/ldconfig
+
+romfs-rootfs::
+	mkdir -p temp
+	make -C build install DESTDIR=$(CURDIR)/temp
+
+romfs-toolchain::
+	mkdir -p temp/{bin,lib,sbin}
+	cp -df $(GCCSYSROOT)/lib/*.so* temp/lib
+	rm temp/lib/libgcc*.so*  # gets installed elsewhere
+	cp $(GCCSYSROOT)/usr/bin/ldd temp/bin/ldd
+	cp $(GCCSYSROOT)/sbin/ldconfig temp/sbin/ldconfig
 
 endif # EGLIBC_MAKEFILE_GUARD
 

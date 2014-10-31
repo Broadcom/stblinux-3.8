@@ -1641,10 +1641,15 @@ static int cma_get_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	pte_t *pte;
 	struct page *tmp_page;
 
+	/*
+	 * We might not be looking at a CMA-mapped region, in which case
+	 * the page table might not be set up and we should fault.
+	 */
 	pgd = pgd_offset(mm, pg);
 	BUG_ON(pgd_none(*pgd));
 	pud = pud_offset(pgd, pg);
-	BUG_ON(pud_none(*pud));
+	if (pud_none(*pud))
+		return ret;
 	pmd = pmd_offset(pud, pg);
 	if (pmd_none(*pmd))
 		return ret;
@@ -1822,7 +1827,7 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 
 #if defined(CONFIG_BRCMSTB)
 		/* handle direct I/O on CMA regions */
-		if (!cma_get_page(mm, vma, start,
+		if (vma && !cma_get_page(mm, vma, start,
 				  pages ? &pages[i] : NULL)) {
 			if (vmas)
 				vmas[i] = vma;

@@ -100,6 +100,13 @@ CONFIG_USER_E2FSPROGS_E2FSCK_E2FSCK
   Filesystem fsck,  for checking damaged filesystems.
   Approx. binary size: 121k
 
+CONFIG_USER_I2C_TOOLS
+  Heterogeneous set of I2C tools for Linux
+  This package contains a heterogeneous set of I2C tools for Linux:
+  a bus probing tool, a chip dumper, register-level access helpers,
+  EEPROM decoding scripts, and more.
+  http://www.lm-sensors.org
+
 CONFIG_USER_INIT_EXPAND
   A simple filesystem decompressor.
   Approx. binary size: 5k

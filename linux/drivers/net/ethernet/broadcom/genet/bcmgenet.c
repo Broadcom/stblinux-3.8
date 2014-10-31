@@ -2634,6 +2634,7 @@ static int bcmgenet_drv_probe(struct platform_device *pdev)
 		NETIF_F_IPV6_CSUM | NETIF_F_RXCSUM;
 
 	/* Request the WOL interrupt line and advertise suspend if available */
+	priv->wol_irq_disabled = 1;
 	err = devm_request_irq(&pdev->dev, priv->wol_irq, bcmgenet_wol_isr, 0,
 				dev->name, priv);
 	if (!err)

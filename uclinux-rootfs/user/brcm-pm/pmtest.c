@@ -68,11 +68,10 @@ void usage(void)
 	printf("  tp1 0        power down TP1 (second CPU thread)\n");
 	printf("  tp2 0        power down TP2 (third CPU thread)\n");
 	printf("  tp3 0        power down TP3 (fourth CPU thread)\n");
-	printf("  memc1 0      power down MEMC1 (if available)\n");
-	printf("  cpu 4        set CPU clock to BASE/4\n");
+	printf("  cpu 4        set CPU clock\n");
 	printf("  pll 1        set alternate CPU PLL mode #1\n");
-	printf("  ddr 64       enable DDR self-refresh after 64 idle cycles\n");
-	printf("  ddr 0        disable DDR self-refresh\n");
+	printf("  srpd 64      enable self-refresh on all MEMCs after 64 cycles\n");
+	printf("  srpd 0       disable self-refresh\n");
 	printf("  standby      enter passive standby\n");
 	printf("  irw_halt     enter irw_halt mode\n");
 	exit(1);
@@ -123,14 +122,10 @@ int main(int argc, char **argv)
 		printf("tp1:          %d\n", state.tp1_status);
 		printf("tp2:          %d\n", state.tp2_status);
 		printf("tp3:          %d\n", state.tp3_status);
-		printf("memc1:        %d\n", state.memc1_status);
-		printf("cpu_base:     %d\n", state.cpu_base);
-		printf("cpu_divisor:  %d\n", state.cpu_divisor);
-		printf("cpu_pll:      %d\n", state.cpu_pll);
-		if (state.cpu_divisor != BRCM_PM_UNDEF)
-			printf("cpu_speed:    %d\n",
-				state.cpu_base / state.cpu_divisor);
-		printf("ddr:          %d\n", state.ddr_timeout);
+		printf("cpufreq_cur:   %d\n", state.cpu_base);
+		printf("cpufreq_avail: %s",   state.cpufreq_avail);
+		printf("cpufreq_gov:   %s",   state.cpufreq_gov);
+		printf("srpd:         %d\n", state.srpd_status);
 		return(0);
 	}
 
@@ -205,35 +200,20 @@ int main(int argc, char **argv)
 		return(0);
 	}
 
-	if(! strcmp(cmd, "memc1"))
+	if(! strcmp(cmd, "srpd"))
 	{
-		state.memc1_status = val;
+		state.srpd_status = val;
 		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
-			fatal("can't set PM state (MEMC1)");
+			fatal("can't set PM state (SRPD)");
 		return(0);
 	}
 
 	if(! strcmp(cmd, "cpu"))
 	{
-		state.cpu_divisor = val;
+		strcpy(state.cpufreq_gov, "userspace\n");
+		state.cpu_base = val;
 		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
 			fatal("can't set PM state (CPU)");
-		return(0);
-	}
-
-	if(! strcmp(cmd, "ddr"))
-	{
-		state.ddr_timeout = val;
-		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
-			fatal("can't set PM state (DDR)");
-		return(0);
-	}
-
-	if(! strcmp(cmd, "pll"))
-	{
-		state.cpu_pll = val;
-		if(brcm_pm_set_status(brcm_pm_ctx, &state) != 0)
-			fatal("can't set PM state (CPU PLL)");
 		return(0);
 	}
 

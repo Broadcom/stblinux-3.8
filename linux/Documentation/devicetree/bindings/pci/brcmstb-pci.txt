@@ -1,214 +1,70 @@
-[This text was copied from: http://devicetree.org/Device_Tree_Usage#PCI_Host_Bridge ]
+Brcmstb PCIe Host Controller Device Tree Bindings
 
-PCI Host Bridge
+Introduction:
 
-This section describes the Host/PCI bridge node.
+The brcmstb host controller closely follows the example set in
 
-Note, some basic knowledge of PCI is assumed in this section. This is
-NOT a tutorial about PCI, if you need some more in depth information,
-please read[1]. You can also refer to either ePAPR or the PCI Bus
-Binding to Open Firmware. A complete working example for a Freescale
-MPC5200 can be found here.  PCI Bus numbering
+	[1] http://devicetree.org/Device_Tree_Usage#PCI_Host_Bridge
 
-Each PCI bus segment is uniquely numbered, and the bus numbering is
-exposed in the pci node by using the bus-ranges property, which
-contains two cells. The first cell gives the bus number assigned to
-this node, and the second cell gives the maximum bus number of any of
-the subordinate PCI busses.
+The rest of this document explains some added customizations and
+offers an example Brcmstb PCIe host controller DT node.
 
-The sample machine has a single pci bus, so both cells are 0.
+Required Properties:
+  reg -- the register start address and length for the PCIe block.
+      Additional start,length pairs may be specified for clock addresses.
+  interrupts -- this must be specified but it is used indirectly.  Interrupt
+      zero must be specified; the Brcmstb driver code uses this interrupt
+      to determine the offset used for all interrupts, specifically, those
+      listed in interrupt-map.
+  compatible -- must specify the string "brcm,pci-plat-dev".
+  #address-cells -- the number of address cells for PCI-space.
+  #size-cells -- the number of size cells for PCI-space.
+  ranges -- See [1]; a specification of the outbound windows for the host
+      controller.  Each outbound window is described by a 7-tuple:
+          (3 entries) -- PCIe space start address (0th entry is ignored).
+          (2 entries) -- CPU/System start address
+          (2 entries) -- Size of region.
+      Due to hardware limitations, there may be a maximum of four windows
+      specified.
+  #interrupt-cells -- number of cells used to describe the interrupt.
+  interrupt-map -- See [1]; each interrupt requires 7 entries, and
+      currently all but the fifth entry (order 0) -- the interrupt
+      number -- is ignored.  There must be four interrupts specified
+      for the PCI's INTA, INTB, INTC, and INTD.
 
-        pci@0x10180000 {
-            compatible = "arm,versatile-pci-hostbridge", "pci";
-            reg = <0x10180000 0x1000>;
-            interrupts = <8 0>;
-            bus-ranges = <0 0>;
-        };
+Optional Properties:
+  interrupt-names -- names of the interrupts listed in the interrupt map.
+  clocks -- list of clock phandles.  If specified, this should list one
+      clock.
+  clock-names -- the "local" names of the clocks specified in 'clocks'.  Note
+      that if the 'clocks' property is given, 'clock-names' is mandatory,
+      and the name of the clock is expected to be "sw_pcie".
+  brcm,ssc -- (boolean) indicates usage of spread-spectrum clocking.
+  brcm,gen --  (integer) indicates desired generation of link:
+      1 => 2.5 Gbps, 2 => 5.0 Gbps, 3 => 8.0 Gbps.
 
-PCI Address Translation
+Example Node:
 
-Similar to the local bus described earlier, the PCI address space is
-completely separate from the CPU address space, so address translation
-is needed to get from a PCI address to a CPU address. As always, this
-is done using the range, #address-cells, and #size-cells properties.
-
-        pci@0x10180000 {
-            compatible = "arm,versatile-pci-hostbridge", "pci";
-            reg = <0x10180000 0x1000>;
-            interrupts = <8 0>;
-            bus-ranges = <0 0>;
-
-            #address-cells = <3>
-            #size-cells = <2>;
-            ranges = <0x42000000 0 0x80000000 0x80000000 0 0x20000000
-                      0x02000000 0 0xa0000000 0xa0000000 0 0x10000000
-                      0x01000000 0 0x00000000 0xb0000000 0 0x01000000>;
-        };
-
-As you can see, child addresses (PCI addresses) use 3 cells, and PCI
-ranges are encoded into 2 cells. The first question might be, why do
-we need three 32 bit cells to specify a PCI address. The three cells
-are labeled phys.hi, phys.mid and phys.low [2].
-
-    phys.hi cell: npt000ss bbbbbbbb dddddfff rrrrrrrr
-    phys.mid cell: hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh
-    phys.low cell: llllllll llllllll llllllll llllllll
-
-PCI addresses are 64 bits wide, and are encoded into phys.mid and
-phys.low. However, the really interesting things are in phys.high
-which is a bit field:
-
-    n: relocatable region flag (doesn't play a role here)
-    p: prefetchable (cacheable) region flag
-    t: aliased address flag (doesn't play a role here)
-    ss: space code
-        00: configuration space
-        01: I/O space
-        10: 32 bit memory space
-        11: 64 bit memory space
-    bbbbbbbb: The PCI bus number. PCI may be structured hierarchically.
-        So we may have PCI/PCI bridges which will define sub busses.
-    ddddd: The device number, typically associated with IDSEL signal connections.
-    fff: The function number. Used for multifunction PCI devices.
-    rrrrrrrr: Register number; used for configuration cycles.
-
-For the purpose of PCI address translation, the important fields are p
-and ss. The value of p and ss in phys.hi determines which PCI address
-space is being accessed. So looking onto our ranges property, we have
-three regions:
-
-    o a 32 bit prefetchable memory region beginning on PCI address
-      0x80000000 of 512 MByte size which will be mapped onto address
-      0x80000000 on the host CPU.
-    o a 32 bit non-prefetchable memory region beginning on PCI address
-      0xa0000000 of 256 MByte size which will be mapped onto address
-      0xa0000000 on the host CPU.
-    o an I/O region beginning on PCI address 0x00000000 of 16 MByte
-      size which will be mapped onto address 0xb0000000 on the host CPU.
-
-To throw a wrench into the works, the presence of the phys.hi bitfield
-means that an operating system needs to know that the node represents
-a PCI bridge so that it can ignore the irrelevant fields for the
-purpose of translation. An OS will look for the string "pci" in the
-PCI bus nodes to determine whether it needs to mask of the extra
-fields.
-
-Advanced Interrupt Mapping
-
-Now we come to the most interesting part, PCI interrupt mapping. A PCI
-device can trigger interrupts using the wires #INTA, #INTB, #INTC and
-#INTD. If we don't have multifunction PCI devices, a device is
-obligated to use #INTA for interrupts. However, each PCI slot or
-device is typically wired to different inputs on the interrupt
-controller. So, the device tree needs a way of mapping each PCI
-interrupt signal to the inputs of the interrupt controller. The
-#interrupt-cells, interrupt-map and interrupt-map-mask properties are
-used to describe the interrupt mapping.
-
-Actually, the interrupt mapping described here isn't limited to PCI
-busses, any node can specify complex interrupt maps, but the PCI case
-is by far the most common.
-
-        pci@0x10180000 {
-            compatible = "arm,versatile-pci-hostbridge", "pci";
-            reg = <0x10180000 0x1000>;
-            interrupts = <8 0>;
-            bus-ranges = <0 0>;
-
-            #address-cells = <3>
-            #size-cells = <2>;
-            ranges = <0x42000000 0 0x80000000  0x80000000  0 0x20000000
-                      0x02000000 0 0xa0000000  0xa0000000  0 0x10000000
-                      0x01000000 0 0x00000000  0xb0000000  0 0x01000000>;
-
-            #interrupt-cells = <1>;
-            interrupt-map-mask = <0xf800 0 0 7>;
-            interrupt-map = <0xc000 0 0 1 &intc  9 3 // 1st slot
-                             0xc000 0 0 2 &intc 10 3
-                             0xc000 0 0 3 &intc 11 3
-                             0xc000 0 0 4 &intc 12 3
-
-                             0xc800 0 0 1 &intc 10 3 // 2nd slot
-                             0xc800 0 0 2 &intc 11 3
-                             0xc800 0 0 3 &intc 12 3
-                             0xc800 0 0 4 &intc  9 3>;
-        };
-
-
-First you'll notice that PCI interrupt numbers use only one cell,
-unlike the system interrupt controller which uses 2 cells; one for the
-irq number, and one for flags. PCI only needs one cell for interrupts
-because PCI interrupts are specified to always be level-low sensitive.
-
-In our example board, we have 2 PCI slots with 4 interrupt lines,
-respectively, so we have to map 8 interrupt lines to the interrupt
-controller. This is done using the interrupt-map property. The exact
-procedure for interrupt mapping is described in[3] .
-
-Because the interrupt number (#INTA etc.) is not sufficient to
-distinguish between several PCI devices on a single PCI bus, we also
-have to denote which PCI device triggered the interrupt
-line. Fortunately, every PCI device has a unique device number that we
-can use for. To distinguish between interrupts of several PCI devices
-we need a tuple consisting of the PCI device number and the PCI
-interrupt number. Speaking more generally, we construct a unit
-interrupt specifier which has four cells:
-
-    three #address-cells consisting of phys.hi, phys.mid, phys.low, and
-    one #interrupt-cell (#INTA, #INTB, #INTC, #INTD).
-
-Because we only need the device number part of the PCI address, the
-interrupt-map-mask property comes into play. interrupt-map-mask is
-also a 4-tuple like the unit interrupt specifier. The 1's in the mask
-denote which part of the unit interrupt specifier should be taken into
-account. In our example we can see that only the device number part of
-phys.hi is required and we need 3 bits to distinguish between the four
-interrupt lines (Counting PCI interrupt lines start at 1, not at 0!).
-
-Now we can construct the interrupt-map property. This property is a
-table and each entry in this table consists of a child (PCI bus) unit
-interrupt specifier, a parent handle (the interrupt controller which
-is responsible for serving the interrupts) and a parent unit interrupt
-specifier. So in the first line we can read that the PCI interrupt
-#INTA is mapped onto IRQ 9, level low sensitive of our interrupt
-controller. [4].
-
-The only missing part for now are the weird numbers int the PCI bus
-unit interrupt specifier. The important part of the unit interrupt
-specifier is the device number from the phys.hi bit field. Device
-number is board specific, and it depends on how each PCI host
-controller activates the IDSEL pin on each device. In this example,
-PCI slot 1 is assigned device id 24 (0x18), and PCI slot 2 is assigned
-device id 25 (0x19). The value of phys.hi for each slot is determined
-by shifting the device number up by 11 bits into the ddddd section of
-the bitfield as follows:
-
-    phys.hi for slot 1 is 0xC000, and
-    phys.hi for slot 2 is 0xC800.
-
-Putting it all together the interrupt-map property show:
-
-    #INTA of slot 1 is IRQ9, level low sensitive on the primary interrupt controller
-    #INTB of slot 1 is IRQ10, level low sensitive on the primary interrupt controller
-    #INTC of slot 1 is IRQ11, level low sensitive on the primary interrupt controller
-    #INTD of slot 1 is IRQ12, level low sensitive on the primary interrupt controller
-
-and
-
-    #INTA of slot 2 is IRQ10, level low sensitive on the primary interrupt controller
-    #INTB of slot 2 is IRQ11, level low sensitive on the primary interrupt controller
-    #INTC of slot 2 is IRQ12, level low sensitive on the primary interrupt controller
-    #INTD of slot 2 is IRQ9, level low sensitive on the primary interrupt controller
-
-The interrupts = <8 0>; property describes the interrupts the
-host/PCI-bridge controller itself may trigger. Don't mix up these
-interrupts with interrupts PCI devices might trigger (using INTA,
-INTB, ...).
-
-One final thing to note. Just like with the interrupt-parent property,
-the presence of an interrupt-map property on a node will change the
-default interrupt controller for all child and grandchild nodes. In
-this PCI example, that means that the PCI host bridge becomes the
-default interrupt controller. If a device attached via the PCI bus has
-a direct connection to another interrupt controller, then it also
-needs to specify its own interrupt-parent property.
+	pcie@f0460000 {
+		reg = <0x0 0xf0460000 0x0 0x9310>;
+		interrupts = <0x0 0x0 0x4>;
+		compatible = "brcm,pci-plat-dev";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		ranges = <0x02000000 0x00000000 0x00000000 0x00000000 0xc0000000 0x00000000 0x08000000
+			  0x02000000 0x00000000 0x08000000 0x00000000 0xc8000000 0x00000000 0x08000000>;
+		#interrupt-cells = <1>;
+		interrupt-map-mask = <0xf800 0 0 7>;
+		interrupt-map = <0 0 0 1 &intc 47 3
+				 0 0 0 2 &intc 48 3
+				 0 0 0 3 &intc 49 3
+				 0 0 0 4 &intc 50 3>;
+		interrupt-names = "pcie_0_inta",
+				  "pcie_0_intb",
+				  "pcie_0_intc",
+				  "pcie_0_intd";
+		clocks = <&sw_pcie0>;
+		clock-names = "sw_pcie";
+		brcm,ssc;
+		brcm,gen = <1>;
+	};

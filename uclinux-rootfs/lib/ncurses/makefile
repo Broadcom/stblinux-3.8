@@ -18,6 +18,10 @@ all::
 	$(MAKE) -j1 -C panel
 	ln -sf curses.h include/ncurses.h
 
+.PHONY: clean distclean
+clean distclean::
+	[ ! -f Makefile ] || $(MAKE) -f Makefile $@
+
 .PHONY: romfs
 romfs::
 

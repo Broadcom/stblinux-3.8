@@ -36,12 +36,13 @@
 #define MOCA_BAND_E		6
 #define MOCA_BAND_F		7
 #define MOCA_BAND_G		8
-#define MOCA_BAND_MAX		9
+#define MOCA_BAND_H		9
+#define MOCA_BAND_MAX		10
 
 #define MOCA_BAND_NAMES { \
 	"highrf", "midrf", "wanrf", \
 	"ext_d", "d_low", "d_high", \
-	"e", "f", "g", \
+	"e", "f", "g", "h"\
 }
 
 #define MOCA_BOOT_FLAGS_BONDED	(1 << 0)
@@ -61,6 +62,10 @@
 #define MOCA_IOCTL_GET_DRV_INFO	_IOR(MOCA_IOC_MAGIC, 0, struct moca_kdrv_info)
 #define MOCA_IOCTL_SET_CPU_RATE	_IOR(MOCA_IOC_MAGIC, 7, unsigned int)
 #define MOCA_IOCTL_SET_PHY_RATE	_IOR(MOCA_IOC_MAGIC, 8, unsigned int)
+#define MOCA_IOCTL_GET_3450_REG	_IOR(MOCA_IOC_MAGIC, 9, unsigned int)
+#define MOCA_IOCTL_SET_3450_REG	_IOR(MOCA_IOC_MAGIC, 10, unsigned int)
+#define MOCA_IOCTL_PM_SUSPEND   _IO(MOCA_IOC_MAGIC, 11)
+#define MOCA_IOCTL_PM_WOL	_IO(MOCA_IOC_MAGIC, 12)
 
 #define MOCA_DEVICE_ID_UNREGISTERED  (-1)
 
@@ -113,7 +118,7 @@ struct moca_kdrv_info {
 	__u32			macaddr_lo;
 
 	__u32			phy_freq;
-	__u32			cpu_freq;
+	__u32			device_id;
 
 	__u32			chip_id;
 };
@@ -127,6 +132,17 @@ struct moca_xfer {
 struct moca_start {
 	struct moca_xfer	x;
 	__u32			boot_flags;
+};
+
+/* MoCA PM states */
+enum moca_pm_states {
+	MOCA_ACTIVE,
+	MOCA_SUSPENDING,
+	MOCA_SUSPENDING_WAITING_ACK,
+	MOCA_SUSPENDING_GOT_ACK,
+	MOCA_SUSPENDED,
+	MOCA_RESUMING,
+	MOCA_NONE
 };
 
 #ifdef __KERNEL__

@@ -21,6 +21,10 @@ all:
 	fi
 	make -f Makefile SUBDIRS=libelf
 
+.PHONY: clean distclean
+clean distclean::
+	[ ! -f Makefile ] || $(MAKE) -f Makefile $@
+
 .PHONY: romfs
 romfs:
 	-$(RM) -f $(ROMFSDIR)/lib/libelf.so*
