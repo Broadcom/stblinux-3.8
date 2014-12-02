@@ -20,46 +20,6 @@ struct bcm7xxx_phy_priv {
 	struct clk	*clk;
 };
 
-#if defined(CONFIG_BCM7445A0) || defined(CONFIG_BCM7445B0)
-static int bcm7445a0b0_config_init(struct phy_device *phydev)
-{
-	int ret;
-	const struct bcm7445_regs {
-		int reg;
-		u16 value;
-	} bcm7445_regs_cfg[] = {
-		/* increases ADC latency by 24ns */
-		{ 0x17, 0x0038 },
-		{ 0x15, 0xAB95 },
-		/* increases internal 1V LDO voltage by 5% */
-		{ 0x17, 0x2038 },
-		{ 0x15, 0xBB22 },
-		/* reduce RX low pass filter corner frequency */
-		{ 0x17, 0x6038 },
-		{ 0x15, 0xFFC5 },
-		/* reduce RX high pass filter corner frequency */
-		{ 0x17, 0x003a },
-		{ 0x15, 0x2002 },
-	};
-	unsigned int i;
-
-	for (i = 0; i < ARRAY_SIZE(bcm7445_regs_cfg); i++) {
-		ret = phy_write(phydev,
-				bcm7445_regs_cfg[i].reg,
-				bcm7445_regs_cfg[i].value);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
-}
-#else
-static inline int bcm7445a0b0_config_init(struct phy_device *phydev)
-{
-	return 0;
-}
-#endif /* CONFIG_BCM7445A0 || CONFIG_BCM7445B0 */
-
 static int bcm7xxx_apd_enable(struct phy_device *phydev)
 {
 	int val;
@@ -107,9 +67,6 @@ static int bcm7xxx_eee_enable(struct phy_device *phydev)
 	return 0;
 }
 
-#if defined(CONFIG_BCM7439A0) || defined(CONFIG_BCM7366A0) || \
-	defined(CONFIG_BCM7445C0)
-
 static void phy_write_exp(struct phy_device *phydev,
 					u16 reg, u16 value)
 {
@@ -134,10 +91,17 @@ static void phy_write_misc(struct phy_device *phydev,
 	phy_write(phydev, 0x15, value);
 }
 
-static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
+static void r_rc_cal_reset(struct phy_device *phydev)
 {
-	int ret;
+	/* Reset R_CAL/RC_CAL Engine */
+	phy_write_exp(phydev, 0x00b0, 0x0010);
 
+	/* Disable Reset R_AL/RC_CAL Engine */
+	phy_write_exp(phydev, 0x00b0, 0x0000);
+}
+
+static int bcm7xxx_28nm_b0_afe_config_init(struct phy_device *phydev)
+{
 	/* Increase VCO range to prevent unlocking problem of PLL at low
 	 * temp
 	 */
@@ -157,11 +121,8 @@ static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 	/* Switch to CORE_BASE1E */
 	phy_write(phydev, 0x1e, 0xd);
 
-	/* Reset R_CAL/RC_CAL Engine */
-	phy_write_exp(phydev, 0x00b0, 0x0010);
+	r_rc_cal_reset(phydev);
 
-	/* Disable Reset R_CAL/RC_CAL Engine */
-	phy_write_exp(phydev, 0x00b0, 0x0000);
 	/* write AFE_RXCONFIG_0 */
 	phy_write_misc(phydev, 0x38, 0x0000, 0xeb19);
 
@@ -177,34 +138,106 @@ static int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
 	/* write AFTE_TX_CONFIG */
 	phy_write_misc(phydev, 0x39, 0x0000, 0x0800);
 
-	ret = bcm7xxx_eee_enable(phydev);
-	if (ret)
-		return ret;
-
-	return bcm7xxx_apd_enable(phydev);
+	return 0;
 }
-#else
-static inline int bcm7xxx_28nm_afe_config_init(struct phy_device *phydev)
+
+static int bcm7xxx_28nm_d0_afe_config_init(struct phy_device *phydev)
 {
-	int ret;
+	/* AFE_RXCONFIG_0 */
+	phy_write_misc(phydev, 0x0038, 0x0000, 0xeb15);
 
-	ret = bcm7xxx_eee_enable(phydev);
-	if (ret)
-		return ret;
+	/* AFE_RXCONFIG_1 */
+	phy_write_misc(phydev, 0x0038, 0x0001, 0x9b2f);
 
-	return bcm7xxx_apd_enable(phydev);
+	/* AFE_RXCONFIG_2, set rCal offset for HT=0 code and LT=-2 code */
+	phy_write_misc(phydev, 0x0038, 0x0002, 0x2003);
+
+	/* AFE_RX_LP_COUNTER, set RX bandwidth to maximum */
+	phy_write_misc(phydev, 0x0038, 0x0003, 0x7fc0);
+
+	/* AFE_TX_CONFIG, set 1000BT Cfeed=110 for all ports */
+	phy_write_misc(phydev, 0x0039, 0x0000, 0x0061);
+
+	/* AFE_VDCA_ICTRL_0, set Iq=1101 instead of 0111 for AB symmetry */
+	phy_write_misc(phydev, 0x0039, 0x0001, 0xa7da);
+
+	/* AFE_VDAC_OTHERS_0, set 1000BT Cidac=010 for all ports */
+	phy_write_misc(phydev, 0x0039, 0x0003, 0xa020);
+
+	/* AFE_HPF_TRIM_OTHERS, set 100Tx/10BT to -4.5% swing and set rCal
+	 * offset for HT=0 code
+	 */
+	phy_write_misc(phydev, 0x003a, 0x0000, 0x00e3);
+
+	/* CORE_BASE1E, force trim to overwrite and set I_ext trim to 0000 */
+	phy_write(phydev, 0x001e, 0x0010);
+
+	/* DSP_TAP10, adjust bias current trim (+0% swing, +0 tick) */
+	phy_write_misc(phydev, 0x000a, 0x0000, 0x011b);
+
+	/* Reset R_CAL/RC_CAL engine */
+	r_rc_cal_reset(phydev);
+
+	return 0;
 }
-#endif /* CONFIG_BCM7366A0 || CONFIG_BCM7439A0 || CONFIG_BCM7445C0 */
+
+static int bcm7xxx_28nm_e0_plus_afe_config_init(struct phy_device *phydev)
+{
+	/* AFE_RXCONFIG_1, provide more margin for INL/DNL measurement on ATE */
+	phy_write_misc(phydev, 0x0038, 0x0001, 0x9b2f);
+
+	/* AFE_VDCA_ICTRL_0, set Iq=1101 instead of 0111 for AB symmetry */
+	phy_write_misc(phydev, 0x0039, 0x0001, 0xa7da);
+
+	/* AFE_HPF_TRIM_OTHERS, set 100Tx/10BT to -4.5% swing and set rCal
+	 * offset for HT=0 code
+	 */
+	phy_write_misc(phydev, 0x003a, 0x0000, 0x00e3);
+
+	/* CORE_BASE1E, force trim to overwrite and set I_ext trim to 0000 */
+	phy_write(phydev, 0x001e, 0x0010);
+
+	/* DSP_TAP10, adjust bias current trim (+0% swing, +0 tick) */
+	phy_write_misc(phydev, 0x000a, 0x0000, 0x011b);
+
+	/* Reset R_CAL/RC_CAL engine */
+	r_rc_cal_reset(phydev);
+
+	return 0;
+}
 
 static int bcm7xxx_28nm_config_init(struct phy_device *phydev)
 {
-	int ret;
+	u8 rev = PHY_BRCM_7XXX_REV(phydev->dev_flags);
+	u8 patch = PHY_BRCM_7XXX_PATCH(phydev->dev_flags);
+	int ret = 0;
 
-	ret = bcm7445a0b0_config_init(phydev);
+	pr_info_once("%s: %s PHY revision: 0x%02x, patch: %d\n",
+		     dev_name(&phydev->dev), phydev->drv->name, rev, patch);
+
+	switch (rev) {
+	case 0xb0:
+		ret = bcm7xxx_28nm_b0_afe_config_init(phydev);
+		break;
+	case 0xd0:
+		ret = bcm7xxx_28nm_d0_afe_config_init(phydev);
+		break;
+	case 0xe0:
+	case 0xf0:
+		ret = bcm7xxx_28nm_e0_plus_afe_config_init(phydev);
+		break;
+	default:
+		break;
+	}
+
 	if (ret)
 		return ret;
 
-	return bcm7xxx_28nm_afe_config_init(phydev);
+	ret = bcm7xxx_eee_enable(phydev);
+	if (ret)
+		return ret;
+
+	return bcm7xxx_apd_enable(phydev);
 }
 
 static int bcm7xxx_28nm_resume(struct phy_device *phydev)
@@ -247,8 +280,8 @@ static int bcm7xxx_config_init(struct phy_device *phydev)
 	phy_write(phydev, 0x1d, 0x1000);
 	phy_read(phydev, 0x1d);
 
-	/* Workaround only required for 100Mbits/sec */
-	if (!(phydev->dev_flags & PHY_BRCM_100MBPS_WAR))
+	/* Workaround only required for 100Mbits/sec capable PHYs */
+	if (phydev->supported & PHY_GBIT_FEATURES)
 		return 0;
 
 	/* set shadow mode 2 */

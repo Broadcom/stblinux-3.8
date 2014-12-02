@@ -251,6 +251,11 @@ static int brcm_ahci_init(struct device *dev, void __iomem *addr)
 
 static void brcm_ahci_exit(struct device *dev)
 {
+	struct ata_host *host = dev_get_drvdata(dev);
+	struct ahci_host_priv *hpriv = host->private_data;
+	void __iomem *addr = hpriv->mmio;
+
+	brcm_sata3_cfg(dev, addr, 0);
 }
 
 static int brcm_ahci_suspend(struct device *dev)

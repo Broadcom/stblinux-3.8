@@ -157,6 +157,9 @@ struct bcmgenet_mib_counters {
 	u32	rbuf_ovflow_cnt;
 	u32	rbuf_err_cnt;
 	u32	mdf_err_cnt;
+	u32	alloc_rx_buff_failed;
+	u32	rx_dma_failed;
+	u32	tx_dma_failed;
 };
 
 #define UMAC_HD_BKP_CTRL		0x004
@@ -554,8 +557,12 @@ struct bcmgenet_priv {
 	struct phy_device *phydev;
 	struct device_node *phy_dn;
 	struct mii_bus *mii_bus;
-	int old_duplex;
+	u16 gphy_rev;
+
+	/* PHY device variables */
 	int old_link;
+	int old_speed;
+	int old_duplex;
 	int old_pause;
 	phy_interface_t phy_interface;
 	u32 phy_supported;
@@ -631,8 +638,9 @@ void bcmgenet_wol_power_up_cfg(struct bcmgenet_priv *priv,
 				enum bcmgenet_power_mode mode);
 
 int bcmgenet_mii_init(struct net_device *dev);
-int bcmgenet_mii_config(struct net_device *dev);
+int bcmgenet_mii_config(struct net_device *dev, bool init);
 void bcmgenet_mii_exit(struct net_device *dev);
 void bcmgenet_mii_reset(struct net_device *dev);
+void bcmgenet_mii_setup(struct net_device *dev);
 
 #endif /* __BCMGENET_H__ */

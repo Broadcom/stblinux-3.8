@@ -17,6 +17,11 @@ romfs::
 	$(STRIP) ttcp
 	$(ROMFSINST) -e CONFIG_USER_TTCP_TTCP ttcp /bin/ttcp
 
+# ttcp does not have distclean target
+.PHONY: distclean
+distclean::
+	$(MAKE) -f Makefile clean
+
 # These targets must not be passed through to the original Makefile
 .PHONY: $(BOGUS_TARGETS)
 $(BOGUS_TARGETS)::

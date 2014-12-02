@@ -1305,47 +1305,6 @@ static int moca_wdt(struct moca_priv_data *priv, u32 cpu)
 	return 0;
 }
 
-/*
- * Caller is assumed hold the mutex lock before changing the PM
- * state
- */
-static void moca_set_pm_state(struct moca_priv_data *priv,
-			      enum moca_pm_states state)
-{
-	dev_info(priv->dev, "state %s -> %s\n", moca_state_string[priv->state],
-		 moca_state_string[state]);
-	priv->state = state;
-}
-
-static int __maybe_unused moca_send_pm_trap(struct moca_priv_data *priv,
-					     enum moca_pm_states state)
-{
-	struct list_head *ml = NULL;
-	struct moca_core_msg *m;
-
-	ml = moca_detach_head(priv, &priv->core_msg_free_list);
-	if (ml == NULL) {
-		dev_warn(priv->dev, "no entries left on core_msg_free_list\n");
-		return -ENOMEM;
-	}
-
-	if (priv->mmp_20) {
-		/*
-		 * generate an IE_PM_NOTIFICATION trap to the user space
-		 */
-		m = list_entry(ml, struct moca_core_msg, chain);
-		m->data[0] = cpu_to_be32(0x3);
-		m->data[1] = cpu_to_be32(8);
-		m->data[2] = cpu_to_be32(0x11014);
-		m->data[3] = cpu_to_be32(state);
-		m->len = 16;
-		moca_attach_tail(priv, ml, &priv->core_msg_pend_list);
-		wake_up(&priv->core_msg_wq);
-	}
-
-	return 0;
-}
-
 static int moca_get_mbx_offset(struct moca_priv_data *priv)
 {
 	const struct moca_regs *r = priv->regs;
@@ -2332,8 +2291,17 @@ static const struct of_device_id bmoca_instance_match[] = {
 MODULE_DEVICE_TABLE(bmoca, bmoca_instance_match);
 #endif
 
+#ifdef CONFIG_PM
+
 static int moca_in_reset(struct moca_priv_data *priv)
 {
+
+	/*
+	 * Make sure the mocad is not stopped
+	 */
+	if (!priv || !priv->running)
+		return 1;
+
 	if (MOCA_RD(priv->base + priv->regs->sw_reset_offset)
 	    & RESET_MOCA_SYS) {
 		/*
@@ -2345,7 +2313,80 @@ static int moca_in_reset(struct moca_priv_data *priv)
 	return 0;
 }
 
-#ifdef CONFIG_PM
+/*
+ * Caller is assumed hold the mutex lock before changing the PM
+ * state
+ */
+static void moca_set_pm_state(struct moca_priv_data *priv,
+			      enum moca_pm_states state)
+{
+	dev_info(priv->dev, "state %s -> %s\n", moca_state_string[priv->state],
+		 moca_state_string[state]);
+	priv->state = state;
+}
+
+static int  moca_send_reset_trap(struct moca_priv_data *priv)
+{
+	struct list_head *ml = NULL;
+	struct moca_core_msg *m;
+
+	ml = moca_detach_head(priv, &priv->core_msg_free_list);
+	if (ml == NULL) {
+		dev_warn(priv->dev, "no entries left on core_msg_free_list\n");
+		return -ENOMEM;
+	}
+
+	if (priv->mmp_20) {
+		/*
+		 * generate an IE_MOCA_RESET_REQUEST trap to the user space
+		 */
+		m = list_entry(ml, struct moca_core_msg, chain);
+		/* trap */
+		m->data[0] = cpu_to_be32(0x3);
+		/* length 12 bytes following this word */
+		m->data[1] = cpu_to_be32(12);
+		/* group 5, IE 0x805 = IE_MOCA_RESET_REQUEST */
+		m->data[3] = cpu_to_be32(0x111); /*cause */
+
+		m->data[2] = cpu_to_be32(0x50805);
+		m->data[4] = cpu_to_be32(0); /* mr_seq_num */
+		m->len = 20;
+		moca_attach_tail(priv, ml, &priv->core_msg_pend_list);
+		wake_up(&priv->core_msg_wq);
+	}
+
+	return 0;
+}
+
+static int moca_send_pm_trap(struct moca_priv_data *priv,
+					     enum moca_pm_states state)
+{
+	struct list_head *ml = NULL;
+	struct moca_core_msg *m;
+
+	ml = moca_detach_head(priv, &priv->core_msg_free_list);
+	if (ml == NULL) {
+		dev_warn(priv->dev, "no entries left on core_msg_free_list\n");
+		return -ENOMEM;
+	}
+
+	if (priv->mmp_20) {
+		/*
+		 * generate an IE_PM_NOTIFICATION trap to the user space
+		 */
+		m = list_entry(ml, struct moca_core_msg, chain);
+		m->data[0] = cpu_to_be32(0x3);
+		m->data[1] = cpu_to_be32(8);
+		m->data[2] = cpu_to_be32(0x11014);
+		m->data[3] = cpu_to_be32(state);
+		m->len = 16;
+		moca_attach_tail(priv, ml, &priv->core_msg_pend_list);
+		wake_up(&priv->core_msg_wq);
+	}
+
+	return 0;
+}
+
 static void moca_prepare_suspend(struct moca_priv_data *priv)
 {
 	int rc;
@@ -2410,7 +2451,7 @@ static void moca_complete_resume(struct moca_priv_data *priv)
 	if (rc != 0)
 		dev_warn(priv->dev, "could not send MOCA_ACTIVE trap\n");
 
-out :
+out:
 	moca_set_pm_state(priv, MOCA_ACTIVE);
 	mutex_unlock(&priv->dev_mutex);
 }
@@ -2422,6 +2463,10 @@ static int moca_pm_notifier(struct notifier_block *notifier,
 	struct moca_priv_data *priv = container_of(notifier,
 						   struct moca_priv_data,
 						   pm_notifier);
+	if (!priv->running) {
+		dev_warn(priv->dev, "%s: mocad not running\n",
+			 __func__);
+	}
 
 	switch (pm_event) {
 		dev_info(priv->dev, "%s for state %lu", __func__, pm_event);
@@ -2635,6 +2680,10 @@ static int moca_suspend(struct device *dev)
 		if (priv && priv->enabled) {
 			mutex_lock(&priv->dev_mutex);
 
+			/*
+			 * check if either moca core in reset or
+			 * mocad has been killed
+			 */
 			if (moca_in_reset(priv)) {
 				moca_set_pm_state(priv, MOCA_SUSPENDED);
 				mutex_unlock(&priv->dev_mutex);
@@ -2662,6 +2711,7 @@ static int moca_suspend(struct device *dev)
 static int moca_resume(struct device *dev)
 {
 	int minor;
+	int rc;
 
 	for (minor = 0; minor < NUM_MINORS; minor++) {
 		struct moca_priv_data *priv = minor_tbl[minor];
@@ -2675,8 +2725,12 @@ static int moca_resume(struct device *dev)
 				 * sync.
 				 */
 				priv->enabled = 0;
-				dev_warn(priv->dev, "sending moca reset\n");
+				dev_warn(priv->dev, "S3 : sending moca reset\n");
 				moca_msg_reset(priv);
+				rc = moca_send_reset_trap(priv);
+				if (rc)
+					dev_dbg(priv->dev,
+						"S3 : moca reset failed\n");
 			}
 
 			mutex_lock(&priv->dev_mutex);

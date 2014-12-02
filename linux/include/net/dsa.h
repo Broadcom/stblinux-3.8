@@ -167,6 +167,7 @@ struct dsa_switch_driver {
 	char	*(*probe)(struct mii_bus *bus, int sw_addr);
 	int	(*setup)(struct dsa_switch *ds);
 	int	(*set_addr)(struct dsa_switch *ds, u8 *addr);
+	u32	(*get_phy_flags)(struct dsa_switch *ds, int port);
 
 	/*
 	 * Access to the switch's PHY registers.

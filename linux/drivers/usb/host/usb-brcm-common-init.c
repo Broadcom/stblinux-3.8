@@ -10,10 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *
  */
 
 /*
@@ -39,45 +35,65 @@
 
 #include "usb-brcm-common-init.h"
 
+#if defined(BCHP_USB_CTRL_REG_START)
 #define USB_CTRL_REG(base, reg)	(base + BCHP_USB_CTRL_##reg - \
 		BCHP_USB_CTRL_SETUP)
-
-#define USB_CTRL_MASK(reg, mask) (BCHP_USB_CTRL_##reg##_##mask##_MASK)
+#define USB_CTRL_MASK(reg, field) (BCHP_USB_CTRL_##reg##_##field##_MASK)
+#define USB_CTRL_SHIFT(reg, field) (BCHP_USB_CTRL_##reg##_##field##_SHIFT)
+#elif defined(BCHP_USB1_CTRL_REG_START)
+#define USB_CTRL_REG(base, reg)	(base + BCHP_USB1_CTRL_##reg - \
+		BCHP_USB1_CTRL_SETUP)
+#define USB_CTRL_MASK(reg, field) (BCHP_USB1_CTRL_##reg##_##field##_MASK)
+#define USB_CTRL_SHIFT(reg, field) (BCHP_USB1_CTRL_##reg##_##field##_SHIFT)
+#endif
 
 #define USB_CTRL_SET(base, reg, mask) do {		\
-		USB_CTRL_REG(base, reg) =		\
-			USB_CTRL_REG(base, reg) |	\
-			USB_CTRL_MASK(reg, mask);	\
+		DEV_SET(USB_CTRL_REG(base, reg),	\
+			USB_CTRL_MASK(reg, mask));	\
 	} while (0)
 
 #define USB_CTRL_UNSET(base, reg, mask) do {		\
-		USB_CTRL_REG(base, reg) =		\
-			USB_CTRL_REG(base, reg) &	\
-			~USB_CTRL_MASK(reg, mask);	\
+		DEV_UNSET(USB_CTRL_REG(base, reg),	\
+			USB_CTRL_MASK(reg, mask));	\
 	} while (0)
-
 
 #define MDIO_USB2	0
 #define MDIO_USB3	(1 << 31)
 
 #define USB_CTRL_SETUP_CONDITIONAL_BITS (	\
-	BCHP_USB_CTRL_SETUP_BABO_MASK |		\
-	BCHP_USB_CTRL_SETUP_FNHW_MASK |		\
-	BCHP_USB_CTRL_SETUP_FNBO_MASK |		\
-	BCHP_USB_CTRL_SETUP_WABO_MASK |		\
-	BCHP_USB_CTRL_SETUP_IOC_MASK  |		\
-	BCHP_USB_CTRL_SETUP_IPP_MASK)
+		USB_CTRL_MASK(SETUP, BABO) |	\
+		USB_CTRL_MASK(SETUP, FNHW) |	\
+		USB_CTRL_MASK(SETUP, FNBO) |	\
+		USB_CTRL_MASK(SETUP, WABO) |	\
+		USB_CTRL_MASK(SETUP, IOC)  |	\
+		USB_CTRL_MASK(SETUP, IPP))
 
 #ifdef __LITTLE_ENDIAN
 #define ENDIAN_SETTINGS ( \
-	BCHP_USB_CTRL_SETUP_BABO_MASK |	\
-	BCHP_USB_CTRL_SETUP_FNHW_MASK)
+		USB_CTRL_MASK(SETUP, BABO) |	\
+		USB_CTRL_MASK(SETUP, FNHW))
 #else
 #define ENDIAN_SETTINGS ( \
-	BCHP_USB_CTRL_SETUP_FNHW_MASK | \
-	BCHP_USB_CTRL_SETUP_FNBO_MASK | \
-	BCHP_USB_CTRL_SETUP_WABO_MASK)
+		USB_CTRL_MASK(SETUP, FNHW) |	 \
+		USB_CTRL_MASK(SETUP, FNBO) |	 \
+		USB_CTRL_MASK(SETUP, WABO))
 #endif
+
+static uint32_t usb_mdio_read(uintptr_t ctrl_base, uint32_t reg, int mode)
+{
+	uint32_t data;
+
+	data = (reg << 16) | mode;
+	DEV_WR(USB_CTRL_REG(ctrl_base, MDIO), data);
+	data |= (1 << 24);
+	DEV_WR(USB_CTRL_REG(ctrl_base, MDIO), data);
+	data &= ~(1 << 24);
+	udelay(10);
+	DEV_WR(USB_CTRL_REG(ctrl_base, MDIO), data);
+	udelay(10);
+
+	return DEV_RD(USB_CTRL_REG(ctrl_base, MDIO2)) & 0xffff;
+}
 
 static void usb_mdio_write(uintptr_t ctrl_base, uint32_t reg,
 			uint32_t val, int mode)
@@ -93,44 +109,78 @@ static void usb_mdio_write(uintptr_t ctrl_base, uint32_t reg,
 	DEV_WR(USB_CTRL_REG(ctrl_base, MDIO), data);
 }
 
+
+static void usb_phy_ldo_fix(uintptr_t usbctrl)
+{
+	USB_CTRL_UNSET(usbctrl, PLL_CTL, PLL_RESETB);
+	DEV_WR(USB_CTRL_REG(usbctrl, UTMI_CTL_1), 0);
+	DEV_WR(USB_CTRL_REG(usbctrl, PLL_LDO_CTL),
+		USB_CTRL_MASK(PLL_LDO_CTL, AFE_CORERDY_VDDC));
+	USB_CTRL_SET(usbctrl, PLL_CTL, PLL_IDDQ_PWRDN);
+	msleep(10);
+	USB_CTRL_UNSET(usbctrl, PLL_CTL, PLL_IDDQ_PWRDN);
+	USB_CTRL_SET(usbctrl, PLL_LDO_CTL, AFE_BG_PWRDWNB);
+	USB_CTRL_SET(usbctrl, PLL_LDO_CTL, AFE_LDO_PWRDWNB);
+	msleep(1);
+	DEV_WR(USB_CTRL_REG(usbctrl, UTMI_CTL_1),
+		USB_CTRL_MASK(UTMI_CTL_1, UTMI_SOFT_RESETB) |
+		USB_CTRL_MASK(UTMI_CTL_1, UTMI_SOFT_RESETB_P1));
+	USB_CTRL_SET(usbctrl, PLL_CTL, PLL_RESETB);
+}
+
 static void usb2_eye_fix(uintptr_t ctrl_base)
 {
-	/* Updating USB 2.0 PHY registers */
+	/* Increase USB 2.0 TX level to meet spec requirement */
 	usb_mdio_write(ctrl_base, 0x1f, 0x80a0, MDIO_USB2);
 	usb_mdio_write(ctrl_base, 0x0a, 0xc6a0, MDIO_USB2);
 }
 
 
-static void __maybe_unused usb3_pll_fix(uintptr_t ctrl_base)
+static void usb3_pll_fix(uintptr_t ctrl_base)
 {
-	/* Updating USB 3.0 PHY registers */
+	/* Set correct window for PLL lock detect */
 	usb_mdio_write(ctrl_base, 0x1f, 0x8000, MDIO_USB3);
 	usb_mdio_write(ctrl_base, 0x07, 0x1503, MDIO_USB3);
 }
 
 
+static void usb3_ssc_enable(uintptr_t ctrl_base)
+{
+	uint32_t val;
+
+	/* Enable USB 3.0 TX spread spectrum */
+	usb_mdio_write(ctrl_base, 0x1f, 0x8040, MDIO_USB3);
+	val = usb_mdio_read(ctrl_base, 0x01, MDIO_USB3) | 3;
+	usb_mdio_write(ctrl_base, 0x01, val, MDIO_USB3);
+}
+
+
 void brcm_usb_common_ctrl_xhci_soft_reset(uintptr_t ctrl, int on_off)
 {
+#if defined(BCHP_USB_CTRL_USB_PM_xhc_soft_resetb_MASK) || \
+	defined(BCHP_USB1_CTRL_USB_PM_xhc_soft_resetb_MASK)
 	/* Assert reset */
 	if (on_off) {
-#if defined(BCHP_USB_CTRL_USB_PM_xhc_soft_resetb_MASK)
 		DEV_UNSET(USB_CTRL_REG(ctrl, USB_PM),
 			USB_CTRL_MASK(USB_PM, xhc_soft_resetb));
-#else
-		DEV_UNSET(USB_CTRL_REG(ctrl, USB30_CTL1),
-			USB_CTRL_MASK(USB30_CTL1, xhc_soft_resetb));
-#endif
 	}
 	/* De-assert reset */
 	else {
-#if defined(BCHP_USB_CTRL_USB_PM_xhc_soft_resetb_MASK)
 		DEV_SET(USB_CTRL_REG(ctrl, USB_PM),
 			USB_CTRL_MASK(USB_PM, xhc_soft_resetb));
+	}
 #else
+	/* Assert reset */
+	if (on_off) {
+		DEV_UNSET(USB_CTRL_REG(ctrl, USB30_CTL1),
+			USB_CTRL_MASK(USB30_CTL1, xhc_soft_resetb));
+	}
+	/* De-assert reset */
+	else {
 		DEV_SET(USB_CTRL_REG(ctrl, USB30_CTL1),
 			USB_CTRL_MASK(USB30_CTL1, xhc_soft_resetb));
-#endif
 	}
+#endif
 }
 
 
@@ -165,19 +215,29 @@ void brcm_usb_common_ctrl_init(uintptr_t ctrl, int ioc, int ipp, int xhci)
 	DEV_SET(USB_CTRL_REG(ctrl, USB30_PCTL), 0x20002);
 #endif
 
+#if defined(BCHP_USB_CTRL_PLL_CTL_PLL_IDDQ_PWRDN_MASK) || \
+	defined(BCHP_USB1_CTRL_PLL_CTL_PLL_IDDQ_PWRDN_MASK)
 	/* Take USB out of power down */
 	DEV_UNSET(USB_CTRL_REG(ctrl, PLL_CTL),
-		BCHP_USB_CTRL_PLL_CTL_PLL_IDDQ_PWRDN_MASK);
+		USB_CTRL_MASK(PLL_CTL, PLL_IDDQ_PWRDN));
 	/* 1 millisecond - for USB clocks to settle down */
 	msleep(1);
+#else
+	/* Take USB out of power down */
+	DEV_UNSET(USB_CTRL_REG(ctrl, USB_PM),
+		USB_CTRL_MASK(USB_PM, USB_PWRDN));
+	/* 1 millisecond - for USB clocks to settle down */
+	msleep(1);
+#endif
 
 #if defined(CONFIG_BCM7445D0)
 	DEV_UNSET(USB_CTRL_REG(ctrl, UTMI_CTL_1),
-		BCHP_USB_CTRL_UTMI_CTL_1_POWER_UP_FSM_EN_P1_MASK |
-		BCHP_USB_CTRL_UTMI_CTL_1_POWER_UP_FSM_EN_MASK);
+		USB_CTRL_MASK(UTMI_CTL_1, POWER_UP_FSM_EN_P1) |
+		USB_CTRL_MASK(UTMI_CTL_1, POWER_UP_FSM_EN));
 #endif
 
-#if defined(BCHP_USB_CTRL_USB30_CTL1_usb3_ipp_MASK)
+#if defined(BCHP_USB_CTRL_USB30_CTL1_usb3_ipp_MASK) || \
+	defined(BCHP_USB1_CTRL_USB30_CTL1_usb3_ipp_MASK)
 	/* Starting with the 7445d0, there are no longer separate 3.0
 	 * versions of IOC and IPP.
 	 */
@@ -189,39 +249,47 @@ void brcm_usb_common_ctrl_init(uintptr_t ctrl, int ioc, int ipp, int xhci)
 	DEV_SET(USB_CTRL_REG(ctrl, USB30_CTL1),
 		USB_CTRL_MASK(USB30_CTL1, phy3_pll_seq_start));
 	DEV_SET(USB_CTRL_REG(ctrl, PLL_CTL),
-		BCHP_USB_CTRL_PLL_CTL_PLL_SUSPEND_EN_MASK);
+		USB_CTRL_MASK(PLL_CTL, PLL_SUSPEND_EN));
 
 	usb2_eye_fix(ctrl);
-	if (xhci)
+	usb_phy_ldo_fix(ctrl);
+	if (xhci) {
 		usb3_pll_fix(ctrl);
+		usb3_ssc_enable(ctrl);
+	}
 
 	/* Setup the endian bits */
 	reg = DEV_RD(USB_CTRL_REG(ctrl, SETUP));
 	reg &= ~USB_CTRL_SETUP_CONDITIONAL_BITS;
 	reg |= ENDIAN_SETTINGS;
 
+#if defined(CONFIG_BCM7364A0)
+	/* Suppress overcurrent indication from USB30 ports */
+	reg |= BCHP_USB_CTRL_SETUP_OC3_DISABLE_MASK;
+#endif
+
 	/*
 	 * Make sure the the second and third memory controller
 	 * interfaces are enabled.
 	 */
-	reg |= (BCHP_USB_CTRL_SETUP_scb1_en_MASK |
-		BCHP_USB_CTRL_SETUP_scb2_en_MASK);
+	reg |= (USB_CTRL_MASK(SETUP, scb1_en) |
+		USB_CTRL_MASK(SETUP, scb2_en));
 
 	/* Override the default OC and PP polarity */
 	if (ioc)
-		reg |= BCHP_USB_CTRL_SETUP_IOC_MASK;
+		reg |= USB_CTRL_MASK(SETUP, IOC);
 	if (ipp)
-		reg |= BCHP_USB_CTRL_SETUP_IPP_MASK;
+		reg |= USB_CTRL_MASK(SETUP, IPP);
 	DEV_WR(USB_CTRL_REG(ctrl, SETUP), reg);
 
 	/* override lame bridge defaults */
 	reg = DEV_RD(USB_CTRL_REG(ctrl, OBRIDGE));
-	reg &= ~BCHP_USB_CTRL_OBRIDGE_OBR_SEQ_EN_MASK;
+	reg &= ~USB_CTRL_MASK(OBRIDGE, OBR_SEQ_EN);
 	DEV_WR(USB_CTRL_REG(ctrl, OBRIDGE), reg);
 	reg = DEV_RD(USB_CTRL_REG(ctrl, EBRIDGE));
-	reg &= ~BCHP_USB_CTRL_EBRIDGE_EBR_SEQ_EN_MASK;
-	reg &= ~BCHP_USB_CTRL_EBRIDGE_EBR_SCB_SIZE_MASK;
-	reg |= (0x08 << BCHP_USB_CTRL_EBRIDGE_EBR_SCB_SIZE_SHIFT);
+	reg &= ~USB_CTRL_MASK(EBRIDGE, EBR_SEQ_EN);
+	reg &= ~USB_CTRL_MASK(EBRIDGE, EBR_SCB_SIZE);
+	reg |= (0x08 << USB_CTRL_SHIFT(EBRIDGE, EBR_SCB_SIZE));
 	DEV_WR(USB_CTRL_REG(ctrl, EBRIDGE), reg);
 }
 

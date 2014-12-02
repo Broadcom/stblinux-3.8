@@ -1,28 +1,28 @@
 /*---------------------------------------------------------------------------
 
-    Copyright (c) 2001-2007 Broadcom Corporation                 /\
-                                                          _     /  \     _
+    Broadcom                                                     /\
+    Connecting everything(R)                              _     /  \     _
     _____________________________________________________/ \   /    \   / \_
-                                                            \_/      \_/  
+                                                            \_/      \_/
 
- Copyright (c) 2007 Broadcom Corporation
+ Copyright (c) 2007-2014 Broadcom Corporation
  All rights reserved.
- 
+
  Redistribution and use of this software in source and binary forms, with or
  without modification, are permitted provided that the following conditions
  are met:
- 
+
  * Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
- 
+
  * Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
- 
+
  * Neither the name of Broadcom Corporation nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission of Broadcom Corporation.
- 
+
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -40,10 +40,6 @@
  Description:
  Power management library definitions
 
-    when        who         what
-    -----       ---         ----
-    20071030    cernekee    initial version
-    20080303    cernekee    add TP1 shutdown
  ------------------------------------------------------------------------- */
 
 #ifndef _H_PMLIB_
@@ -57,25 +53,24 @@
  */
 
 #define BRCM_PM_UNDEF			-1
-#define CPUFREQ_AVAIL_MAXLEN	128
+#define CPUFREQ_AVAIL_MAXLEN		128
 #define CPUFREQ_GOV_MAXLEN		128
 
-struct brcm_pm_state
-{
+struct brcm_pm_state {
 	int sata_status;	/* 1=on, 0=off */
 	int tp1_status;		/* 1=on, 0=off */
 	int tp2_status;		/* 1=on, 0=off */
 	int tp3_status;		/* 1=on, 0=off */
 
-	int cpu_base;		/* current base frequency, in Hz */
+	int cpu_base;		/* current base frequency, in kHz */
+	int cpufreq_setspeed;	/* scaling setting, in kHz */
 	char cpufreq_avail[CPUFREQ_AVAIL_MAXLEN];	/* available cpufreqs */
-	char cpufreq_gov[CPUFREQ_GOV_MAXLEN];		/* current cpufreq gov. name */
+	char cpufreq_gov[CPUFREQ_GOV_MAXLEN];	/* current cpufreq gov. name */
 
 	int srpd_status;	/* 0=no PM, >0 = timeout for self-refresh */
 };
 
-struct brcm_pm_cfg
-{
+struct brcm_pm_cfg {
 	int use_dhcp;		/* stop/start dhcpcd */
 };
 

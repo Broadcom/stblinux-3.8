@@ -108,24 +108,24 @@ static int sdhci_brcmstb_probe(struct platform_device *pdev)
 	struct device_node *dn = pdev->dev.of_node;
 	struct sdhci_host *host;
 	struct sdhci_pltfm_host *pltfm_host;
+	struct clk *clk;
 	int res;
 
+	clk = of_clk_get_by_name(dn, "sw_sdio");
+	if (IS_ERR(clk)) {
+		dev_err(&pdev->dev, "Clock not found in Device Tree\n");
+		clk = NULL;
+	}
+	res = clk_prepare_enable(clk);
+	if (res)
+		return res;
 	res = sdhci_pltfm_register(pdev, &sdhci_brcmstb_pdata);
 	if (res)
 		return res;
 	host = platform_get_drvdata(pdev);
 	pltfm_host = sdhci_priv(host);
-
-	pltfm_host->clk = of_clk_get_by_name(dn, "sw_sdio");
-	if (IS_ERR(pltfm_host->clk))
-		pltfm_host->clk = NULL;
-
-	res = sdhci_brcmstb_clk_control(host, 1);
-	if (res) {
-		sdhci_pltfm_unregister(pdev);
-		return res;
-	}
-	return 0;
+	pltfm_host->clk = clk;
+	return res;
 }
 
 static int sdhci_brcmstb_remove(struct platform_device *pdev)

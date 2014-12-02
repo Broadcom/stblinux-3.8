@@ -94,12 +94,12 @@ static int bcmgenet_mii_write(struct mii_bus *bus, int phy_id,
 /* setup netdev link state when PHY link status change and
  * update UMAC and RGMII block when link up
  */
-static void bcmgenet_mii_setup(struct net_device *dev)
+void bcmgenet_mii_setup(struct net_device *dev)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	struct phy_device *phydev = priv->phydev;
 	u32 reg, cmd_bits = 0;
-	unsigned int status_changed = 0;
+	bool status_changed = false;
 
 	if (priv->old_link != phydev->link) {
 		status_changed = 1;
@@ -107,6 +107,26 @@ static void bcmgenet_mii_setup(struct net_device *dev)
 	}
 
 	if (phydev->link) {
+		/* check speed/duplex/pause changes */
+		if (priv->old_speed != phydev->speed) {
+			status_changed = true;
+			priv->old_speed = phydev->speed;
+		}
+
+		if (priv->old_duplex != phydev->duplex) {
+			status_changed = true;
+			priv->old_duplex = phydev->duplex;
+		}
+
+		if (priv->old_pause != phydev->pause) {
+			status_changed = true;
+			priv->old_pause = phydev->pause;
+		}
+
+		/* done if nothing has changed */
+		if (!status_changed)
+			return;
+
 		/* program UMAC and RGMII block based on established link
 		 * speed, pause, and duplex.
 		 * the speed set in umac->cmd tell RGMII block which clock
@@ -127,11 +147,6 @@ static void bcmgenet_mii_setup(struct net_device *dev)
 			cmd_bits = UMAC_SPEED_10;
 		cmd_bits <<= CMD_SPEED_SHIFT;
 
-		if (priv->old_duplex != phydev->duplex) {
-			status_changed = 1;
-			priv->old_duplex = phydev->duplex;
-		}
-
 		/* duplex */
 		if (phydev->duplex != DUPLEX_FULL)
 			cmd_bits |= CMD_HD_EN;
@@ -144,18 +159,20 @@ static void bcmgenet_mii_setup(struct net_device *dev)
 		/* pause capability */
 		if (!phydev->pause)
 			cmd_bits |= CMD_RX_PAUSE_IGNORE | CMD_TX_PAUSE_IGNORE;
-	}
 
-	if (!status_changed)
-		return;
-
-	if (phydev->link) {
 		reg = bcmgenet_umac_readl(priv, UMAC_CMD);
 		reg &= ~((CMD_SPEED_MASK << CMD_SPEED_SHIFT) |
 			 CMD_HD_EN | CMD_RX_PAUSE_IGNORE |
 			 CMD_TX_PAUSE_IGNORE);
 		reg |= cmd_bits;
 		bcmgenet_umac_writel(priv, reg, UMAC_CMD);
+	} else {
+		/* done if nothing has changed */
+		if (!status_changed)
+			return;
+
+		/* needed for MoCA fixed PHY to reflect correct link status */
+		netif_carrier_off(dev);
 	}
 
 	phy_print_status(phydev);
@@ -206,12 +223,18 @@ static int bcmgenet_mii_probe(struct net_device *dev)
 	char phy_id[MII_BUS_ID_SIZE + 3];
 	const char *fixed_bus = NULL;
 	int phy_addr = priv->phy_addr;
-	unsigned int phy_flags;
+	u32 phy_flags;
 
 	if (priv->phydev) {
 		pr_info("PHY already attached\n");
 		return 0;
 	}
+
+	/* Initialize link state variables that bcmgenet_mii_setup() uses */
+	priv->old_link = -1;
+	priv->old_speed = -1;
+	priv->old_duplex = -1;
+	priv->old_pause = -1;
 
 	if (priv->old_dt_binding) {
 		/* Bind to fixed-0 for MOCA and switches */
@@ -230,22 +253,8 @@ static int bcmgenet_mii_probe(struct net_device *dev)
 		phy_addr);
 	}
 
-	phy_flags = PHY_BRCM_100MBPS_WAR;
+	phy_flags = priv->gphy_rev;
 
-	/* workarounds are only needed for 100Mbps PHYs */
-	if (priv->phy_speed == SPEED_1000)
-		phy_flags = 0;
-
-	/* workarounds are only needed for some 40nm chips, exclude
-	 * GENET v1 or 60/65nm chips
-	 */
-	if (GENET_IS_V1(priv))
-		phy_flags = 0;
-
-#if defined(CONFIG_BCM7342) || defined(CONFIG_BCM7468) || \
-	defined(CONFIG_BCM7340) || defined(CONFIG_BCM7420)
-	phy_flags = 0;
-#endif
 	if (priv->old_dt_binding) {
 		phydev = phy_connect(dev, phy_id, bcmgenet_mii_setup, phy_flags,
 				priv->phy_interface);
@@ -259,6 +268,7 @@ static int bcmgenet_mii_probe(struct net_device *dev)
 					bcmgenet_mii_setup,
 					priv->phy_interface);
 	}
+
 	if (!phydev) {
 		pr_err("could not attach to PHY\n");
 		return -ENODEV;
@@ -274,9 +284,6 @@ static int bcmgenet_mii_probe(struct net_device *dev)
 	pr_info("attached PHY at address %d [%s]\n",
 			phydev->addr, phydev->drv->name);
 
-	priv->old_link = -1;
-	priv->old_duplex = -1;
-	priv->old_pause = -1;
 	priv->phydev = phydev;
 
 	return 0;
@@ -360,7 +367,7 @@ static void bcmgenet_moca_phy_setup(struct bcmgenet_priv *priv)
 	bcmgenet_sys_writel(priv, reg, SYS_PORT_CTRL);
 }
 
-int bcmgenet_mii_config(struct net_device *dev)
+int bcmgenet_mii_config(struct net_device *dev, bool init)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 	const char *phy_name = NULL;
@@ -449,7 +456,9 @@ int bcmgenet_mii_config(struct net_device *dev)
 		return -EINVAL;
 	}
 
-	dev_info(&priv->pdev->dev, "configuring instance for %s\n", phy_name);
+	if (init)
+		dev_info(&priv->pdev->dev, "configuring instance for %s\n",
+			 phy_name);
 
 	return 0;
 }
@@ -585,7 +594,7 @@ int bcmgenet_mii_init(struct net_device *dev)
 	if (ret)
 		goto out;
 
-	ret = bcmgenet_mii_config(dev);
+	ret = bcmgenet_mii_config(dev, true);
 	if (ret)
 		goto out;
 

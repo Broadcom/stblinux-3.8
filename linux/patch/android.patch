@@ -317,7 +317,7 @@ diff -Nur a/linux/Documentation/sync.txt b/linux/Documentation/sync.txt
 diff -Nur a/linux/arch/arm/Kconfig b/linux/arch/arm/Kconfig
 --- a/linux/arch/arm/Kconfig	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/arch/arm/Kconfig	2013-03-20 16:30:15.635114695 -0700
-@@ -1868,6 +1866,15 @@
+@@ -1878,6 +1876,15 @@
  	help
  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
  
@@ -367,7 +367,7 @@ diff -Nur a/linux/arch/arm/Kconfig.debug b/linux/arch/arm/Kconfig.debug
 diff -Nur a/linux/arch/arm/boot/compressed/head.S b/linux/arch/arm/boot/compressed/head.S
 --- a/linux/arch/arm/boot/compressed/head.S	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/arch/arm/boot/compressed/head.S	2013-03-20 16:30:17.571217827 -0700
-@@ -716,6 +716,7 @@
+@@ -717,6 +717,7 @@
  		bic     r6, r6, #1 << 31        @ 32-bit translation system
  		bic     r6, r6, #3 << 0         @ use only ttbr0
  		mcrne	p15, 0, r3, c2, c0, 0	@ load page table pointer
@@ -16131,7 +16131,7 @@ diff -Nur a/linux/drivers/mmc/core/mmc.c b/linux/drivers/mmc/core/mmc.c
 diff -Nur a/linux/drivers/mmc/core/sd.c b/linux/drivers/mmc/core/sd.c
 --- a/linux/drivers/mmc/core/sd.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/drivers/mmc/core/sd.c	2013-03-20 16:30:58.457395771 -0700
-@@ -796,6 +796,9 @@
+@@ -799,6 +799,9 @@
  	bool reinit)
  {
  	int err;
@@ -16141,7 +16141,7 @@ diff -Nur a/linux/drivers/mmc/core/sd.c b/linux/drivers/mmc/core/sd.c
  
  	if (!reinit) {
  		/*
-@@ -822,7 +825,26 @@
+@@ -825,7 +828,26 @@
  		/*
  		 * Fetch switch information from card.
  		 */
@@ -16168,7 +16168,7 @@ diff -Nur a/linux/drivers/mmc/core/sd.c b/linux/drivers/mmc/core/sd.c
  		if (err)
  			return err;
  	}
-@@ -1033,18 +1055,36 @@
+@@ -1036,18 +1058,36 @@
   */
  static void mmc_sd_detect(struct mmc_host *host)
  {
@@ -16208,7 +16208,7 @@ diff -Nur a/linux/drivers/mmc/core/sd.c b/linux/drivers/mmc/core/sd.c
  	mmc_release_host(host);
  
  	if (err) {
-@@ -1085,12 +1125,31 @@
+@@ -1088,12 +1128,31 @@
  static int mmc_sd_resume(struct mmc_host *host)
  {
  	int err;
@@ -16240,7 +16240,7 @@ diff -Nur a/linux/drivers/mmc/core/sd.c b/linux/drivers/mmc/core/sd.c
  	mmc_release_host(host);
  
  	return err;
-@@ -1144,6 +1203,9 @@
+@@ -1147,6 +1206,9 @@
  {
  	int err;
  	u32 ocr;
@@ -16250,7 +16250,7 @@ diff -Nur a/linux/drivers/mmc/core/sd.c b/linux/drivers/mmc/core/sd.c
  
  	BUG_ON(!host);
  	WARN_ON(!host->claimed);
-@@ -1206,9 +1268,27 @@
+@@ -1209,9 +1271,27 @@
  	/*
  	 * Detect and init the card.
  	 */
@@ -26866,7 +26866,7 @@ diff -Nur a/linux/fs/gfs2/bmap.c b/linux/fs/gfs2/bmap.c
 diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
 --- a/linux/fs/namespace.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/fs/namespace.c	2013-03-20 16:31:03.945688126 -0700
-@@ -1242,14 +1242,6 @@
+@@ -1255,14 +1255,6 @@
  }
  
  /*
@@ -26881,7 +26881,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
   * Now umount can handle mount points as well as block devices.
   * This is important for filesystems which use unnamed block devices.
   *
-@@ -1267,9 +1259,6 @@
+@@ -1280,9 +1272,6 @@
  	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
  		return -EINVAL;
  
@@ -26891,7 +26891,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  	if (!(flags & UMOUNT_NOFOLLOW))
  		lookup_flags |= LOOKUP_FOLLOW;
  
-@@ -1283,6 +1272,10 @@
+@@ -1296,6 +1285,10 @@
  	if (!check_mnt(mnt))
  		goto dput_and_out;
  
@@ -26902,7 +26902,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  	retval = do_umount(mnt, flags);
  dput_and_out:
  	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
-@@ -1306,7 +1299,7 @@
+@@ -1319,7 +1312,7 @@
  
  static int mount_is_safe(struct path *path)
  {
@@ -26911,7 +26911,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return 0;
  	return -EPERM;
  #ifdef notyet
-@@ -1644,7 +1637,7 @@
+@@ -1657,7 +1650,7 @@
  	int type;
  	int err = 0;
  
@@ -26920,7 +26920,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return -EPERM;
  
  	if (path->dentry != path->mnt->mnt_root)
-@@ -1811,7 +1804,7 @@
+@@ -1848,7 +1841,7 @@
  	struct mount *p;
  	struct mount *old;
  	int err = 0;
@@ -26929,7 +26929,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return -EPERM;
  	if (!old_name || !*old_name)
  		return -EINVAL;
-@@ -1947,14 +1940,16 @@
+@@ -1984,14 +1977,16 @@
  			int mnt_flags, const char *name, void *data)
  {
  	struct file_system_type *type;
@@ -26948,7 +26948,7 @@ diff -Nur a/linux/fs/namespace.c b/linux/fs/namespace.c
  		return -EPERM;
  
  	type = get_fs_type(fstype);
-@@ -2579,7 +2574,7 @@
+@@ -2624,7 +2619,7 @@
  	struct mount *new_mnt, *root_mnt;
  	int error;
  
@@ -30914,7 +30914,7 @@ diff -Nur a/linux/kernel/fork.c b/linux/kernel/fork.c
 diff -Nur a/linux/kernel/futex.c b/linux/kernel/futex.c
 --- a/linux/kernel/futex.c	2013-03-15 10:27:25.000000000 -0700
 +++ b/linux/kernel/futex.c	2013-03-20 16:31:02.225596499 -0700
-@@ -2471,6 +2471,8 @@
+@@ -2496,6 +2496,8 @@
  	if (!futex_cmpxchg_enabled)
  		return -ENOSYS;
  
@@ -38740,12 +38740,13 @@ diff -Nur a/linux/tools/perf/util/pmu.y b/linux/tools/perf/util/pmu.y
 diff -Nur a/linux/drivers/brcmstb/Makefile b/linux/drivers/brcmstb/Makefile
 --- a/linux/drivers/brcmstb/Makefile	2012-06-25 11:43:12.078775000 -0700
 +++ b/linux/drivers/brcmstb/Makefile	2012-11-26 13:20:24.554153439 -0800
-@@ -1,1 +3,5 @@
+@@ -1,2 +1,6 @@
  obj-$(CONFIG_PCI)	+= pci.o
 +
 +# Provide status for Android that we are connected to mains (AC power)
 +obj-$(CONFIG_ANDROID)	+= b_ps.o
 +
+ obj-y			+= wake-timer.o
 diff -Nur a/linux/drivers/brcmstb/b_ps.c b/linux/drivers/brcmstb/b_ps.c
 --- a/linux/drivers/brcmstb/b_ps.c	1969-12-31 16:00:00.000000000 -0800
 +++ b/linux/drivers/brcmstb/b_ps.c	2012-11-27 18:30:33.484858863 -0800
@@ -38941,5 +38942,32 @@ diff -Nur a/linux/drivers/brcmstb/b_ps.c b/linux/drivers/brcmstb/b_ps.c
 +MODULE_DESCRIPTION("Brcmstb power supply driver");
 +MODULE_LICENSE("GPL");
 +MODULE_ALIAS("platform:brcmstb-ps");
+diff --git a/linux/arch/arm/mach-brcmstb/common.c b/linux/arch/arm/mach-brcmstb/common.c
+old mode 100644
+new mode 100755
+index 70e81c2..31ea05e
+--- a/linux/arch/arm/mach-brcmstb/common.c
++++ b/linux/arch/arm/mach-brcmstb/common.c
+@@ -270,8 +270,20 @@ static void __init brcmstb_machine_init(void)
+ 	cma_register();
+ }
+ 
++/* use AON_SYSTEM_DATA_RAM[9] to store cmd */
++#define REG_RESTART_REASON (BCHP_AON_CTRL_SYSTEM_DATA_RAMi_ARRAY_BASE+9*sizeof(uint32_t))
+ static void brcmstb_restart(char mode, const char *cmd)
+ {
++	if (cmd != NULL && cmd[0] != 0)
++	{
++		printk(KERN_INFO"brcmstb_restart cmd: %s\n", cmd);
++		BDEV_WR(REG_RESTART_REASON, (uint32_t)cmd[0]); /* store first char of restart reason */
++	}
++	else
++	{
++		BDEV_WR(REG_RESTART_REASON, 0x0);
++	}
++
+ 	BDEV_WR_F_RB(SUN_TOP_CTRL_RESET_SOURCE_ENABLE,
+ 		sw_master_reset_enable, 1);
+ 	BDEV_WR_F_RB(SUN_TOP_CTRL_SW_MASTER_RESET, chip_master_reset, 1);
 
 

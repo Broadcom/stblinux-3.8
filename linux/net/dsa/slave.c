@@ -490,9 +490,13 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
 	struct dsa_switch *ds = p->parent;
 	struct dsa_chip_data *cd = ds->pd;
 	struct device_node *phy_dn;
+	u32 phy_flags = 0;
 	u32 phy_addr;
 
 	p->phy_interface = of_get_phy_mode(cd->port_dn[p->port]);
+
+	if (ds->drv->get_phy_flags)
+		phy_flags = ds->drv->get_phy_flags(ds, p->port);
 
 	phy_dn = of_parse_phandle(cd->port_dn[p->port], "phy-handle", 0);
 	if (phy_dn) {
@@ -519,7 +523,7 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
 						p->phy_interface);
 		} else
 			p->phy = of_phy_connect(slave_dev, phy_dn,
-					dsa_slave_adjust_link, 0,
+					dsa_slave_adjust_link, phy_flags,
 					p->phy_interface);
 	} else {
 		p->phy = of_phy_connect_fixed_link(slave_dev,
@@ -648,6 +652,9 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 	netif_carrier_off(slave_dev);
 
 	if (p->phy != NULL) {
+		if (ds->drv->get_phy_flags)
+			p->phy->dev_flags |= ds->drv->get_phy_flags(ds, port);
+
 		phy_attach(slave_dev, dev_name(&p->phy->dev),
 			   0, PHY_INTERFACE_MODE_GMII);
 

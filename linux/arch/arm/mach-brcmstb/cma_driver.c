@@ -483,6 +483,9 @@ cleanup:
  * cma_dev_get_cma_dev() - Get a cma_dev * by memc index
  *
  * @memc: The MEMC index
+ *
+ * Return: a pointer to the associated CMA device, or NULL if no such
+ * device.
  */
 struct cma_dev *cma_dev_get_cma_dev(int memc)
 {
@@ -520,6 +523,8 @@ EXPORT_SYMBOL(cma_dev_get_cma_dev);
  * physical address of the contiguous region that was carved out
  * @len: Number of bytes to allocate
  * @align: Byte alignment
+ *
+ * Return: 0 on success, negative on failure.
  */
 int cma_dev_get_mem(struct cma_dev *cma_dev, u64 *addr, u32 len,
 			u32 align)
@@ -561,6 +566,8 @@ EXPORT_SYMBOL(cma_dev_get_mem);
  * @addr: Start physical address of allocated region
  * @len: Number of bytes that were allocated (this must match with get_mem
  * call!)
+ *
+ * Return: 0 on success, negative on failure.
  */
 int cma_dev_put_mem(struct cma_dev *cma_dev, u64 addr, u32 len)
 {
@@ -637,6 +644,8 @@ static int scan_alloc_bitmap(struct cma_dev *cma_dev, int op, int *region_count,
  * cma_dev_get_num_regions() - Get number of allocated regions
  *
  * @cma_dev: The CMA device
+ *
+ * Return: 0 on success, negative on failure
  */
 int cma_dev_get_num_regions(struct cma_dev *cma_dev)
 {
@@ -655,6 +664,8 @@ EXPORT_SYMBOL(cma_dev_get_num_regions);
  * @memc: MEMC index associated with the region
  * @addr: Physical address of region
  * @num_bytes: Size of region in bytes
+ *
+ * Return: 0 on success, negative on failure.
  */
 int cma_dev_get_region_info(struct cma_dev *cma_dev, int region_num,
 			    s32 *memc, u64 *addr, u32 *num_bytes)
@@ -785,6 +796,8 @@ static struct page **get_pages(struct page *page, int num_pages)
  * contiguous memory.
  * @num_pages: Number of pages
  * @pgprot: Page protection bits
+ *
+ * Return: pointer to mapping, or NULL on failure
  */
 void *cma_dev_kva_map(struct page *page, int num_pages, pgprot_t pgprot)
 {
@@ -823,6 +836,8 @@ EXPORT_SYMBOL(cma_dev_kva_map);
  * to physical pages mapped by cma_dev_kva_map()
  *
  * @kva: Kernel virtual address previously mapped by cma_dev_kva_map()
+ *
+ * Return: 0 on success, negative on failure.
  */
 int cma_dev_kva_unmap(const void *kva)
 {

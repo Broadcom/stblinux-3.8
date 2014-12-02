@@ -36,11 +36,12 @@ struct brcmstb_waketmr {
 	void __iomem *base;
 	unsigned int irq;
 
-	unsigned int wake_timeout;
+	int wake_timeout;
 	struct notifier_block reboot_notifier;
 };
 
-#define BRCMSTB_WKTMR_DEFAULT_TIMEOUT	1
+/* No timeout */
+#define BRCMSTB_WKTMR_DEFAULT_TIMEOUT	(-1)
 
 #define BRCMSTB_WKTMR_EVENT		0x00
 #define BRCMSTB_WKTMR_COUNTER		0x04
@@ -77,19 +78,23 @@ static ssize_t brcmstb_waketmr_timeout_show(struct device *dev,
 {
 	struct brcmstb_waketmr *timer = dev_get_drvdata(dev);
 
-	return snprintf(buf, PAGE_SIZE, "%u\n", timer->wake_timeout);
+	return snprintf(buf, PAGE_SIZE, "%d\n", timer->wake_timeout);
 }
 
 static ssize_t brcmstb_waketmr_timeout_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct brcmstb_waketmr *timer = dev_get_drvdata(dev);
-	unsigned long timeout;
+	int timeout;
 	int ret;
 
-	ret = kstrtoul(buf, 0, &timeout);
+	ret = kstrtoint(buf, 0, &timeout);
 	if (ret < 0)
 		return ret;
+
+	/* Allow -1 as "no timeout" */
+	if (timeout < -1)
+		return -EINVAL;
 
 	timer->wake_timeout = timeout;
 
@@ -105,7 +110,7 @@ static int brcmstb_waketmr_prepare_suspend(struct brcmstb_waketmr *timer)
 	struct device *dev = timer->dev;
 	int ret;
 
-	if (device_may_wakeup(dev)) {
+	if (device_may_wakeup(dev) && timer->wake_timeout >= 0) {
 		ret = enable_irq_wake(timer->irq);
 		if (ret) {
 			dev_err(dev, "failed to enable wake-up interrupt\n");
@@ -150,6 +155,15 @@ static int brcmstb_waketmr_probe(struct platform_device *pdev)
 	if (!timer->base)
 		return -ENODEV;
 
+	/*
+	 * Set wakeup capability before requesting wakeup interrupt, so we can
+	 * process boot-time "wakeups" (e.g., from S5 soft-off)
+	 */
+	device_set_wakeup_capable(dev, true);
+	ret = device_wakeup_enable(dev);
+	if (ret)
+		return ret;
+
 	timer->irq = platform_get_irq(pdev, 0);
 	if ((int)timer->irq < 0)
 		return -ENODEV;
@@ -158,12 +172,6 @@ static int brcmstb_waketmr_probe(struct platform_device *pdev)
 			                DRV_NAME, timer);
 	if (ret < 0)
 		return -ENODEV;
-
-	/* Capable for wakeup, but disabled by default */
-	device_set_wakeup_capable(dev, true);
-	ret = device_wakeup_disable(dev);
-	if (ret < 0)
-		return ret;
 
 	timer->reboot_notifier.notifier_call = brcmstb_waketmr_reboot;
 	register_reboot_notifier(&timer->reboot_notifier);
@@ -201,8 +209,8 @@ static int brcmstb_waketmr_resume(struct device *dev)
 	struct brcmstb_waketmr *timer = dev_get_drvdata(dev);
 	int ret;
 
-	if (!device_may_wakeup(dev))
-	       return 0;
+	if (!device_may_wakeup(dev) || timer->wake_timeout < 0)
+		return 0;
 
 	ret = disable_irq_wake(timer->irq);
 
